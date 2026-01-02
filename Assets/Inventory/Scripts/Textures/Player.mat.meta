@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 94bfe0aad7ce852428b36d0918018be9
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Textures/Player.mat
+  uploadId: 708677

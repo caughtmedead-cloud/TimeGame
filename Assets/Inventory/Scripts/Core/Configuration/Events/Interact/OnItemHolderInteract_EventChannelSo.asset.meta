@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 77032c4eaf0a32c46964c2970c1b838e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Events/Interact/OnItemHolderInteract_EventChannelSo.asset
+  uploadId: 708677

@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d1bd05e7495f1a84d96ab67091aefaa1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Windows/BasicWindow.cs
+  uploadId: 708677

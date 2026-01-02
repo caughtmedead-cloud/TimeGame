@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5aac9fc4482d36c41951025ffd83601b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Textures/WallTop.mat
+  uploadId: 708677

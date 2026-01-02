@@ -1,13 +1,16 @@
 ﻿<Solution>
   <Project Path="Kybernetik.InspectorGadgets.Editor.csproj" />
+  <Project Path="CoreInventory.csproj" />
   <Project Path="FishNet.Codegen.Cecil.csproj" />
   <Project Path="Kybernetik.InspectorGadgets.csproj" />
   <Project Path="FishNet.Runtime.csproj" />
   <Project Path="DTT.EditorUtilities.Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Editor.csproj" />
   <Project Path="GameKit.Dependencies.csproj" />
-  <Project Path="VFolders.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="VFolders.csproj" />
+  <Project Path="CoreInventory.Editor.csproj" />
+  <Project Path="Inventory.Scripts.csproj" />
   <Project Path="DTT.RuntimeUtilities.Runtime.csproj" />
   <Project Path="DTT.PublishingTools.Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Runtime.csproj" />
@@ -18,9 +21,12 @@
   <Project Path="DTT.RuntimeUtilities.Demo.csproj" />
   <Project Path="DTT.EditorUtilities.Demo.csproj" />
   <Project Path="Bezi.Editor.csproj" />
+  <Project Path="EditMode.csproj" />
   <Project Path="DTT.ProceduralUI.Tests.csproj" />
   <Project Path="DTT.ProceduralUI.Tests.Editor.csproj" />
   <Project Path="DTT.PublishingTools.Runtime.csproj" />
+  <Project Path="Inventory.Scripts.Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Runtime.Unsafe.csproj" />
   <Project Path="DTT.ProceduralUI.Demo.csproj" />
+  <Project Path="Inputs.csproj" />
 </Solution>

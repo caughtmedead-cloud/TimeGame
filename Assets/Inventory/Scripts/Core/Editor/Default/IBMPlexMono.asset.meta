@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 85c118c46a4e041f0a8b0d20d088a8c3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Editor/Default/IBMPlexMono.asset
+  uploadId: 708677

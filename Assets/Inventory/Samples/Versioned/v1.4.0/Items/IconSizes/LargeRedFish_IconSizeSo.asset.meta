@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: da500e0a655dd0f4ca3a7028f0fdb2c2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/LargeRedFish_IconSizeSo.asset
+  uploadId: 708677

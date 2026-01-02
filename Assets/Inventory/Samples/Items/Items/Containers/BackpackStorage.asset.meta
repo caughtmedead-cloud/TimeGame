@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 47a9fb884068891469573a0c8a4a408a
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Containers/BackpackStorage.asset
+  uploadId: 708677

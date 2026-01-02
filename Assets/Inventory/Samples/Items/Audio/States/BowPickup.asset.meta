@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ea14763ccfc34462db20f0bf2cbb02e0
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Audio/States/BowPickup.asset
+  uploadId: 708677

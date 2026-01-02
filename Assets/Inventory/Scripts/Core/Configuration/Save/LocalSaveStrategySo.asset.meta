@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 339a9c3e8c1dff542a0de0626d6b99f3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Save/LocalSaveStrategySo.asset
+  uploadId: 708677

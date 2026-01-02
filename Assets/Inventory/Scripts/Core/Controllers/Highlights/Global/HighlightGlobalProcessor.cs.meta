@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: c431422730f6456baa8ffd3309c972dc
+timeCreated: 1709157181
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Highlights/Global/HighlightGlobalProcessor.cs
+  uploadId: 708677

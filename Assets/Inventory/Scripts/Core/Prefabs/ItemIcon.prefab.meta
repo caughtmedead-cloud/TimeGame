@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 2108fe576ddd4254c9ee074b19413067
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Prefabs/ItemIcon.prefab
+  uploadId: 708677

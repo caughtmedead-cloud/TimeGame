@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 0232dc22cd5744b1bf2f51aa4230e22e
+timeCreated: 1681342967
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/ScriptableObjects/Configuration/Anchors/HighlighterPrefabAnchorSo.cs
+  uploadId: 708677

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f48e8284bf5cb9e4e8eef0970d0149ba
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Types/HelmetType.asset
+  uploadId: 708677

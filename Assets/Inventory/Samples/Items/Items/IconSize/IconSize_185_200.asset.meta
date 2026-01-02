@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b7c020118925d4868a3428739742a2b1
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/IconSize/IconSize_185_200.asset
+  uploadId: 708677

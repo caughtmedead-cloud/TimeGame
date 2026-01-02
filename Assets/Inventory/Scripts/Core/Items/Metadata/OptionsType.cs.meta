@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: aa1c88561f9bd4cb89005f4031cdc3db
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Items/Metadata/OptionsType.cs
+  uploadId: 708677

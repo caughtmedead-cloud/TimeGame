@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 880f403277b547549a2485a6744893a5
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Types/KnifeType.asset
+  uploadId: 708677

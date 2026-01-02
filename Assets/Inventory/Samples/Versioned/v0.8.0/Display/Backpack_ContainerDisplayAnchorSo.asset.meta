@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 9ac859bcd97ea483fbc56087f0e97bd6
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v0.8.0/Display/Backpack_ContainerDisplayAnchorSo.asset
+  uploadId: 708677

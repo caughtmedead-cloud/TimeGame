@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ccea2e4393b53074c826273f5dd0c40e
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Grids/Box_Container.prefab
+  uploadId: 708677

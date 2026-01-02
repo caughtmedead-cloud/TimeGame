@@ -1,0 +1,21 @@
+{
+    "name": "Inventory.Scripts.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:5cf64a5a9edcec646b65cc1c17b496c7",
+        "GUID:6443f3d4fc4444369bd2932bd74cf28f",
+        "GUID:19aaa886d3b6f42108fba2efdc192b1a",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

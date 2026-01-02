@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: c897b30a882e5c044badbb3d971feb01
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/UI/Font/IBM Plex Mono/IBMPlexMono-Bold
+    SDF.asset
+  uploadId: 708677

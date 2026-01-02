@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8c052d9293fbeb94d987fb03948b9d63
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Types/GranadeType.asset
+  uploadId: 708677

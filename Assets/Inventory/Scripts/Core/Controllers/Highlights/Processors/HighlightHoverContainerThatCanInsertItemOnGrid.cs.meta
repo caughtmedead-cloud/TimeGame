@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 1a709e70033440f0b7cfcf87c2bffabe
+timeCreated: 1709090390
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Highlights/Processors/HighlightHoverContainerThatCanInsertItemOnGrid.cs
+  uploadId: 708677

@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 3512557b4431417a854324c3c6f623e7
+timeCreated: 1701056311
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Displays/Filler/Primitives/SpriteFiller.cs
+  uploadId: 708677

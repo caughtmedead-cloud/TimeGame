@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1af60ac3cb3b9c34facf8307d5934e98
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/Display/PlayerScrollArea_DisplayAnchorSo.asset
+  uploadId: 708677

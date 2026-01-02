@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59e831ec13b842bb916f6d0337ef9175, type: 3}
+  m_Name: ItemDiscardTransform_AnchorSo
+  m_EditorClassIdentifier: 
+  isSet: 0
+  value: {fileID: 0}
+  description: Location where the item will be dropped. You can attach this to a
+    empty GameObject inside your Player prefab. There is going to be the transform
+    will instantiate the EnvironmentItemHolder (which is an item in the world)

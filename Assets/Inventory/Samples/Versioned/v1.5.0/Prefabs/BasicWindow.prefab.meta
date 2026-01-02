@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7fff86ed3d8489742b9a3c32fd8736a7
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/Prefabs/BasicWindow.prefab
+  uploadId: 708677

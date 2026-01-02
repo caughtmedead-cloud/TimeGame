@@ -1,0 +1,10 @@
+fileFormatVersion: 2
+guid: 5b5a7cd58424440480901424e72fad41
+timeCreated: 1701638701
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Displays/Filler/Primitives/TextReflectionContentFiller.cs
+  uploadId: 708677

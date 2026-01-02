@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8b8f3f1dabaadb1419dd55f24175e069
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Draggable/Processors/PlaceItemHoveringToStack.asset
+  uploadId: 708677

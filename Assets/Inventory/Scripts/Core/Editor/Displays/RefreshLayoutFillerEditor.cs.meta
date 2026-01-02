@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 068c54bf111a4b058b77e19754d6bf0c
+timeCreated: 1716817437
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Editor/Displays/RefreshLayoutFillerEditor.cs
+  uploadId: 708677

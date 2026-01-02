@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d16f878eab2156b4497c3655b7fa0bd9
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/RobotLeg_IconSizeSo.asset
+  uploadId: 708677

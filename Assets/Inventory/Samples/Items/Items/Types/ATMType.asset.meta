@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a456903525b71a74c918c616fc6869f9
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Types/ATMType.asset
+  uploadId: 708677

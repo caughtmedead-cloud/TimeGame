@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a497ce63d3eefc145b6b2d5f4248f156
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/Camera_IconSizeSo.asset
+  uploadId: 708677

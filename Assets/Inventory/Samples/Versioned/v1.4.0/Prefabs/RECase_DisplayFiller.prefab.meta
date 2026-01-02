@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e948b3f1225d4054ea82d60d0668d672
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Prefabs/RECase_DisplayFiller.prefab
+  uploadId: 708677

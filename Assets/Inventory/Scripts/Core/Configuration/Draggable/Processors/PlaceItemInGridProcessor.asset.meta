@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c1f9847f0a23cfd4a8acc868562a8d6e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Draggable/Processors/PlaceItemInGridProcessor.asset
+  uploadId: 708677

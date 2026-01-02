@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 282a05065ec1458eb35942c31eb529f2
+timeCreated: 1681652019
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Draggable/Processors/Places/PlaceItemInsideContainerHovering.cs
+  uploadId: 708677

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 02e94693d30864ac086a7bf73e691594
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Audio/AudioBackpack.asset
+  uploadId: 708677

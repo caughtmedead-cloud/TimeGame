@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8b51d2bcd7d9ad74f97e848b74dd5d72
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Textures/Sidewalk.mat
+  uploadId: 708677

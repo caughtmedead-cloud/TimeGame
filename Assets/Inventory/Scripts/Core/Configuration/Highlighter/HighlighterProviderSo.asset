@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94a390bbf541214409487076dcf8af27, type: 3}
+  m_Name: HighlighterProviderSo
+  m_EditorClassIdentifier: 
+  debug: 0
+  highlighterPrefabAnchorSo: {fileID: 11400000, guid: ecea8d9bb6c04c846ad67212609f971c, type: 2}
+  processors:
+  - {fileID: 11400000, guid: 3794e94b283438747a1dfd5763346f86, type: 2}
+  - {fileID: 11400000, guid: 3ca32a25d46dd7948916118207675588, type: 2}
+  - {fileID: 11400000, guid: 5e3d2d7734bd5b94c9b4a94e5bc6fede, type: 2}
+  - {fileID: 11400000, guid: 01ada66e0f14c794aaa4c77fa6fed8c1, type: 2}
+  - {fileID: 11400000, guid: b926fedbf08cb4242bd63869a9b1ade8, type: 2}
+  - {fileID: 11400000, guid: 616f9c15d583c8a4ba28386b98f43f06, type: 2}
+  globalProcessors:
+  - {fileID: 11400000, guid: cd0c30fb1fc47d34fb524eca0cda4886, type: 2}
+  - {fileID: 11400000, guid: 0cba11eb83494814dae3778b73d56edd, type: 2}

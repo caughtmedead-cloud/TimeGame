@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b926fedbf08cb4242bd63869a9b1ade8
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Highlighter/Processors/HighlightHoverContainerThatCanInsertItemOnGrid.asset
+  uploadId: 708677

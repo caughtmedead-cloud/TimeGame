@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 61c213cddb3a43169556ca99fdb1d769
+timeCreated: 1708716233
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Items/Metadata/CountableMetadata.cs
+  uploadId: 708677

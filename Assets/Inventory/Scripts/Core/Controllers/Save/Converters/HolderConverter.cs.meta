@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: f08776a188e049e0b0907fafc06ff55d
+timeCreated: 1712281193
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Save/Converters/HolderConverter.cs
+  uploadId: 708677

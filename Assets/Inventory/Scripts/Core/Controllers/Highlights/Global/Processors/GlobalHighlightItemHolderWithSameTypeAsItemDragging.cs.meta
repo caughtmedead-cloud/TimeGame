@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 888379121dce4a288a099ee04386b307
+timeCreated: 1709159832
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Highlights/Global/Processors/GlobalHighlightItemHolderWithSameTypeAsItemDragging.cs
+  uploadId: 708677

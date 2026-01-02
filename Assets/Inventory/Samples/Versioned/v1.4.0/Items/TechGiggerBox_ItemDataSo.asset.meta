@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e985368972378604889e8c2a2d6a6574
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/TechGiggerBox_ItemDataSo.asset
+  uploadId: 708677

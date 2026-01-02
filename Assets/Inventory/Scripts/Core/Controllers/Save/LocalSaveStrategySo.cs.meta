@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 2d03ea480b6f4c879ea07f014bf4d1d4
+timeCreated: 1711901439
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Save/LocalSaveStrategySo.cs
+  uploadId: 708677

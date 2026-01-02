@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d8a085df38cf4704c9927c99128086af
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/IconGenerator/Scripts/IconGenerator.cs
+  uploadId: 708677

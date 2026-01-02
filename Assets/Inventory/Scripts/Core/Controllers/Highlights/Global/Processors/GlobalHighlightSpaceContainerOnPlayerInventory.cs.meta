@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 4cdd3db1ae54495398d12421e3e4dd77
+timeCreated: 1709158673
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Highlights/Global/Processors/GlobalHighlightSpaceContainerOnPlayerInventory.cs
+  uploadId: 708677

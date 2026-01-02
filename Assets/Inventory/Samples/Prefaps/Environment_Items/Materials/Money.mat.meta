@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b1163ec305c6edf4e9eb2d2f917dd661
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/Environment_Items/Materials/Money.mat
+  uploadId: 708677

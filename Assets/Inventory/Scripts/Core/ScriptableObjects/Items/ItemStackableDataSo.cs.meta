@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 44897c27dc4a4196971694bfdbd9afad
+timeCreated: 1708715782
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/ScriptableObjects/Items/ItemStackableDataSo.cs
+  uploadId: 708677

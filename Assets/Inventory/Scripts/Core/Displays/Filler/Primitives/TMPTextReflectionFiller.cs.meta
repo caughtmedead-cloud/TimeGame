@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 0d791c1e898343cba7f5a8617fc849b4
+timeCreated: 1700937270
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Displays/Filler/Primitives/TMPTextReflectionFiller.cs
+  uploadId: 708677

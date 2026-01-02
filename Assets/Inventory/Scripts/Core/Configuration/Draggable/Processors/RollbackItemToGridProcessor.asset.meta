@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d2819e43a4445a742ac39a066011a74e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Draggable/Processors/RollbackItemToGridProcessor.asset
+  uploadId: 708677

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5c547d5d32d9c36428aad236703a3f0b
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/Prefabs/CharacterDisplayFiller.prefab
+  uploadId: 708677

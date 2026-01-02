@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 9066106b153028b42b8d7a7c985737f6
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/v1.5.0_TileSpecSo.asset
+  uploadId: 708677

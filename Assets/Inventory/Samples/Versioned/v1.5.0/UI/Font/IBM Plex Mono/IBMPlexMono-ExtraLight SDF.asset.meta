@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 4a8d96dcbd4ebe3448758f6d6e7e13d4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/UI/Font/IBM Plex Mono/IBMPlexMono-ExtraLight
+    SDF.asset
+  uploadId: 708677

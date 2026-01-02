@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 928d1983b7764f478846ca663fe42320
+timeCreated: 1714358648
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Grids/Helper/NearPositionHelper.cs
+  uploadId: 708677

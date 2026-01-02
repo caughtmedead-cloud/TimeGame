@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: cbbf95ab9949623499fef7a8515173a3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Textures/Box.mat
+  uploadId: 708677

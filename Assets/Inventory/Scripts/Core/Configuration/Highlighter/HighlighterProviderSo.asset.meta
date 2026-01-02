@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 0f46aef0d2167d140b020983e1e85ff6
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Highlighter/HighlighterProviderSo.asset
+  uploadId: 708677

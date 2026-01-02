@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d735acbbc06d07d47a5597084d30d662
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/BoxOnHolder_IconSizeSo.asset
+  uploadId: 708677

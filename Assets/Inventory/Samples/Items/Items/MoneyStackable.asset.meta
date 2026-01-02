@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ff50832396bd0b24ea00c9e49d40b77d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/MoneyStackable.asset
+  uploadId: 708677

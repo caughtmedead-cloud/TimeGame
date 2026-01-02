@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ece5abd5874308f40ac37bd1d76735fb
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/Pipe_ItemDataSo.asset
+  uploadId: 708677

@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 2b253ebe0f504e789016045fc381a0aa
+timeCreated: 1700943533
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Editor/Drawers/ReflectionPropertyPropertyDrawer.cs
+  uploadId: 708677

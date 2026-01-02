@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 22958f9d38d8d3a40af07f8b68b00f0f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Inputs/ApplicationOutOfFocus_Middleware.asset
+  uploadId: 708677

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 7add1e44551de764683569e1f51e3296
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/SecurityLocker_ItemDataSo.asset
+  uploadId: 708677

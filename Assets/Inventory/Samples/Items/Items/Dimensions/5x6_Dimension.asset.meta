@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 196ed2f43da938b479d29a3a6dc3c260
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Dimensions/5x6_Dimension.asset
+  uploadId: 708677

@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 4eb53ec23a86497a88cf6890ac7b43a7
+timeCreated: 1681605250
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Draggable/Processors/Rollbacks/RollbackItemToHolder.cs
+  uploadId: 708677

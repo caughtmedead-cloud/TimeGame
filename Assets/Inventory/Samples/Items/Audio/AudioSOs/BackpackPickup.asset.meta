@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a9ddcbcdc75e04a439fed8e4bcdd808d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Audio/AudioSOs/BackpackPickup.asset
+  uploadId: 708677

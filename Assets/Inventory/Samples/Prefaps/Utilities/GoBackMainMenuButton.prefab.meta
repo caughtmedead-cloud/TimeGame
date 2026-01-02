@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7c8999881a44d4dbd8c9daa47791642a
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/Utilities/GoBackMainMenuButton.prefab
+  uploadId: 708677

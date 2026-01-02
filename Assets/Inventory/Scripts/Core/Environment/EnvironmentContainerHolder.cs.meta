@@ -1,0 +1,22 @@
+fileFormatVersion: 2
+guid: 352141bb8fcaee048b0bcf11640421d7
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - itemContainerDataSo: {instanceID: 0}
+  - inventoryDisplayAnchorSo: {instanceID: 0}
+  - attachedInventorySo: {fileID: 11400000, guid: 972acd31f35ac8f4aa574a35c68ed657,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Environment/EnvironmentContainerHolder.cs
+  uploadId: 708677

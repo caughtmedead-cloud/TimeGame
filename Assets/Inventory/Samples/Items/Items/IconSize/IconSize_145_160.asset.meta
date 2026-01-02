@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e3a55e365b7ee47fa9a21bb41c9ac794
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/IconSize/IconSize_145_160.asset
+  uploadId: 708677

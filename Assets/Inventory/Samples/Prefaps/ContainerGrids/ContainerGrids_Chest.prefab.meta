@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 3166fc5a8ab921144b3daf5d6db1e0fc
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/ContainerGrids/ContainerGrids_Chest.prefab
+  uploadId: 708677

@@ -1,0 +1,10 @@
+fileFormatVersion: 2
+guid: 3079299589d4448d9af985c6b4de0a4a
+timeCreated: 1700424513
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/ScriptableObjects/Configuration/Anchors/Display/InventoryDisplayAnchorSo.cs
+  uploadId: 708677

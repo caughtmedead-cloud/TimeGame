@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6d8a69fecf6f4ac4fa07460cfc57e84f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Options/Events/OnEquipAbstractItemOption_EventChannelSo.asset
+  uploadId: 708677

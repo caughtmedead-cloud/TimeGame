@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: f78cb398ce4b7354986215468b0c3673
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/UI/Font/IBM Plex Mono/IBMPlexMono-Medium
+    SDF.asset
+  uploadId: 708677

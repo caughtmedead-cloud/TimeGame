@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ba87621951d69d04db5898d938898233
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Inputs/System/Inputs.asmdef
+  uploadId: 708677

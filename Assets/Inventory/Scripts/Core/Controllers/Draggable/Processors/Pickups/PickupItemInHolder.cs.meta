@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: a6abae34d92b49058a55a76a494ceb2f
+timeCreated: 1681673429
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Draggable/Processors/Pickups/PickupItemInHolder.cs
+  uploadId: 708677

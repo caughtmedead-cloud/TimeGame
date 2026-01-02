@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b49fc9a7bc2b1f344b9f5749dc2fae3f
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/ContainerGrids/ContainerGrids_Environment_Box.prefab
+  uploadId: 708677

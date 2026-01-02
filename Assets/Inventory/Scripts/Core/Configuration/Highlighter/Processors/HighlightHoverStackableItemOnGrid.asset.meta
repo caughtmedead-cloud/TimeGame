@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 616f9c15d583c8a4ba28386b98f43f06
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Highlighter/Processors/HighlightHoverStackableItemOnGrid.asset
+  uploadId: 708677

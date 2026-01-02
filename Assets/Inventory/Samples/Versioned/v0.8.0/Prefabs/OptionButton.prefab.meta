@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 82b9568b8458d224a9db3467225ceb94
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v0.8.0/Prefabs/OptionButton.prefab
+  uploadId: 708677

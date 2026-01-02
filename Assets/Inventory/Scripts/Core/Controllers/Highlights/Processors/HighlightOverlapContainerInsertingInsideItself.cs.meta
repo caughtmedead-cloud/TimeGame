@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 0ee0dad211c74b13bae19089b158a7a0
+timeCreated: 1709091816
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Highlights/Processors/HighlightOverlapContainerInsertingInsideItself.cs
+  uploadId: 708677

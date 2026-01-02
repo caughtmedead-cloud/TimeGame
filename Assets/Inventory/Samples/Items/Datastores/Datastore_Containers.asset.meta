@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 0a7da49bf6bcac345b1773523c96f6ef
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Datastores/Datastore_Containers.asset
+  uploadId: 708677

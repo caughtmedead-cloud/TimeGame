@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e47bb93cf996dec40b6925e1bf842346
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Datastores/Datastore_Stackable_Items.asset
+  uploadId: 708677

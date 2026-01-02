@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: a00b90feb5712bd4dbffce09f93fdafc
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/Grids/Containers/SampleContainer_Single_Grid.prefab
+  uploadId: 708677

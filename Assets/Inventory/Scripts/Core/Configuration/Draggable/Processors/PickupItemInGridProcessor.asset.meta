@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 998c51386eb24484aa6b9ab10bf2392d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Draggable/Processors/PickupItemInGridProcessor.asset
+  uploadId: 708677

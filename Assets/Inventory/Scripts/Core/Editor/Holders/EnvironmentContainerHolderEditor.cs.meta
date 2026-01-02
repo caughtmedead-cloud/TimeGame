@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 727b187f88f2412ea5ae6cc07f04666b
+timeCreated: 1729038775
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Editor/Holders/EnvironmentContainerHolderEditor.cs
+  uploadId: 708677

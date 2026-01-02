@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6d008b5ddd4ba7e49af2afead865f469
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/Large_Red_Fish_ItemDataSo.asset
+  uploadId: 708677

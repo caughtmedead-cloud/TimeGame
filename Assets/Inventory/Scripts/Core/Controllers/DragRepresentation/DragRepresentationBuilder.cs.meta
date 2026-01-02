@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 377584ad0dc14103bae09199befb317b
+timeCreated: 1714694862
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/DragRepresentation/DragRepresentationBuilder.cs
+  uploadId: 708677

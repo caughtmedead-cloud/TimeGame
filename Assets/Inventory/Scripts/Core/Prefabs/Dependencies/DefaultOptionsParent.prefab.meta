@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b367860ac35ea0343b535206a17db335
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Prefabs/Dependencies/DefaultOptionsParent.prefab
+  uploadId: 708677

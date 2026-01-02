@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 3f4f685717eb6dc42820fe751eb95a32
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Tests/PlayMode/PlayMode.asmdef
+  uploadId: 708677

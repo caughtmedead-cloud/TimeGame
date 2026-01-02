@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c1cec9d777c06408d8dbd9c66423daf4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Options/InspectOption.asset
+  uploadId: 708677

@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 56076767fbb148a48c0cc69e28ede309
+timeCreated: 1681596507
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Draggable/ReleaseProcessor.cs
+  uploadId: 708677

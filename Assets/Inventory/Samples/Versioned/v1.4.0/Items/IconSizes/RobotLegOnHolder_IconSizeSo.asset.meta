@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: fe321aaf61f286744a9686595ecd839a
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/RobotLegOnHolder_IconSizeSo.asset
+  uploadId: 708677

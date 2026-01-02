@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: bd1b34013f17245cc89c0eb9a5027d90
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Events/OnAudioState_EventChannelSo.asset
+  uploadId: 708677

@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: a402ee50835c4a2f9d669ad28c74f720
+timeCreated: 1711910884
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Save/Converters/ItemDataSoConverter.cs
+  uploadId: 708677

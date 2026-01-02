@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 85c24d8d5220286459ed72e95001db3c
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Default_ItemPrefabSo.asset
+  uploadId: 708677

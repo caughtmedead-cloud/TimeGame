@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 00655d40060210943a6ece3b2aeb5790
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Anchors/ItemHolder_Selected_AnchorSo.asset
+  uploadId: 708677

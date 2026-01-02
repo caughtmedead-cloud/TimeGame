@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 2a6dbffdcf9a4fe290da4d0d42f8a47f
+timeCreated: 1683342136
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Editor/Drawers/Metadata/ContainerMetadataPropertyDrawer.cs
+  uploadId: 708677

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5b9dfb24d6eaa0e4cba00c6c53305396
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/InventorySupplierSo.asset
+  uploadId: 708677

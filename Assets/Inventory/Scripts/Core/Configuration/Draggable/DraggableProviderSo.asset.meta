@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 122a1f446253a7c4a9122527da560b71
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Draggable/DraggableProviderSo.asset
+  uploadId: 708677

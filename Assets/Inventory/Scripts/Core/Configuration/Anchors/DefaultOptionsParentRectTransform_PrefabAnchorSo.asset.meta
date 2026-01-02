@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 19ca0e6bd26efc34ebcb0fd7a845cfd2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Anchors/DefaultOptionsParentRectTransform_PrefabAnchorSo.asset
+  uploadId: 708677

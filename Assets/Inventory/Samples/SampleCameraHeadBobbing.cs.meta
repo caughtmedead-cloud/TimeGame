@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 3b6c0021f2a1d3f4f8881ecef5c34c4a
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/SampleCameraHeadBobbing.cs
+  uploadId: 708677

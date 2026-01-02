@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 559816e957b031941a8ea75629392434
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/ExplosiveEye_ItemDataSo.asset
+  uploadId: 708677

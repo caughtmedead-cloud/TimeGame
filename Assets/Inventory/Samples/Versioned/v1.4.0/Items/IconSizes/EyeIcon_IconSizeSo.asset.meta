@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f7536f13fb3aec344ab20d00fadc8f48
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/EyeIcon_IconSizeSo.asset
+  uploadId: 708677

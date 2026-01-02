@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 19aaa886d3b6f42108fba2efdc192b1a
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Editor/CoreInventory.Editor.asmdef
+  uploadId: 708677

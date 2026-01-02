@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 0e838fae0152b45719073e9668ff055d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/Skull_Helmet.asset
+  uploadId: 708677

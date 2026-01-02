@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: d1651b44d80c48e89aa198b9a57e95dc
+timeCreated: 1699493482
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/ScriptableObjects/Configuration/Anchors/WindowParentRTPrefabAnchorSo.cs
+  uploadId: 708677

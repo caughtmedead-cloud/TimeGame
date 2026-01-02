@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: d10b4b2529aa4bb5a9105d8e240b8b2b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - itemDiscardTransformSo: {fileID: 11400000, guid: 1244df3f927b74c0da412ab82c2a15d0,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/ScriptableObjects/Configuration/ItemDiscardTransformUpdater.cs
+  uploadId: 708677

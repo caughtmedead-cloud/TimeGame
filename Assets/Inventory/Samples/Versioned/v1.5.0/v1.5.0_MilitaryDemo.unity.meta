@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 0f9926e3237b9044ba9af4e990b0b94f
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/v1.5.0_MilitaryDemo.unity
+  uploadId: 708677

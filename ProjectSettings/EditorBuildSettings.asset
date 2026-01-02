@@ -8,10 +8,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TimeTest_Present.unity
     guid: 818f4394f6ab51a4d8a8be8af215a1b2
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/TimeTest_Past.unity
     guid: 93b624facfee6bb47a5ad6297c64c7cc
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/TimeTest_Future.unity
     guid: 69fa90e85678224488a022b7d39dddd7
   m_configObjects:

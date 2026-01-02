@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 6dc164a362090462f8146e0279b8ab61
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Prefabs/ExampleDiscardTransformComponent.prefab
+  uploadId: 708677

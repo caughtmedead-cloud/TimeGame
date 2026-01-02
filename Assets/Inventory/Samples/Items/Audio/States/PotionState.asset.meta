@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 012b9d0a390214c6ab6ba6d7bfc6f846
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Audio/States/PotionState.asset
+  uploadId: 708677

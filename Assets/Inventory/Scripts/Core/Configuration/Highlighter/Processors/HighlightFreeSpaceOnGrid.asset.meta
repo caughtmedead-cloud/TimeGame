@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 3ca32a25d46dd7948916118207675588
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Highlighter/Processors/HighlightFreeSpaceOnGrid.asset
+  uploadId: 708677

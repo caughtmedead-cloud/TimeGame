@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: dc59d708f93a493491bffbc5ea7cbcea
+timeCreated: 1700937242
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Displays/Filler/Primitives/AbstractFiller.cs
+  uploadId: 708677

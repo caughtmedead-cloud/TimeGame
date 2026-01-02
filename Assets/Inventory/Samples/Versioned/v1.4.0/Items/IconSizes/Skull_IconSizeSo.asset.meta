@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 307bbc005283d654b893e9c7f2a600ae
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/Skull_IconSizeSo.asset
+  uploadId: 708677

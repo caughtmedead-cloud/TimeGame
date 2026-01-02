@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44897c27dc4a4196971694bfdbd9afad, type: 3}
+  m_Name: MoneyStackable
+  m_EditorClassIdentifier: 
+  uniqueUid:
+    uid: 40894333-f7be-4701-b825-5899fe79c557
+  displayName: Roubles
+  description: A monetary type
+  dimensionsSo: {fileID: 11400000, guid: 8de22abe6aea68c4994373f40af5cb6c, type: 2}
+  icon: {fileID: 21300000, guid: 786a89d611ef8a442aaa05358149b973, type: 3}
+  prefab: {fileID: 8709225828009853647, guid: 53bd9a509ce444a98859ac1b116e6349, type: 3}
+  itemDataTypeSo: {fileID: 0}
+  audioCueSo: {fileID: 0}
+  iconSizeSo: {fileID: 11400000, guid: 2c978556c1c394e43b9ba847360753fb, type: 2}
+  inHolderIconSizeSo: {fileID: 11400000, guid: 2c978556c1c394e43b9ba847360753fb, type: 2}
+  optionsSo:
+  - {fileID: 11400000, guid: c1cec9d777c06408d8dbd9c66423daf4, type: 2}
+  - {fileID: 11400000, guid: 5bc027882bddfda409aa176109c16db7, type: 2}
+  - {fileID: 11400000, guid: e42c6c32c3d6d4286a3b11b055016222, type: 2}
+  maxStack: 10
+  minStack: 0.25
+  treatAsInteger: 0
+  showMaxStack: 0

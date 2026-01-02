@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 6fe8dfd4b5e697440ba5786c289b267f
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/Environment_Items/PotionItem.prefab
+  uploadId: 708677

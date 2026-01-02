@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1335882c6b0ac4b63812ba718de4254f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Audio/States/RubyState.asset
+  uploadId: 708677

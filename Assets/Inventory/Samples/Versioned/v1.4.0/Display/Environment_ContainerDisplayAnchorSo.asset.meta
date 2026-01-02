@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ddbcebd9971393545a3dbd61c6434eb8
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Display/Environment_ContainerDisplayAnchorSo.asset
+  uploadId: 708677

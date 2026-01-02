@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 1d5c828d1b454da09048f18401fcfb03
+timeCreated: 1712283721
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Editor/UniqueUidEditor.cs
+  uploadId: 708677

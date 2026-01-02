@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 37bea5cd8ea24134e9571fd949528acd
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Potion.asset
+  uploadId: 708677

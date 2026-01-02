@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 41e86851506954fed8c34528375fd1b9
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Prefabs/ContainerWindow.prefab
+  uploadId: 708677

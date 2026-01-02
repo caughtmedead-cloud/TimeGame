@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: af0a6e9909f4d584d938d370fc7ed6d4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Ruby.asset
+  uploadId: 708677

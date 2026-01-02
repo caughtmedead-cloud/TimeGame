@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5e3d2d7734bd5b94c9b4a94e5bc6fede
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Highlighter/Processors/HighlightOverlapItemOnGrid.asset
+  uploadId: 708677

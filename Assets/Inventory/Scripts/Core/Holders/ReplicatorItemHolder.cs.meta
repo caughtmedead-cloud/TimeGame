@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 9a33db60ea15452e93db0688fea1346d
+timeCreated: 1716421630
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Holders/ReplicatorItemHolder.cs
+  uploadId: 708677

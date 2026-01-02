@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 8c6547cb7e4604d269cf418e0b43d651
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/UI/Font/OFL.txt
+  uploadId: 708677

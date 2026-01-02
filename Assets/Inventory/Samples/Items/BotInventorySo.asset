@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79543635fc783a74581f8e7b1ac17a75, type: 3}
+  m_Name: BotInventorySo
+  m_EditorClassIdentifier: 
+  saveable: 1
+  saveStrategySo: {fileID: 11400000, guid: 339a9c3e8c1dff542a0de0626d6b99f3, type: 2}
+  saveFileName:
+    uid: 4752cc1f-a17c-4ee8-bd34-a8abe49da856
+  preEquipments:
+  - holderId: 44c1e52e-1deb-46cb-8a43-d2f2b1e37d97
+    item: {fileID: 11400000, guid: 47a9fb884068891469573a0c8a4a408a, type: 2}
+  - holderId: aa182d85-6457-41e2-ae07-c16b58acec3f
+    item: {fileID: 11400000, guid: 8efbaa45eb82fdd48bb47614d6f85a14, type: 2}
+  holders:
+  - rid: 96359523725345158
+  - rid: 96359523725345159
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 96359523725345158
+      type: {class: HolderData, ns: Inventory.Scripts.Core.Holders, asm: CoreInventory}
+      data:
+        id: 44c1e52e-1deb-46cb-8a43-d2f2b1e37d97
+        isEquipped: 1
+        itemEquipped:
+          rid: 96359523725345160
+    - rid: 96359523725345159
+      type: {class: HolderData, ns: Inventory.Scripts.Core.Holders, asm: CoreInventory}
+      data:
+        id: aa182d85-6457-41e2-ae07-c16b58acec3f
+        isEquipped: 1
+        itemEquipped:
+          rid: 96359523725345161
+    - rid: 96359523725345160
+      type: {class: ItemTable, ns: Inventory.Scripts.Core.Items, asm: CoreInventory}
+      data:
+        <CurrentGridTable>k__BackingField:
+          rid: -2
+        <CurrentHolder>k__BackingField:
+          rid: 96359523725345158
+        <InventoryMetadata>k__BackingField:
+          rid: 96359523725345162
+    - rid: 96359523725345161
+      type: {class: ItemTable, ns: Inventory.Scripts.Core.Items, asm: CoreInventory}
+      data:
+        <CurrentGridTable>k__BackingField:
+          rid: -2
+        <CurrentHolder>k__BackingField:
+          rid: 96359523725345159
+        <InventoryMetadata>k__BackingField:
+          rid: 96359523725345163
+    - rid: 96359523725345162
+      type: {class: ContainerMetadata, ns: Inventory.Scripts.Core.Items.Metadata, asm: CoreInventory}
+      data:
+        <Inventories>k__BackingField:
+        - rid: 96359523725345164
+    - rid: 96359523725345163
+      type: {class: ContainerMetadata, ns: Inventory.Scripts.Core.Items.Metadata, asm: CoreInventory}
+      data:
+        <Inventories>k__BackingField:
+        - rid: 96359523725345165
+        - rid: 96359523725345166
+        - rid: 96359523725345167
+        - rid: 96359523725345168
+        - rid: 96359523725345169
+        - rid: 96359523725345170
+        - rid: 96359523725345171
+        - rid: 96359523725345172
+        - rid: 96359523725345173
+    - rid: 96359523725345164
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345165
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345166
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345167
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345168
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345169
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345170
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345171
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345172
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359523725345173
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}

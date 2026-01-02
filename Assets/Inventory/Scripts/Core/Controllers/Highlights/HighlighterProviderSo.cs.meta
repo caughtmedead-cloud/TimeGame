@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 94a390bbf541214409487076dcf8af27
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - highlighterPrefabAnchorSo: {fileID: 11400000, guid: ecea8d9bb6c04c846ad67212609f971c,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Highlights/HighlighterProviderSo.cs
+  uploadId: 708677

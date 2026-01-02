@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: f455aa4e57c03824ea8c97f4e637a1d7
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/IconGenerator/IconGenerator.unity
+  uploadId: 708677

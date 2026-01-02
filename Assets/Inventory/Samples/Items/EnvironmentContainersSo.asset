@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79543635fc783a74581f8e7b1ac17a75, type: 3}
+  m_Name: EnvironmentContainersSo
+  m_EditorClassIdentifier: 
+  saveable: 1
+  saveStrategySo: {fileID: 11400000, guid: 339a9c3e8c1dff542a0de0626d6b99f3, type: 2}
+  saveFileName:
+    uid: 1a1a7e54-b349-40ce-9692-a49da0727405
+  preEquipments: []
+  holders:
+  - rid: 96359493861376558
+  - rid: 96359493861376558
+  - rid: 96359493861376559
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 96359493861376558
+      type: {class: HolderData, ns: Inventory.Scripts.Core.Holders, asm: CoreInventory}
+      data:
+        id: ea32e58f-5831-481d-80d4-caddf4103f4b
+        isEquipped: 1
+        itemEquipped:
+          rid: 96359493861376569
+    - rid: 96359493861376559
+      type: {class: HolderData, ns: Inventory.Scripts.Core.Holders, asm: CoreInventory}
+      data:
+        id: df95c7ec-f15d-4a52-9b09-27d5c5d296e9
+        isEquipped: 1
+        itemEquipped:
+          rid: 96359493861376570
+    - rid: 96359493861376569
+      type: {class: ItemTable, ns: Inventory.Scripts.Core.Items, asm: CoreInventory}
+      data:
+        <CurrentGridTable>k__BackingField:
+          rid: -2
+        <CurrentHolder>k__BackingField:
+          rid: 96359493861376558
+        <InventoryMetadata>k__BackingField:
+          rid: 96359493861376571
+    - rid: 96359493861376570
+      type: {class: ItemTable, ns: Inventory.Scripts.Core.Items, asm: CoreInventory}
+      data:
+        <CurrentGridTable>k__BackingField:
+          rid: -2
+        <CurrentHolder>k__BackingField:
+          rid: 96359493861376559
+        <InventoryMetadata>k__BackingField:
+          rid: 96359493861376572
+    - rid: 96359493861376571
+      type: {class: ContainerMetadata, ns: Inventory.Scripts.Core.Items.Metadata, asm: CoreInventory}
+      data:
+        <Inventories>k__BackingField:
+        - rid: 96359493861376573
+    - rid: 96359493861376572
+      type: {class: ContainerMetadata, ns: Inventory.Scripts.Core.Items.Metadata, asm: CoreInventory}
+      data:
+        <Inventories>k__BackingField:
+        - rid: 96359493861376574
+    - rid: 96359493861376573
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}
+    - rid: 96359493861376574
+      type: {class: GridTable, ns: Inventory.Scripts.Core.Grids, asm: CoreInventory}

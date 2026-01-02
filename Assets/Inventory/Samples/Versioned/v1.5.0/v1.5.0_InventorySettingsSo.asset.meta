@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 26314d271d5fad0448ab741a14426df5
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.5.0/v1.5.0_InventorySettingsSo.asset
+  uploadId: 708677

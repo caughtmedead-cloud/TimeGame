@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5cfb0278fc456ea4fa0249698ce3c052
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/GreenFish_IconSizeSo.asset
+  uploadId: 708677

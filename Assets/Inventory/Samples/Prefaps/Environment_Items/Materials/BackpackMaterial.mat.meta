@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 664776bb3e30bd648887e3004b362db0
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/Environment_Items/Materials/BackpackMaterial.mat
+  uploadId: 708677

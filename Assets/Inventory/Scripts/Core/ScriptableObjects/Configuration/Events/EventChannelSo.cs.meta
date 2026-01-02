@@ -1,0 +1,10 @@
+fileFormatVersion: 2
+guid: 226135474440413580290abb774bcec8
+timeCreated: 1700337583
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/ScriptableObjects/Configuration/Events/EventChannelSo.cs
+  uploadId: 708677

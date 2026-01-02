@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: a611d288eadd46648c2779031918fcfe
+timeCreated: 1709086487
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Highlights/Processors/HighlightItemCursorHoverOnGrid.cs
+  uploadId: 708677

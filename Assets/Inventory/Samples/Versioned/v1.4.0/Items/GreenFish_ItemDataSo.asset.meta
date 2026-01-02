@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ea7e559f7b03b0a4282294b7ebd26653
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/GreenFish_ItemDataSo.asset
+  uploadId: 708677

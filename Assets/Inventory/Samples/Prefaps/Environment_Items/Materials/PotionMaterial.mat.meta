@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1a45116682d987d419d9e9964a1292b5
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/Environment_Items/Materials/PotionMaterial.mat
+  uploadId: 708677

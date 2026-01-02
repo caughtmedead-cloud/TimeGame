@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: fc903438544b84a459e9b3c67ed92701
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Items/Pistol.asset
+  uploadId: 708677

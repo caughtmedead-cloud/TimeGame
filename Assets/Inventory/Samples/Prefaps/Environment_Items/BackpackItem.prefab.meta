@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c2b02f46b08bb8d428c9cbde554d7a74
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Prefaps/Environment_Items/BackpackItem.prefab
+  uploadId: 708677

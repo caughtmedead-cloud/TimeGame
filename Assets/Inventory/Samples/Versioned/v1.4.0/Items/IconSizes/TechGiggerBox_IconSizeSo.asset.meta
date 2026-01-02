@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6e03f336dda9dcd4e9747181bf58cf06
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/Items/IconSizes/TechGiggerBox_IconSizeSo.asset
+  uploadId: 708677

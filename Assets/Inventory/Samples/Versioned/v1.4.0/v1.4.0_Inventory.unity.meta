@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5a3d156cb16250643866a1df7acdc3a9
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Versioned/v1.4.0/v1.4.0_Inventory.unity
+  uploadId: 708677

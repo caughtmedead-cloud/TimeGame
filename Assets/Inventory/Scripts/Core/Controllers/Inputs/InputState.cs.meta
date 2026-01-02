@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 5ca9536064414d6daff474dc34290259
+timeCreated: 1682467767
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Inputs/InputState.cs
+  uploadId: 708677

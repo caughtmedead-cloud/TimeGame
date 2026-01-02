@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 94af7d60067377c46977e67290e9fd0d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Samples/Items/Options/UnEquipOption.asset
+  uploadId: 708677

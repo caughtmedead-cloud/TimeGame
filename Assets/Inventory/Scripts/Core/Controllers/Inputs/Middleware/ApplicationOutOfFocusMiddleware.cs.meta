@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: a691ec03135343d88319e9ce0af9d8d7
+timeCreated: 1682473137
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Controllers/Inputs/Middleware/ApplicationOutOfFocusMiddleware.cs
+  uploadId: 708677

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e6c16b3582eb85d499026df4f8acb439
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 215256
+  packageName: Ultimate Grid Inventory
+  packageVersion: 1.5.0
+  assetPath: Assets/Inventory/Scripts/Core/Configuration/Inputs/NewInputSystem_Middleware.asset
+  uploadId: 708677
