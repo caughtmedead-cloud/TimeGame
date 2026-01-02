@@ -17,6 +17,7 @@
   <Project Path="FishNet.Demos.csproj" />
   <Project Path="DTT.RuntimeUtilities.Demo.csproj" />
   <Project Path="DTT.EditorUtilities.Demo.csproj" />
+  <Project Path="Bezi.Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Tests.csproj" />
   <Project Path="DTT.ProceduralUI.Tests.Editor.csproj" />
   <Project Path="DTT.PublishingTools.Runtime.csproj" />
