@@ -2,8 +2,8 @@
   <Project Path="Kybernetik.InspectorGadgets.Editor.csproj" />
   <Project Path="CoreInventory.csproj" />
   <Project Path="FishNet.Codegen.Cecil.csproj" />
-  <Project Path="Kybernetik.InspectorGadgets.csproj" />
   <Project Path="DrawXXL.csproj" />
+  <Project Path="Kybernetik.InspectorGadgets.csproj" />
   <Project Path="FishNet.Runtime.csproj" />
   <Project Path="DTT.EditorUtilities.Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Editor.csproj" />

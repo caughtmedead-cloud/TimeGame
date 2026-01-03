@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/TimeTest_Present.unity
+    path: Assets/_Scenes/Timeline/Timeline_Present.unity
     guid: 818f4394f6ab51a4d8a8be8af215a1b2
   - enabled: 0
     path: Assets/Scenes/TimeTest_Past.unity
