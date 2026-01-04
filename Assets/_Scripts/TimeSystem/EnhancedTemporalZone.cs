@@ -25,6 +25,20 @@ public class EnhancedTemporalZone : NetworkBehaviour
     [Tooltip("Stability drain per second (negative value)")]
     [SerializeField] private float stabilityDrainRate = -2.0f;
     
+    [Header("Intensity Gradient")]
+    [Tooltip("Enable distance-based intensity falloff")]
+    public bool useIntensityGradient = false;
+
+    [Tooltip("Intensity curve: X = normalized distance from center (0=center, 1=edge), Y = drain multiplier (0-1)")]
+    public AnimationCurve intensityCurve = AnimationCurve.Linear(0f, 1f, 1f, 0.25f);
+
+    [Tooltip("Visualize gradient rings in editor")]
+    public bool showGradientRings = true;
+
+    [Tooltip("Number of gradient visualization rings")]
+    [Range(2, 10)]
+    public int gradientRingCount = 4;
+    
     [Header("Visual Settings")]
     public Color zoneColor = new Color(0f, 1f, 1f, 0.3f);
     public Color selectedColor = new Color(1f, 1f, 0f, 0.5f);
@@ -122,7 +136,14 @@ public class EnhancedTemporalZone : NetworkBehaviour
                 continue;
             }
             
-            float drainAmount = stabilityDrainRate * Time.deltaTime;
+            float drainMultiplier = 1f;
+            
+            if (useIntensityGradient)
+            {
+                drainMultiplier = CalculateIntensityAtPosition(stability.transform.position);
+            }
+            
+            float drainAmount = stabilityDrainRate * drainMultiplier * Time.deltaTime;
             stability.ModifyStability(drainAmount);
         }
     }
@@ -147,6 +168,36 @@ public class EnhancedTemporalZone : NetworkBehaviour
             Debug.Log($"[AnomalyZone] '{zoneName}' - Player {stability.Owner?.ClientId} EXITED (Total players: {affectedPlayers.Count})");
         }
     }
+    
+    private float CalculateIntensityAtPosition(Vector3 playerPosition)
+    {
+        Vector3 localPos = transform.InverseTransformPoint(playerPosition);
+        float normalizedDistance = 0f;
+    
+        if (activeCollider is SphereCollider sphereCol)
+        {
+            float distanceFromCenter = Vector3.Distance(transform.position, playerPosition);
+            normalizedDistance = Mathf.Clamp01(distanceFromCenter / sphereCol.radius);
+        }
+        else if (activeCollider is BoxCollider boxCol)
+        {
+            Vector3 halfSize = boxCol.size * 0.5f;
+            Vector3 normalizedDist = new Vector3(
+                Mathf.Abs(localPos.x) / halfSize.x,
+                Mathf.Abs(localPos.y) / halfSize.y,
+                Mathf.Abs(localPos.z) / halfSize.z
+            );
+            normalizedDistance = Mathf.Max(normalizedDist.x, normalizedDist.y, normalizedDist.z);
+        }
+        else if (activeCollider is CapsuleCollider capCol)
+        {
+            float distanceFromCenter = Vector3.Distance(transform.position, playerPosition);
+            normalizedDistance = Mathf.Clamp01(distanceFromCenter / capCol.radius);
+        }
+    
+        return intensityCurve.Evaluate(normalizedDistance);
+    }
+    
     
     protected override void OnValidate()
     {

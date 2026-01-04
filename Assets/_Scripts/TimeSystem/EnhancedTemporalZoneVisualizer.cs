@@ -115,6 +115,12 @@ public class EnhancedTemporalZoneVisualizer : VisualizerParent
         bool globalTextEnabled = GetGlobalTextVisibility();
         bool shouldShowText = globalTextEnabled || isSelected;
 
+        // Draw gradient rings FIRST (behind main shape) when zone is selected AND gradient enabled
+        if (isSelected && zone.useIntensityGradient)
+        {
+            DrawGradientRings(col);
+        }
+
         Color color = isSelected ? zone.selectedColor : zone.zoneColor;
         float linesWidth = isSelected ? 0.02f : 0.0f;
         int struts = zone.strutCount;
@@ -209,6 +215,115 @@ public class EnhancedTemporalZoneVisualizer : VisualizerParent
                 pointer_as_textAttachStyle: false,
                 drawCoordsAsText: false,
                 hideZDir: false,
+                durationInSec: 0f,
+                hiddenByNearerObjects: false
+            );
+        }
+    }
+
+    private void DrawGradientRings(Collider col)
+    {
+        if (!zone.showGradientRings)
+            return;
+
+        if (col is SphereCollider sphereCol)
+        {
+            DrawSphereGradientRings(sphereCol);
+        }
+        else if (col is BoxCollider boxCol)
+        {
+            DrawBoxGradientRings(boxCol);
+        }
+        else if (col is CapsuleCollider capCol)
+        {
+            DrawCapsuleGradientRings(capCol);
+        }
+    }
+
+    private void DrawSphereGradientRings(SphereCollider sphereCol)
+    {
+        float maxRadius = sphereCol.radius;
+
+        for (int i = 1; i <= zone.gradientRingCount; i++)
+        {
+            float normalizedDist = i / (float)zone.gradientRingCount;
+            float ringRadius = maxRadius * normalizedDist;
+
+            float intensity = zone.intensityCurve.Evaluate(normalizedDist);
+
+            Color ringColor = Color.Lerp(Color.green, Color.red, intensity);
+            ringColor.a = 0.4f;
+
+            DrawShapes.Circle(
+                transform.position,
+                ringRadius,
+                ringColor,
+                Vector3.up,
+                default(Vector3),
+                0.015f,
+                i == zone.gradientRingCount ? null : $"{(intensity * 100):F0}%",
+                DrawBasics.LineStyle.solid,
+                1f,
+                DrawBasics.LineStyle.invisible,
+                false,
+                false,
+                0f,
+                false
+            );
+        }
+    }
+
+    private void DrawBoxGradientRings(BoxCollider boxCol)
+    {
+        Vector3 size = boxCol.size;
+
+        for (int i = 1; i <= zone.gradientRingCount; i++)
+        {
+            float normalizedDist = i / (float)zone.gradientRingCount;
+            Vector3 ringSize = size * normalizedDist;
+
+            float intensity = zone.intensityCurve.Evaluate(normalizedDist);
+
+            Color ringColor = Color.Lerp(Color.green, Color.red, intensity);
+            ringColor.a = 0.4f;
+
+            DrawShapes.Cube(
+                position: transform.position,
+                scale: ringSize,
+                color: ringColor,
+                rotation: transform.rotation,
+                linesWidth: 0.015f,
+                text: null,
+                durationInSec: 0f,
+                hiddenByNearerObjects: false
+            );
+        }
+    }
+
+    private void DrawCapsuleGradientRings(CapsuleCollider capCol)
+    {
+        float maxRadius = capCol.radius;
+        float maxHeight = capCol.height;
+
+        for (int i = 1; i <= zone.gradientRingCount; i++)
+        {
+            float normalizedDist = i / (float)zone.gradientRingCount;
+            float ringRadius = maxRadius * normalizedDist;
+            float ringHeight = maxHeight * normalizedDist;
+
+            float intensity = zone.intensityCurve.Evaluate(normalizedDist);
+
+            Color ringColor = Color.Lerp(Color.green, Color.red, intensity);
+            ringColor.a = 0.4f;
+
+            DrawShapes.Capsule(
+                position: transform.position,
+                rotation: transform.rotation,
+                height: ringHeight,
+                radius: ringRadius,
+                color: ringColor,
+                linesWidth: 0.015f,
+                text: null,
                 durationInSec: 0f,
                 hiddenByNearerObjects: false
             );

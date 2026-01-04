@@ -374,8 +374,16 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 1843921886885973564, guid: 5314250082d4d2b4098f154e11003260, type: 3}
+      propertyPath: gradientRingCount
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1843921886885973564, guid: 5314250082d4d2b4098f154e11003260, type: 3}
       propertyPath: _editorEffectRadius
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 1843921886885973564, guid: 5314250082d4d2b4098f154e11003260, type: 3}
+      propertyPath: useIntensityGradient
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3021445792168424254, guid: 5314250082d4d2b4098f154e11003260, type: 3}
       propertyPath: m_Radius
