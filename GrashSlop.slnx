@@ -7,6 +7,7 @@
   <Project Path="FishNet.Runtime.csproj" />
   <Project Path="DTT.EditorUtilities.Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Editor.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="GameKit.Dependencies.csproj" />
   <Project Path="DrawXXL-Editor.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
@@ -17,7 +18,6 @@
   <Project Path="DTT.PublishingTools.Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Runtime.csproj" />
   <Project Path="Unity.FishNet.Codegen.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="CustomToolbar.csproj" />
   <Project Path="FishNet.Demos.csproj" />
   <Project Path="DTT.RuntimeUtilities.Demo.csproj" />
