@@ -1,14 +1,17 @@
+// PlayerController.cs - DIAGNOSTIC VERSION with full logging
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using DG.Tweening;
 
 public class PlayerController : NetworkBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 3f;
     [SerializeField] private float sprintSpeed = 7f;
-    [SerializeField] private float crouchSpeed = 1.5f;  // crouch movement speed
+    [SerializeField] private float crouchSpeed = 1.5f;
     [SerializeField] private float groundAcceleration = 20f;
     [SerializeField] private float groundDeceleration = 25f;
 
@@ -45,6 +48,12 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] private float gamepadSensitivity = 150f;
     [SerializeField] private float maxLookAngle = 80f;
 
+    [Header("Camera Settings")]
+    [SerializeField] private FirstPersonCamera firstPersonCamera;
+    
+    [Header("Debug")]
+    [SerializeField] private bool enableLookDebug = true;
+
     private CharacterController characterController;
     private Camera playerCamera;
     private PlayerInputActions inputActions;
@@ -54,6 +63,7 @@ public class PlayerController : NetworkBehaviour
     private Vector3 jumpStartVelocity;
     private bool isGrounded;
     private bool isSprinting = false;
+    private bool wasGrounded = false;
     private readonly SyncVar<bool> isCrouching = new SyncVar<bool>(
         false,
         new SyncTypeSettings(WritePermission.ServerOnly, ReadPermission.Observers)
@@ -72,19 +82,26 @@ public class PlayerController : NetworkBehaviour
     private float gravity;
     private float jumpVelocity;
     
-    private float verticalRotation = 0f;
-
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool sprintInput;
     private bool jumpInput;
+    private float verticalRotation = 0f;
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
         playerCamera = GetComponentInChildren<Camera>();
+        firstPersonCamera = GetComponent<FirstPersonCamera>();
         
         inputActions = new PlayerInputActions();
+        
+        if (enableLookDebug)
+        {
+            Debug.Log($"[PlayerController.Awake] mouseSensitivity = {mouseSensitivity}");
+            Debug.Log($"[PlayerController.Awake] gamepadSensitivity = {gamepadSensitivity}");
+            Debug.Log($"[PlayerController.Awake] firstPersonCamera assigned = {firstPersonCamera != null}");
+        }
     }
 
     private void OnEnable()
@@ -122,6 +139,11 @@ public class PlayerController : NetworkBehaviour
             }
             
             inputActions.Player.Enable();
+            
+            if (enableLookDebug)
+            {
+                Debug.Log($"[PlayerController.OnStartClient] OWNER - mouseSensitivity = {mouseSensitivity}");
+            }
         }
         else
         {
@@ -139,10 +161,8 @@ public class PlayerController : NetworkBehaviour
         gravity = (2 * jumpHeight) / Mathf.Pow(timeToJumpApex, 2);
         jumpVelocity = (2 * jumpHeight) / timeToJumpApex;
         
-        // Fix micro-movement stuttering
         characterController.minMoveDistance = 0f;
         
-        // Hook SyncVar change
         isCrouching.OnChange += OnCrouchChanged;
     }
 
@@ -163,7 +183,19 @@ public class PlayerController : NetworkBehaviour
         Vector2 rawLookInput = inputActions.Player.Look.ReadValue<Vector2>();
         
         moveInput = ApplyRadialDeadzone(rawMoveInput, moveStickDeadzone);
-        lookInput = ApplyRadialDeadzone(rawLookInput, lookStickDeadzone);
+        
+        // FIXED: Check which device is ACTUALLY sending the look input
+        bool isGamepad = inputActions.Player.Look.activeControl?.device is Gamepad;
+        
+        if (isGamepad)
+        {
+            lookInput = ApplyRadialDeadzone(rawLookInput, lookStickDeadzone);
+        }
+        else
+        {
+            // Mouse - NO deadzone applied
+            lookInput = rawLookInput;
+        }
         
         sprintInput = inputActions.Player.Sprint.IsPressed();
         if (toggleCrouch)
@@ -199,13 +231,11 @@ public class PlayerController : NetworkBehaviour
     {
         if (!IsOwner) return;
         
-        // Cooldown check
         if (Time.time - lastJumpTime < jumpCooldown)
         {
             return;
         }
         
-        // Only queue jump if grounded
         if (!isGrounded)
         {
             return;
@@ -223,6 +253,14 @@ public class PlayerController : NetworkBehaviour
         {
             velocity.y = -5f;
         }
+
+        // Detect landing transition
+        if (!wasGrounded && isGrounded)
+        {
+            OnLanded();
+        }
+
+        wasGrounded = isGrounded;
     }
 
     private void HandleJumpQueue()
@@ -253,12 +291,10 @@ public class PlayerController : NetworkBehaviour
         
         Vector3 targetVelocity = inputDirection * targetSpeed;
         
-        // Handle crouch state transitions (network-authoritative)
         UpdateCrouchState();
 
         if (inputDirection.magnitude > 0.01f)
         {
-            // Priority: Crouch > Sprint > Walk
             if (EffectiveCrouch())
             {
                 targetSpeed = crouchSpeed;
@@ -307,11 +343,9 @@ public class PlayerController : NetworkBehaviour
 
         if (jumpInput)
         {
-            // If crouching, request a reduced crouch-jump and stand up
             if (EffectiveCrouch())
             {
                 isCrouchJumpRequested = true;
-                // Attempt to stand up before jump
                 StopCrouch();
             }
 
@@ -351,50 +385,30 @@ public class PlayerController : NetworkBehaviour
     {
         bool wantsToCrouch = crouchInput && enableCrouch;
 
-        // Can't crouch in air
         if (!isGrounded && wantsToCrouch)
         {
             wantsToCrouch = false;
         }
 
-        // CLIENT PREDICTION: Owner updates local state immediately and informs server
         if (IsOwner)
         {
-            // DEBUG: Log every frame to see what's happening
-            if (Time.frameCount % 30 == 0)  // Every 30 frames to avoid spam
-            {
-                Debug.Log($"[Crouch Debug] crouchInput={crouchInput}, wantsToCrouch={wantsToCrouch}, " +
-                          $"EffectiveCrouch={EffectiveCrouch()}, predictedCrouch={predictedCrouch}, " +
-                          $"syncedCrouch={isCrouching.Value}, toggleCrouch={toggleCrouch}, crouchToggled={crouchToggled}");
-            }
-
-            // Start crouch locally
             if (wantsToCrouch && !EffectiveCrouch() && CanStartCrouch())
             {
-                Debug.Log("[Crouch] Starting crouch");
                 predictedCrouch = true;
                 StartCrouch();
                 ServerSetCrouch(true);
             }
-            // Stop crouch locally
             else if (!wantsToCrouch && EffectiveCrouch())
             {
-                Debug.Log($"[Crouch] Attempting to stop crouch. CanStandUp={CanStandUp()}");
                 if (CanStandUp())
                 {
-                    Debug.Log("[Crouch] Stopping crouch - SUCCESS");
                     predictedCrouch = false;
                     StopCrouch();
                     ServerSetCrouch(false);
                 }
-                else
-                {
-                    Debug.LogWarning("[Crouch] Can't stand up - blocked by obstacle!");
-                }
             }
         }
 
-        // Smoothly transition height using effective state
         float targetHeight = EffectiveCrouch() ? crouchHeight : normalHeight;
         if (Mathf.Abs(characterController.height - targetHeight) > 0.01f)
         {
@@ -409,7 +423,6 @@ public class PlayerController : NetworkBehaviour
 
     private bool EffectiveCrouch()
     {
-        // Owner sees prediction immediately, fall back to synced value otherwise
         if (IsOwner)
             return predictedCrouch || isCrouching.Value;
         return isCrouching.Value;
@@ -422,8 +435,6 @@ public class PlayerController : NetworkBehaviour
 
     private void StartCrouch()
     {
-        // Visual/gameplay effects only (prediction handled separately)
-        // Use SendMessage so we don't require a compile-time FootIK type
         SendMessage("setActivateCrouchingBehaviour", true, SendMessageOptions.DontRequireReceiver);
     }
 
@@ -434,31 +445,19 @@ public class PlayerController : NetworkBehaviour
 
     private bool CanStandUp()
     {
-        // How much extra height we need when standing
         float heightToGain = normalHeight - crouchHeight;
 
-        // Start from current top of capsule
         Vector3 rayStart = transform.position + Vector3.up * characterController.height;
 
-        // Cast upward to see if we have clearance
         bool hasObstacle = Physics.SphereCast(
             rayStart,
-            characterController.radius * 0.9f,  // Slightly smaller to avoid edge cases
+            characterController.radius * 0.9f,
             Vector3.up,
             out RaycastHit hit,
-            heightToGain + 0.1f,  // Add small buffer
-            ~0,  // All layers
+            heightToGain + 0.1f,
+            ~0,
             QueryTriggerInteraction.Ignore
         );
-
-#if UNITY_EDITOR
-        Debug.DrawRay(rayStart, Vector3.up * (heightToGain + 0.1f), hasObstacle ? Color.red : Color.green, 0.1f);
-
-        if (hasObstacle && showGroundCheckDebug)
-        {
-            Debug.LogWarning($"[CanStandUp] Blocked by: {hit.collider.name} at {hit.point}");
-        }
-#endif
 
         return !hasObstacle;
     }
@@ -466,7 +465,6 @@ public class PlayerController : NetworkBehaviour
     [ServerRpc]
     private void ServerSetCrouch(bool crouch)
     {
-        // Server validates and applies authoritative state
         if (crouch)
         {
             if (CanStartCrouch())
@@ -481,7 +479,6 @@ public class PlayerController : NetworkBehaviour
 
     private void OnCrouchChanged(bool previousValue, bool newValue, bool asServer)
     {
-        // Reconcile predicted state and apply visuals on remote clients
         if (!IsOwner)
         {
             if (newValue)
@@ -491,7 +488,6 @@ public class PlayerController : NetworkBehaviour
         }
         else
         {
-            // Owner: if server corrected prediction, reconcile
             if (predictedCrouch != newValue)
             {
                 predictedCrouch = false;
@@ -502,7 +498,6 @@ public class PlayerController : NetworkBehaviour
             }
             else
             {
-                // prediction matched server; clear prediction
                 predictedCrouch = false;
             }
         }
@@ -510,29 +505,42 @@ public class PlayerController : NetworkBehaviour
 
     private void HandleMouseLook()
     {
-        bool isGamepad = Gamepad.current != null && lookInput.sqrMagnitude > 0f;
+        if (lookInput.sqrMagnitude < 0.0001f)
+            return;
         
-        float lookX, lookY;
+        bool isGamepad = inputActions.Player.Look.activeControl?.device is Gamepad;
+        
+        float deltaX, deltaY;
         
         if (isGamepad)
         {
-            lookX = lookInput.x * gamepadSensitivity * Time.deltaTime;
-            lookY = lookInput.y * gamepadSensitivity * Time.deltaTime;
+            deltaX = lookInput.x * gamepadSensitivity * Time.deltaTime;
+            deltaY = lookInput.y * gamepadSensitivity * Time.deltaTime;
         }
         else
         {
-            lookX = lookInput.x * mouseSensitivity;
-            lookY = lookInput.y * mouseSensitivity;
+            // CHANGED: 0.5f → 0.02f (much more reasonable for pixel deltas)
+            const float INPUT_SYSTEM_MOUSE_SCALE = 0.02f;
+            
+            deltaX = lookInput.x * INPUT_SYSTEM_MOUSE_SCALE * mouseSensitivity;
+            deltaY = lookInput.y * INPUT_SYSTEM_MOUSE_SCALE * mouseSensitivity;
         }
 
-        transform.Rotate(Vector3.up * lookX);
-
-        verticalRotation -= lookY;
-        verticalRotation = Mathf.Clamp(verticalRotation, -maxLookAngle, maxLookAngle);
-        
-        if (playerCamera != null)
+        if (firstPersonCamera != null)
         {
-            playerCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
+            firstPersonCamera.HandleLookInput(deltaX, deltaY);
+        }
+        else
+        {
+            transform.Rotate(Vector3.up * deltaX);
+
+            verticalRotation -= deltaY;
+            verticalRotation = Mathf.Clamp(verticalRotation, -maxLookAngle, maxLookAngle);
+
+            if (playerCamera != null)
+            {
+                playerCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
+            }
         }
     }
 
@@ -542,6 +550,21 @@ public class PlayerController : NetworkBehaviour
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+        }
+    }
+
+    // Triggered when landing is detected
+    private void OnLanded()
+    {
+        if (IsOwner && playerCamera != null)
+        {
+            // Quick camera punch on landing
+            playerCamera.transform.DOPunchRotation(
+                new Vector3(-2f, 0f, 0f), // Pitch down slightly
+                0.2f,                      // Duration
+                10,                        // Vibrato
+                1f                         // Elasticity
+            );
         }
     }
 
@@ -573,17 +596,6 @@ public class PlayerController : NetworkBehaviour
         float radius = characterController.radius * 0.8f;
         
         bool hit = Physics.SphereCast(origin, radius, Vector3.down, out RaycastHit hitInfo, groundCheckDistance, groundLayer);
-        
-        #if UNITY_EDITOR
-        if (showGroundCheckDebug)
-        {
-            Debug.DrawLine(origin, origin + Vector3.down * groundCheckDistance, hit ? Color.green : Color.red);
-            if (hit)
-            {
-                Debug.DrawLine(hitInfo.point, hitInfo.point + Vector3.up * 0.5f, Color.yellow);
-            }
-        }
-        #endif
         
         return hit;
     }
@@ -638,7 +650,14 @@ public class PlayerController : NetworkBehaviour
     public float MouseSensitivity 
     { 
         get => mouseSensitivity; 
-        set => mouseSensitivity = Mathf.Clamp(value, 0.1f, 10f); 
+        set
+        {
+            mouseSensitivity = Mathf.Clamp(value, 0.1f, 10f);
+            if (enableLookDebug)
+            {
+                Debug.Log($"[MouseSensitivity.set] New value: {mouseSensitivity}");
+            }
+        }
     }
 
     public float GamepadSensitivity 
