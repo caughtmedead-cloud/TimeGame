@@ -235,7 +235,62 @@ public class TimelineSceneSetup : NetworkBehaviour
     {
         Debug.Log($"[TimelineSceneSetup] Transitioning client {conn.ClientId}: {oldTimeline} → {newTimeline}");
         
-        UnloadTimelineForConnection(conn, oldTimeline);
-        LoadTimelineForConnection(conn, newTimeline);
+        // Find the player's NetworkObject
+        NetworkObject playerNob = null;
+        foreach (NetworkObject nob in conn.Objects)
+        {
+            // Find player by checking for TimelineManager component
+            if (nob.GetComponent<TimelineManager>() != null)
+            {
+                playerNob = nob;
+                break;
+            }
+        }
+        
+        if (playerNob == null)
+        {
+            Debug.LogError($"[TimelineSceneSetup] Cannot find player NetworkObject for client {conn.ClientId}!");
+            return;
+        }
+        
+        // Get the target scene
+        Scene newScene = GetSceneForTimeline(newTimeline);
+        
+        if (!newScene.IsValid())
+        {
+            Debug.LogError($"[TimelineSceneSetup] Invalid scene for timeline {newTimeline}");
+            return;
+        }
+        
+        // =====================================================================
+        // NEW: Load the new scene WITH the player moved to it
+        // =====================================================================
+        
+        SceneLoadData sld = new SceneLoadData(newScene);
+        sld.Options.AllowStacking = true;
+        sld.Options.LocalPhysics = physicsMode;
+        
+        // CRITICAL: Add player to MovedNetworkObjects array
+        // This tells FishNet to move the player to the new scene during load
+        sld.MovedNetworkObjects = new NetworkObject[] { playerNob };
+        
+        Debug.Log($"[TimelineSceneSetup] Moving player {conn.ClientId} to {newTimeline} scene...");
+        
+        // Load new scene for connection (with player moving to it)
+        base.SceneManager.LoadConnectionScenes(new NetworkConnection[] { conn }, sld);
+        
+        // =====================================================================
+        // Unload the old scene AFTER the new one is loaded
+        // =====================================================================
+        
+        Scene oldScene = GetSceneForTimeline(oldTimeline);
+        if (oldScene.IsValid())
+        {
+            SceneUnloadData sud = new SceneUnloadData(oldScene);
+            base.SceneManager.UnloadConnectionScenes(new NetworkConnection[] { conn }, sud);
+            Debug.Log($"[TimelineSceneSetup] Unloaded old {oldTimeline} scene for client {conn.ClientId}");
+        }
+        
+        Debug.Log($"[TimelineSceneSetup] ✅ Player {conn.ClientId} transitioned to {newTimeline}");
     }
 }
