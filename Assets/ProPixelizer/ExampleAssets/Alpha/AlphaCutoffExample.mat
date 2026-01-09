@@ -2,15 +2,20 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: AlphaCutoffExample
   m_Shader: {fileID: 4800000, guid: 71d6765ad72e11541bc1448c891bbcf9, type: 3}
-  m_ShaderKeywords: BOOLEAN_619A75A8_ON RECEIVE_SHADOWS_ON USE_ALPHA_ON USE_OBJECT_POSITION_ON
-    _SPECULARHIGHLIGHTS_OFF
+  m_ValidKeywords:
+  - RECEIVE_SHADOWS_ON
+  m_InvalidKeywords:
+  - BOOLEAN_619A75A8_ON
+  - USE_ALPHA_ON
+  - USE_OBJECT_POSITION_ON
+  - _SPECULARHIGHLIGHTS_OFF
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -20,12 +25,8 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _Albedo:
-        m_Texture: {fileID: 2800000, guid: b9af4c428c47f9d4b9e0828273a804f5, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _BaseMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: b9af4c428c47f9d4b9e0828273a804f5, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -33,10 +34,6 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _CalculateLighting_A0A05277_Texture2DC2D599B8_723749087:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _Emission:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -53,10 +50,6 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _NormalMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -96,6 +89,7 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    m_Ints: []
     m_Floats:
     - AlphaClipThreshold: 0.5
     - BOOLEAN_619A75A8: 1
@@ -106,7 +100,8 @@ Material:
     - RECEIVE_SHADOWS: 1
     - USE_ALPHA: 1
     - USE_EMISSION: 0
-    - USE_OBJECT_POSITION: 1
+    - USE_OBJECT_POSITION: 0
+    - USE_OBJECT_POSITION_FOR_PIXEL_GRID: 0
     - Vector1_4DFF368: 3
     - _AlphaClip: 0
     - _AlphaClipThreshold: 0.166
@@ -116,6 +111,7 @@ Material:
     - _Cutoff: 0.5
     - _DiffuseVertexColorWeight: 1
     - _DstBlend: 0
+    - _EdgeBevelWeight: 0
     - _EmissiveVertexColorWeight: 0
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0

@@ -24,7 +24,7 @@ namespace ProPixelizer
         {
             //GUILayout.Label("TextureIndexer", EditorStyles.largeLabel);
             EditorGUILayout.LabelField("ProPixelizer | Update and Verify Materials", EditorStyles.boldLabel);
-            if (GUILayout.Button("User Guide")) Application.OpenURL("https://sites.google.com/view/propixelizer/user-guide");
+            if (GUILayout.Button("User Guide")) Application.OpenURL(ProPixelizerUtils.USER_GUIDE_URL);
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox("This tool checks ProPixelizer materials in the project to make sure they are correctly serialized. It fixes any broken keywords and updates material properties to the most recent version of ProPixelizer.", MessageType.Info);
             EditorGUILayout.HelpBox("This tool will check all materials in your project, please be patient for larger projects. It is strongly recommended to backup your files, e.g. using version control.", MessageType.Warning);
@@ -61,7 +61,7 @@ namespace ProPixelizer
             // Check and perform upgrades for all Appearance+Outline materials.
             int APOMaterialCount = 0;
             int APOMaterialUpdatedCount = 0;
-            var updater = new ProPixelizer1_8MaterialUpdater();
+            var updater = new ProPixelizer2_0MaterialUpdater();
             foreach (string materialID in allMaterials)
             {
                 var path = AssetDatabase.GUIDToAssetPath(materialID);

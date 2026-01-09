@@ -9,28 +9,21 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: PixelisedSpherePlusOutlineDithered
   m_Shader: {fileID: 4800000, guid: 71d6765ad72e11541bc1448c891bbcf9, type: 3}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - COLOR_GRADING_ON
   - PROPIXELIZER_DITHERING_ON
   - RECEIVE_SHADOWS_ON
+  m_InvalidKeywords:
   - USE_OBJECT_POSITION_ON
-  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 2000
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _Albedo:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     - _BaseMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -40,10 +33,6 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _CalculateLighting_A0A05277_Texture2DC2D599B8_723749087:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _Emission:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -60,10 +49,6 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _NormalMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -111,7 +96,8 @@ Material:
     - RECEIVE_SHADOWS: 1
     - USE_ALPHA: 0
     - USE_EMISSION: 0
-    - USE_OBJECT_POSITION: 1
+    - USE_OBJECT_POSITION: 0
+    - USE_OBJECT_POSITION_FOR_PIXEL_GRID: 0
     - Vector1_4DFF368: 3
     - _AlphaClip: 0
     - _AlphaClipThreshold: 0.5
@@ -121,6 +107,7 @@ Material:
     - _Cutoff: 0.5
     - _DiffuseVertexColorWeight: 1
     - _DstBlend: 0
+    - _EdgeBevelWeight: 0
     - _EmissiveVertexColorWeight: 0
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
@@ -149,7 +136,6 @@ Material:
     - _PixelGridOrigin: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &1605771998520535654
 MonoBehaviour:
   m_ObjectHideFlags: 11

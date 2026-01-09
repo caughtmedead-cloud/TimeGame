@@ -24,6 +24,9 @@ namespace ProPixelizer
         [Tooltip("Should the color of this object's outline copy that of the root transform?")]
         public bool UseRootColor = true;
 
+        [Tooltip("Override the material's outline color with that of the outline control?")]
+        public bool OverrideColor = true;
+
         [Tooltip("The color to use for the outline.")]
         public Color Color;
 
@@ -39,7 +42,6 @@ namespace ProPixelizer
                 {
                     if (mesh.materials[i].HasProperty("_OutlineColor"))
                     {
-                        mesh.materials[i] = new Material(mesh.materials[i]); //create instance
                         OutlineMaterialIndices.Add(i); //needed b/c other things might create a new instance of material
                     }
                 }
@@ -72,7 +74,8 @@ namespace ProPixelizer
                 foreach (int i in OutlineMaterialIndices)
                 {
                     mesh.materials[i].SetFloat("_ID", FloatUID);
-                    mesh.materials[i].SetColor("_OutlineColor", Color);
+                    if (UseRootColor || OverrideColor)
+                        mesh.materials[i].SetColor("_OutlineColor", Color);
                 }
             }
         }

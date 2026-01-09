@@ -4,40 +4,31 @@ using ProPixelizer.Tools.Migration;
 using System;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.Rendering;
 
 namespace ProPixelizer
 {
     public class PixelizedWithOutlineShaderGUI : ShaderGUI
     {
-        bool showColor, showAlpha, showPixelize, showLighting, showOutline;
-        bool useColorGrading, useNormalMap, useEmission, useObjectPosition, useAlpha, useShadows;
+        bool showColor, showPixelize, showLighting, showOutline;
+
+        public virtual string DisplayName => "ProPixelizer | Appearance+Outline Material";
 
         Material Material;
-
-        public const string COLOR_GRADING_ON = "COLOR_GRADING_ON";
-        public const string NORMAL_MAP_ON = "NORMAL_MAP_ON";
-        public const string USE_EMISSION_ON = "USE_EMISSION_ON";
-        public const string USE_OBJECT_POSITION_ON = "USE_OBJECT_POSITION_ON";
-        public const string ALPHA_ON = "USE_ALPHA_ON";
-        public const string RECEIVE_SHADOWS_ON = "RECEIVE_SHADOWS_ON";
 
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] properties)
         {
             materialEditor.serializedObject.Update();
             Material = materialEditor.target as Material;
-            useColorGrading = Material.IsKeywordEnabled(COLOR_GRADING_ON);
-            useEmission = Material.IsKeywordEnabled(USE_EMISSION_ON);
-            useNormalMap = Material.IsKeywordEnabled(NORMAL_MAP_ON);
-            useObjectPosition = Material.IsKeywordEnabled(USE_OBJECT_POSITION_ON);
-            useAlpha = Material.IsKeywordEnabled(ALPHA_ON);
-            useShadows = Material.IsKeywordEnabled(RECEIVE_SHADOWS_ON);
 
-            EditorGUILayout.LabelField("ProPixelizer | Appearance+Outline Material", EditorStyles.boldLabel);
-            if (GUILayout.Button("User Guide")) Application.OpenURL("https://sites.google.com/view/propixelizer/user-guide");
+            EditorGUILayout.LabelField(DisplayName, EditorStyles.boldLabel);
+            if (GUILayout.Button("User Guide")) Application.OpenURL(ProPixelizerUtils.USER_GUIDE_URL);
             EditorGUILayout.Space();
 
             if (CheckForUpdate(materialEditor.serializedObject))
                 return;
+            GUILayout.TextArea("Note: I now recommend that you use the ProPixelizerUberShader in ProPixelizer/ShaderGraph instead of PixelizedWithOutline. PixelizedWithOutline is left here for backwards compatibility.", EditorStyles.wordWrappedMiniLabel);
 
             DrawAppearanceGroup(materialEditor, properties);
             DrawLightingGroup(materialEditor, properties);
@@ -56,6 +47,15 @@ namespace ProPixelizer
             var dsgi = EditorGUILayout.ToggleLeft("Double Sided Global Illumination", Material.doubleSidedGI);
             Material.doubleSidedGI = dsgi;
 
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+#if UNITY_2023_3_OR_NEWER
+            if (GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode)
+                GUILayout.TextArea("Note: Pixelization disabled in the Inspector preview window on Unity 2023 when (non-RenderGraph) compatibility mode is enabled.", EditorStyles.wordWrappedMiniLabel);
+#else
+            GUILayout.TextArea("Note: Pixelization disabled in the Inspector preview window on Unity 2022.", EditorStyles.wordWrappedMiniLabel);
+#endif
+
             //EditorUtility.SetDirty(Material);
             materialEditor.serializedObject.ApplyModifiedProperties();
         }
@@ -65,13 +65,13 @@ namespace ProPixelizer
             showColor = EditorGUILayout.BeginFoldoutHeaderGroup(showColor, "Appearance");
             if (showColor)
             {
-                var albedo = FindProperty("_Albedo", properties);
+                var albedo = FindProperty("_BaseMap", properties);
                 editor.TextureProperty(albedo, "Albedo", true);
 
                 var baseColor = FindProperty("_BaseColor", properties);
                 editor.ColorProperty(baseColor, "Color");
 
-                var colorGrading = FindProperty("COLOR_GRADING", properties);
+                var colorGrading = FindProperty(ProPixelizerKeywords.COLOR_GRADING, properties);
                 editor.ShaderProperty(colorGrading, "Use Color Grading");
                 if (colorGrading.floatValue > 0f)
                 {
@@ -79,23 +79,23 @@ namespace ProPixelizer
                     editor.TextureProperty(lut, "Palette", false);
                 }
 
-                var normal = FindProperty("_NormalMap", properties);
+                var normal = FindProperty("_BumpMap", properties);
                 editor.TextureProperty(normal, "Normal Map", true);
 
-                var emission = FindProperty("_Emission", properties);
+                var emission = FindProperty("_EmissionMap", properties);
                 editor.TextureProperty(emission, "Emission", true);
 
                 var emissiveColor = FindProperty("_EmissionColor", properties);
                 editor.ColorProperty(emissiveColor, "Emission Color");
-                EditorGUILayout.HelpBox("Emission Color is multiplied by the Emission texture to determine the emissive output. The default emissive color and texture and both black.", MessageType.Info);
+                EditorGUILayout.HelpBox("Emission Color is multiplied by the Emission texture to determine the emissive output. The default emissive color and texture and both black.", MessageType.None);
 
                 var diffuseVertexColorWeight = FindProperty("_DiffuseVertexColorWeight", properties);
                 editor.RangeProperty(diffuseVertexColorWeight, "Diffuse Vertex Color Weight");
                 var emissiveVertexColorWeight = FindProperty("_EmissiveVertexColorWeight", properties);
                 editor.RangeProperty(emissiveVertexColorWeight, "Emissive Vertex Color Weight");
-                EditorGUILayout.HelpBox("The vertex color sliders control how the emissive and diffuse colors are affected by a mesh's vertex colors. Vertex colors are used for many per-particle color properties by Unity's particle system.", MessageType.Info);
+                EditorGUILayout.HelpBox("The vertex color sliders control how the emissive and diffuse colors are affected by a mesh's vertex colors. Vertex colors are used for many per-particle color properties by Unity's particle system.", MessageType.None);
 
-                var use_alpha_clip = FindProperty("PROPIXELIZER_DITHERING", properties);
+                var use_alpha_clip = FindProperty(ProPixelizerKeywords.PROPIXELIZER_DITHERING, properties);
                 editor.ShaderProperty(use_alpha_clip, "Use Dithered Transparency");
                 var threshold = FindProperty("_AlphaClipThreshold", properties);
                 editor.ShaderProperty(threshold, "Alpha Clip Threshold");
@@ -109,13 +109,15 @@ namespace ProPixelizer
             if (showLighting)
             {
                 var ramp = FindProperty("_LightingRamp", properties);
-                editor.TextureProperty(ramp, "Lighting Ramp", false);
+                var lightRampTexture = editor.TextureProperty(ramp, "Lighting Ramp", false);
+                if (lightRampTexture.mipmapCount > 1)
+                    EditorGUILayout.HelpBox("The selected light ramp texture has mipmaps enabled; this is not recommended as it can produce artefacts. Please disable in the Advanced settings of your texture.", MessageType.Warning);
 
                 var ambient = FindProperty("_AmbientLight", properties);
                 editor.ShaderProperty(ambient, "Ambient Light");
                 EditorGUILayout.HelpBox("The Ambient Light alpha value can be used to blend between scene ambient color and spherical harmonics (alpha zero) or the color of the Ambient Light property (alpha one).", MessageType.Info);
 
-                var receiveShadows = FindProperty("RECEIVE_SHADOWS", properties);
+                var receiveShadows = FindProperty(ProPixelizerKeywords.RECEIVE_SHADOWS, properties);
                 editor.ShaderProperty(receiveShadows, "Receive shadows");
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
@@ -131,13 +133,11 @@ namespace ProPixelizer
                 EditorGUI.indentLevel++;
                 EditorGUILayout.LabelField("Note: Pixel Size does not affect preview camera views.", EditorStyles.wordWrappedMiniLabel);
                 EditorGUI.indentLevel--;
-                var useObjectPosition = FindProperty("USE_OBJECT_POSITION", properties);
-                editor.ShaderProperty(useObjectPosition, "Object Position");
-                EditorGUILayout.HelpBox("Whether to use the object position as the zero coordinate for the pixel grid. For more information, see the 'Aligning Pixel Grids' section in the user guide.", MessageType.Info);
-                if (useObjectPosition.floatValue < 0.5f)
+                // _PixelGridOrigin is not set by the user, ignored here.
+
+                if (Material.IsKeywordEnabled(ProPixelizerKeywords.USE_OBJECT_POSITION_FOR_PIXEL_GRID_ON))
                 {
-                    var gridPosition = FindProperty("_PixelGridOrigin", properties);
-                    editor.ShaderProperty(gridPosition, "Origin (world space)");
+                    EditorGUILayout.HelpBox("Keyword " + ProPixelizerKeywords.USE_OBJECT_POSITION_FOR_PIXEL_GRID_ON + " is enabled.", MessageType.None);
                 }
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
@@ -152,7 +152,7 @@ namespace ProPixelizer
                 editor.ShaderProperty(oID, "ID");
                 EditorGUILayout.HelpBox("The ID is an 8-bit number used to identify different objects in the " +
                     "buffer for purposes of drawing outlines. Outlines are drawn when a pixel is next to a pixel " +
-                    "of different ID value.", MessageType.Info);
+                    "of different ID value.", MessageType.None);
                 var outlineColor = FindProperty("_OutlineColor", properties);
                 editor.ShaderProperty(outlineColor, "Outline Color");
                 var edgeHighlightColor = FindProperty("_EdgeHighlightColor", properties);
@@ -160,7 +160,10 @@ namespace ProPixelizer
                 EditorGUILayout.HelpBox("Use color values less than 0.5 to darken edge highlights. " +
                     "Use color values greater than 0.5 to lighten edge highlights. " +
                     "Use color values of 0.5 to make edge highlights invisible.\n\n" +
-                    "You may need to enable the setting in the Pixelisation Feature on your Forward Renderer asset.", MessageType.Info);
+                    "You may need to enable the setting in the Pixelisation Feature on your Forward Renderer asset.", MessageType.None);
+                var bevelWeight = FindProperty("_EdgeBevelWeight", properties);
+                editor.ShaderProperty(bevelWeight, "Edge Bevel Weight");
+                EditorGUILayout.HelpBox("Controls the strength of edge bevelling between 0 (off) and 1 (fully on). When on, edges that are detected use the average normal from their neighbourhood.", MessageType.None);
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
@@ -173,7 +176,7 @@ namespace ProPixelizer
         {
             try
             {
-                var updater = new ProPixelizer1_8MaterialUpdater();
+                var updater = new ProPixelizer2_0MaterialUpdater();
                 if (updater.CheckForUpdate(so))
                 {
                     EditorGUILayout.HelpBox(

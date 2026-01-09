@@ -20,7 +20,7 @@ namespace ProPixelizer
         static ProPixelizerVerification()
         {
 #if UNITY_EDITOR
-            EditorApplication.delayCall += ReimportShaders;
+            //EditorApplication.delayCall += ReimportShaders;
 #endif
         }
 
@@ -31,8 +31,8 @@ namespace ProPixelizer
         public static void ReimportShaders()
         {
 #if UNITY_EDITOR
-            AssetDatabase.ImportAsset("Assets/ProPixelizer/ShaderGraph/ProPixelizerBase.shadergraph", ImportAssetOptions.ForceUpdate);
-            AssetDatabase.ImportAsset("Assets/ProPixelizer/SRP/PixelizedWithOutline.shader", ImportAssetOptions.ForceUpdate);
+            AssetDatabase.ImportAsset(Utils.PackageLocation + "/ShaderGraph/ProPixelizerBase.shadergraph", ImportAssetOptions.ForceUpdate);
+            AssetDatabase.ImportAsset(Utils.PackageLocation + "/SRP/ShaderLibrary/PixelizedWithOutline.shader", ImportAssetOptions.ForceUpdate);
 #endif
         }
 
@@ -40,16 +40,15 @@ namespace ProPixelizer
         {
 #if UNITY_EDITOR
             bool generatedWarning = false;
-
             // In the future, I hope that Unity makes ShaderGraphPreferences public so that I can use that rather than hard-coded names here.
             int variantLimit = EditorPrefs.GetInt("UnityEditor.ShaderGraph.VariantLimit", 128);
-            if (variantLimit < 256)
+            if (variantLimit < 128)
             {
                 Debug.LogWarning(string.Format(
                     "The ShaderGraph Variant Limit is currently set to a value of {0}. " +
                     "The ProPixelizer appearance shader will not compile unless this variant " +
                     "is raised, and your shaders will appear pink. Please increase this limit, " +
-                    "e.g. to 256, by changing Preferences > ShaderGraph > Shader Variant Limit. " +
+                    "e.g. to 128, by changing Preferences > ShaderGraph > Shader Variant Limit. " +
                     "Afterwards, reimport the ProPixelizer folder.",
                     variantLimit));
                 generatedWarning = true;
@@ -60,14 +59,29 @@ namespace ProPixelizer
             {
                 if (asset.msaaSampleCount > 1)
                 {
-                    Debug.LogWarning(string.Format("MSAA is enabled in the active render pipeline asset, this is incompatible with ProPixelizer."));
+                    Debug.LogWarning(string.Format("MSAA is enabled in the active render pipeline asset, this is incompatible with ProPixelizer. " +
+                        "To fix this, navigate to your Render Pipeline Asset and set Quality -> Anti Aliasing (MSAA) to Disabled."));
                     generatedWarning = true;
                 }
             }
 
             if (generatedWarning)
-                Debug.LogWarning("Warnings have been emitted during the ProPixelizer verification step. You can disable them by unticking 'Generate Warnings' in the render feature.");
+                Debug.LogWarning("Warnings have been emitted during the ProPixelizer verification step. You can disable them by unticking 'Generate Warnings' in the ProPixelizer Render Feature.");
 #endif
         }
+
+#if UNITY_EDITOR
+        public static bool RPANeedsFix(UniversalRenderPipelineAsset rpa)
+        {
+            if (rpa.msaaSampleCount > 1)
+                return true;
+            return false;
+        }
+
+        public static void TryFixRPA(UniversalRenderPipelineAsset rpa)
+        {
+            rpa.msaaSampleCount = 1;
+        }
+#endif
     }
 }

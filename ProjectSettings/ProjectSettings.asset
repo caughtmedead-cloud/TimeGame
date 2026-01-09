@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 28
-  productGUID: 1afa78fccb674e44ba320585ed866cba
+  productGUID: da8173eb8a332534789fc91419177967
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: DefaultCompany
-  productName: GrashSlop
+  productName: ThelosU6
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -134,7 +134,6 @@ PlayerSettings:
   switchNVNMaxPublicSamplerIDCount: 0
   switchMaxWorkerMultiple: 8
   switchNVNGraphicsFirmwareMemory: 32
-  switchGraphicsJobsSyncAfterKick: 1
   vulkanNumSwapchainBuffers: 3
   vulkanEnableSetSRGBWrite: 0
   vulkanEnablePreTransform: 1
@@ -144,8 +143,7 @@ PlayerSettings:
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
   bundleVersion: 0.1.0
-  preloadedAssets:
-  - {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -257,7 +255,7 @@ PlayerSettings:
   appleEnableProMotion: 0
   shaderPrecisionModel: 0
   clonedFromGUID: 3c72c65a16f0acb438eed22b8b16c24a
-  templatePackageId: com.unity.template.urp-blank@17.0.14
+  templatePackageId: com.unity.template.urp-blank@17.0.12
   templateDefaultScene: Assets/Scenes/SampleScene.unity
   useCustomMainManifest: 0
   useCustomLauncherManifest: 0
@@ -523,10 +521,7 @@ PlayerSettings:
       m_Height: 720
       m_Kind: 1
       m_SubKind: 
-  m_BuildTargetBatching:
-  - m_BuildTarget: Standalone
-    m_StaticBatching: 1
-    m_DynamicBatching: 0
+  m_BuildTargetBatching: []
   m_BuildTargetShaderSettings: []
   m_BuildTargetGraphicsJobs: []
   m_BuildTargetGraphicsJobMode: []
@@ -821,12 +816,12 @@ PlayerSettings:
   webGLMemoryLinearGrowthStep: 16
   webGLMemoryGeometricGrowthStep: 0.2
   webGLMemoryGeometricGrowthCap: 96
+  webGLEnableWebGPU: 0
   webGLPowerPreference: 2
   webGLWebAssemblyTable: 0
   webGLWebAssemblyBigInt: 0
   webGLCloseOnQuit: 0
   webWasm2023: 0
-  webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
     Android: DOTWEEN
     EmbeddedLinux: DOTWEEN
@@ -835,10 +830,10 @@ PlayerSettings:
     Kepler: DOTWEEN
     LinuxHeadlessSimulation: DOTWEEN
     Nintendo Switch: DOTWEEN
+    Nintendo Switch 2: DOTWEEN
     PS4: DOTWEEN
     PS5: DOTWEEN
     QNX: DOTWEEN
-    ReservedCFE: DOTWEEN
     Standalone: FISHNET;FISHNET_V4;FISHNET_PRO;PUBLISHING_TOOLS_ASSET_STORE_RELEASE;PROCEDURAL_UI_ASSET_STORE_RELEASE;DOTWEEN
     VisionOS: DOTWEEN
     WebGL: DOTWEEN
@@ -866,14 +861,14 @@ PlayerSettings:
   editorAssembliesCompatibilityLevel: 1
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: GrashSlop
+  metroPackageName: ThelosU6
   metroPackageVersion: 
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
   metroCertificateIssuer: 
   metroCertificateNotAfter: 0000000000000000
-  metroApplicationDescription: GrashSlop
+  metroApplicationDescription: ThelosU6
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 0
@@ -944,10 +939,10 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: 6d0bef45-32e5-41ad-9004-0224154c9846
+  cloudProjectId: c00b506d-accb-402a-83bb-1652811ff87b
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: GrashSlop
+  projectName: ThelosU6
   organizationId: caughtmedead
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
@@ -957,5 +952,3 @@ PlayerSettings:
   insecureHttpOption: 0
   androidVulkanDenyFilterList: []
   androidVulkanAllowFilterList: []
-  androidVulkanDeviceFilterListAsset: {fileID: 0}
-  d3d12DeviceFilterListAsset: {fileID: 0}

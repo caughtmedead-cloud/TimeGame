@@ -16,16 +16,30 @@ MonoBehaviour:
   UseDepthTestingForIDOutlines: 1
   DepthTestThreshold: 0.0001
   UseNormalsForEdgeDetection: 1
-  NormalEdgeDetectionSensitivity: 3.5
+  NormalEdgeDetectionSensitivity: 2
+  UseDepthTestingForEdgeOutlines: 1
+  DefaultLowResScale: 0.5
+  UsePixelExpansion: 1
+  PixelisationFilter: 0
+  FullscreenColorPalette: {fileID: 0}
+  EditorColorGrading: 0
   PixelizationShaders:
     PixelizationMap: {fileID: 4800000, guid: 8dd346b62451e76418dabc2355815f15, type: 3}
     CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
-    CopyMainTexAndDepth: {fileID: 4800000, guid: 4fdd965c0d64e16468688f87fbca597d,
-      type: 3}
-    ApplyPixelizationMap: {fileID: 4800000, guid: f47f4f650fb29834684600d9a95f41c7,
-      type: 3}
+    CopyMainTexAndDepth: {fileID: 4800000, guid: 4fdd965c0d64e16468688f87fbca597d, type: 3}
+    ApplyPixelizationMap: {fileID: 4800000, guid: f47f4f650fb29834684600d9a95f41c7, type: 3}
   OutlineShaders:
     OutlineDetection: {fileID: 4800000, guid: c59878161c7e0ad40b0661b47620d0e5, type: 3}
+  DepthRecompositionShaders:
+    CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
+    CopyMainTexAndDepth: {fileID: 4800000, guid: 4fdd965c0d64e16468688f87fbca597d, type: 3}
+    DepthBasedComposition: {fileID: 4800000, guid: 1daf70343df19d34f9bdaf78a137fdd5, type: 3}
+  FinalRecompositionPassShaders:
+    CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
+    CopyMainTexAndDepth: {fileID: 4800000, guid: 4fdd965c0d64e16468688f87fbca597d, type: 3}
+  FullscreenColorGradingPassShaders:
+    FullScreenColorGrade: {fileID: 4800000, guid: d5205d08ab9a61a4fa1cdf7f0ab15dc2, type: 3}
+    CopyMainTex: {fileID: 4800000, guid: 0822cee233586044e823897998d6da94, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46,8 +60,7 @@ MonoBehaviour:
   shaders:
     blitPS: {fileID: 4800000, guid: c17132b1f77d20942aa75f8429c0f8bc, type: 3}
     copyDepthPS: {fileID: 4800000, guid: d6dae50ee9e1bfa4db75f19f99355220, type: 3}
-    screenSpaceShadowPS: {fileID: 4800000, guid: 0f854b35a0cf61a429bd5dcfea30eddd,
-      type: 3}
+    screenSpaceShadowPS: {fileID: 4800000, guid: 0f854b35a0cf61a429bd5dcfea30eddd, type: 3}
     samplingPS: {fileID: 4800000, guid: 04c410c9937594faa893a11dceb85f7e, type: 3}
     tileDepthInfoPS: {fileID: 0}
     tileDeferredPS: {fileID: 0}

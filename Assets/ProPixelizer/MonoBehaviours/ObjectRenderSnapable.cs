@@ -4,9 +4,52 @@ using UnityEngine.Serialization;
 
 namespace ProPixelizer
 {
-
+    [DisallowMultipleComponent]
     public class ObjectRenderSnapable : MonoBehaviour
     {
+        [Header("Snapping")]
+        [Tooltip("Should position be snapped?")]
+        [FormerlySerializedAs("ShouldSnapPosition")]
+        public bool SnapPosition = true;
+
+        [Tooltip("Should Euler rotation angles be snapped?")]
+        [FormerlySerializedAs("shouldSnapAngles")]
+        public bool SnapEulerAngles = true;
+
+        [Tooltip("Strategy that should be used for snapping rotation angles.")]
+        public eSnapAngleStrategy SnapAngleStrategy;
+
+        [Tooltip("Resolution to which angles should be snapped")]
+        public float angleResolution = 30f;
+
+        [Space(10)]
+        [Header("Pixel Alignment")]
+
+        // Should we use a pixel grid aligned to the root entity's position? 
+        [FormerlySerializedAs("UseRootPixelGrid")]
+        [Tooltip("When true, the pixels of this object are snapped into alignment with the specified transform.")]
+        public bool AlignPixelGrid = false;
+
+        /// <summary>
+        /// Transform to use as a reference for the pixel grid alignment.
+        /// 
+        /// If empty, defaults to root.
+        /// </summary>
+        [Tooltip("The transform to align this object's pixels to when 'Align Pixel Grid' is true. If empty, the root transform is used.")]
+        public Transform PixelGridReference;
+
+        [Tooltip("The pixel size used for alignment. Most of the time you want this to match the pixel size of your object.")]
+        public int AlignmentPixelSize = 5;
+
+        [Tooltip("If true, tries to set the AlignmentPixelSize from a ProPixelizer material on this object.")]
+        public bool GetPixelSizeFromMaterial = true;
+
+        [Space(10)]
+        [Header("Materials")]
+
+        [Tooltip("If true, also configures ProPixelizer material keywords required for snapping on child meshes in the heirachy.")]
+        public bool ConfigureChildren = true;
+
         /// <summary>
         /// Local position of the snapable before snapping.
         /// </summary>
@@ -32,17 +75,6 @@ namespace ProPixelizer
         /// </summary>
         public int TransformDepth { get; private set; }
 
-        [Tooltip("Should position be snapped?")]
-        [FormerlySerializedAs("ShouldSnapPosition")]
-        public bool SnapPosition = true;
-
-        [Tooltip("Should Euler rotation angles be snapped?")]
-        [FormerlySerializedAs("shouldSnapAngles")]
-        public bool SnapEulerAngles = true;
-
-        [Tooltip("Strategy that should be used for snapping rotation angles.")]
-        public eSnapAngleStrategy SnapAngleStrategy;
-
         public enum eSnapAngleStrategy
         {
             WorldSpaceRotation,
@@ -54,28 +86,10 @@ namespace ProPixelizer
         /// </summary>
         public bool ShouldSnapAngles() => SnapEulerAngles;
 
-        [Tooltip("Resolution to which angles should be snapped")]
-        public float angleResolution = 30f;
-
         /// <summary>
         /// Resolution (degrees) to which euler angles are snapped.
         /// </summary>
         public float AngleResolution() => angleResolution;
-
-        public float OffsetBias => 0.5f;
-
-        // Should we use a pixel grid aligned to the root entity's position? 
-        [FormerlySerializedAs("UseRootPixelGrid")]
-        [Tooltip("When true, the pixels of this object are snapped into alignment with another transform.")]
-        public bool AlignPixelGrid = false;
-
-        /// <summary>
-        /// Transform to use as a reference for the pixel grid alignment.
-        /// 
-        /// If empty, defaults to root.
-        /// </summary>
-        [Tooltip("The transform to align this object's pixels to when 'Align Pixel Grid' is true. If empty, the root transform is used.")]
-        public Transform PixelGridReference;
 
         private Renderer _renderer;
 
@@ -102,8 +116,6 @@ namespace ProPixelizer
             transform.localRotation = LocalRotationPreSnap;
         }
 
-        private int _pixelSize = 3;
-
         public void Start()
         {
             //Determine depth of the given behaviour's transform
@@ -115,33 +127,48 @@ namespace ProPixelizer
                 iter = iter.parent;
             }
             TransformDepth = depth;
-
             _renderer = GetComponent<Renderer>();
-            if (_renderer == null)
-                return;
-
-            for (int i = 0; i < _renderer.materials.Length; i++)
-            {
-                if (_renderer.materials[i].HasProperty("_PixelGridOrigin"))
-                {
-                    // Instance the propixelizer material.
-                    _renderer.materials[i] = new Material(_renderer.materials[i]);
-                    _renderer.materials[i].EnableKeyword("USE_OBJECT_POSITION_ON");
-                    _renderer.materials[i].EnableKeyword("USE_OBJECT_POSITION");
-                    _pixelSize = Mathf.RoundToInt(_renderer.materials[i].GetFloat("_PixelSize"));
-                }
-            }
+            ConfigureProPixelizerMaterials();
         }
 
-        public int GetPixelSize()
+        /// <summary>
+        /// Configures ProPixelizer material keywords required for correct object snapping.
+        /// </summary>
+        public void ConfigureProPixelizerMaterials()
         {
-            return _pixelSize;
+            if (ConfigureChildren)
+            {
+                foreach (var renderer in GetComponentsInChildren<Renderer>())
+                {
+                    if (renderer == _renderer) continue;
+                    // If renderer has an object render snapable on the object, don't conflict with it.
+                    if (renderer.GetComponent<ObjectRenderSnapable>() != null) continue;
+                    TryConfigureMaterials(renderer.materials);
+                }
+            }
+            
+            if (_renderer != null)
+                TryConfigureMaterials(_renderer.materials);
+        }
+
+        void TryConfigureMaterials(Material[] materials)
+        {
+            for (int i = 0; i < materials.Length; i++)
+            {
+                var isProPixelizerMaterial = materials[i].HasProperty(ProPixelizerMaterialPropertyReferences.PixelSize);
+                if (isProPixelizerMaterial)
+                {
+                    materials[i].EnableKeyword(ProPixelizerKeywords.USE_OBJECT_POSITION_FOR_PIXEL_GRID_ON);
+                    if (GetPixelSizeFromMaterial)
+                        AlignmentPixelSize = Mathf.RoundToInt(materials[i].GetFloat(ProPixelizerMaterialPropertyReferences.PixelSize));
+                }
+            }
         }
 
         /// <summary>
         /// Snap euler angles to specified AngleResolution.
         /// </summary>
-        public void SnapAngles(Camera camera)
+        public void SnapAngles(ProPixelizerCamera camera)
         {
             if (!ShouldSnapAngles())
                 return;
@@ -160,7 +187,7 @@ namespace ProPixelizer
                     }
                 case eSnapAngleStrategy.CameraSpaceY:
                     {
-                        float cameraY = camera.transform.eulerAngles.y;
+                        float cameraY = camera.PreSnapCameraRotation.eulerAngles.y;
                         //snap in relative angle space with respect to camera
                         angles.y -= cameraY;
                         Vector3 snapped = new Vector3(

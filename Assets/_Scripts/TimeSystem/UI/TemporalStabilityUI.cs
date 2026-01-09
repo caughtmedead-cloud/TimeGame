@@ -161,8 +161,6 @@ public class TemporalStabilityUI : NetworkBehaviour
     /// </summary>
     private void UpdateStabilityDisplay(float current, float max)
     {
-        Debug.Log($"[TemporalStabilityUI] UpdateStabilityDisplay called: {current:F1}/{max:F1}");
-        
         float fillAmount = current / max;
         
         // Update fill image (works with Procedural UI or standard Image)

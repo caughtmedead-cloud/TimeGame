@@ -12,7 +12,7 @@ namespace ProPixelizer
             materialEditor.serializedObject.Update();
 
             EditorGUILayout.LabelField("ProPixelizer | ProPixelizer Base", EditorStyles.boldLabel);
-            if (GUILayout.Button("User Guide")) Application.OpenURL("https://sites.google.com/view/propixelizer/user-guide");
+            if (GUILayout.Button("User Guide")) Application.OpenURL(ProPixelizerUtils.USER_GUIDE_URL);
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
                 "Please use the ProPixelizer PixelizedWithOutline material instead.", MessageType.Error);

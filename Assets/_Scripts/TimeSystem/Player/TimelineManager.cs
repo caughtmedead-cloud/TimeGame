@@ -23,6 +23,12 @@ using System;
 ///    - Creates emergent temporal instability for tension
 ///    - Auto-returns to Present when stability restored
 /// 
+/// SCENE TRANSITIONS (NEW):
+/// - Uses TimelineSceneSetup to transition player between timeline scenes
+/// - Unloads old timeline scene for this player
+/// - Loads new timeline scene for this player
+/// - Scene Condition automatically updates visibility
+/// 
 /// FishNet v4 Reference: Uses SyncVar<T> class (not [SyncVar] attribute which is obsolete).
 /// </summary>
 [RequireComponent(typeof(TemporalStability))]
@@ -70,6 +76,9 @@ public class TimelineManager : NetworkBehaviour
     // Random timeline shift tracking
     private float nextRandomShiftCheck = 0f;
     
+    // Scene transition reference
+    private TimelineSceneSetup _timelineSceneSetup;
+    
     // Events for other systems to subscribe to
     public event Action<TimelineState> OnTimelineTransition;
     
@@ -90,6 +99,13 @@ public class TimelineManager : NetworkBehaviour
         if (temporalStability == null)
         {
             temporalStability = GetComponent<TemporalStability>();
+        }
+        
+        // Find TimelineSceneSetup
+        _timelineSceneSetup = FindFirstObjectByType<TimelineSceneSetup>();
+        if (_timelineSceneSetup == null)
+        {
+            Debug.LogError("[TimelineManager] ❌ TimelineSceneSetup not found! Timeline transitions will fail.");
         }
         
         // Subscribe to SyncVar changes
@@ -150,84 +166,56 @@ public class TimelineManager : NetworkBehaviour
     /// Server-only: Called when stability changes.
     /// This triggers timeline transition checks.
     /// </summary>
-    private void OnStabilityChanged_Server(float current, float max)
-    {
-        // Only process on server
-        if (!IsServerStarted) return;
-        
-        CheckAndUpdateTimeline();
-        
-        // If using random shifts and stability restored above threshold, return to Present
-        if (useRandomShifts && current >= randomShiftThreshold && _currentTimeline.Value != TimelineState.Present)
-        {
-            Debug.Log($"[Server] Stability restored - returning player {Owner.ClientId} to Present timeline");
-            TransitionTimeline(TimelineState.Present);
-        }
-    }
-    
-    /// <summary>
-    /// Server-only: Check if player should transition to a different timeline.
-    /// Two modes:
-    /// - Simple Mode (useRandomShifts = false): Automatic transitions at thresholds (for testing)
-    /// - Random Mode (useRandomShifts = true): Unpredictable shifts when stability is low (for gameplay)
-    /// </summary>
     [Server]
-    public void CheckAndUpdateTimeline()
+    private void OnStabilityChanged_Server(float newStability, float maxStability)
     {
-        if (temporalStability == null) return;
-        
-        float stability = temporalStability.CurrentStability;
-        
         if (useRandomShifts)
         {
-            // RANDOM MODE: Unpredictable timeline shifts
-            // Enable random shifts when stability is low
-            if (stability < randomShiftThreshold)
+            // RANDOM MODE: Check if we should start random shifts
+            if (newStability < randomShiftThreshold)
             {
                 CheckRandomTimelineShift();
-            }
-            
-            // Force to Past at 0% stability (critical failure)
-            if (stability <= 0f)
-            {
-                if (_currentTimeline.Value != TimelineState.Past)
-                {
-                    TransitionTimeline(TimelineState.Past);
-                }
             }
         }
         else
         {
-            // SIMPLE MODE: Threshold-based transitions for testing
-            // Progression: Present (100-60%) → Future (59-20%) → Past (19-0%)
-            TimelineState newTimeline = TimelineState.Present;
-            
-            if (stability >= futureTransitionThreshold)
-            {
-                // 60-100% stability = Present timeline
-                newTimeline = TimelineState.Present;
-            }
-            else if (stability >= pastTransitionThreshold)
-            {
-                // 20-59% stability = Future timeline
-                newTimeline = TimelineState.Future;
-            }
-            else
-            {
-                // 0-19% stability = Past timeline
-                newTimeline = TimelineState.Past;
-            }
-            
-            // Only transition if timeline actually changed
-            if (newTimeline != _currentTimeline.Value)
-            {
-                TransitionTimeline(newTimeline);
-            }
+            // SIMPLE MODE: Threshold-based transitions
+            CheckSimpleTimelineTransition(newStability);
         }
     }
     
     /// <summary>
-    /// Server-only: Randomly shift player to Past/Future at unpredictable intervals.
+    /// Simple threshold-based timeline transitions (for testing).
+    /// 100-60% = Present, 59-20% = Future, 19-0% = Past
+    /// </summary>
+    [Server]
+    private void CheckSimpleTimelineTransition(float stability)
+    {
+        TimelineState targetTimeline;
+        
+        if (stability >= futureTransitionThreshold)
+        {
+            targetTimeline = TimelineState.Present;
+        }
+        else if (stability >= pastTransitionThreshold)
+        {
+            targetTimeline = TimelineState.Future;
+        }
+        else
+        {
+            targetTimeline = TimelineState.Past;
+        }
+        
+        // Only transition if different from current
+        if (targetTimeline != _currentTimeline.Value)
+        {
+            Debug.Log($"[Server] Player {Owner.ClientId} stability {stability:F1}% - transitioning to {targetTimeline}");
+            TransitionTimeline(targetTimeline);
+        }
+    }
+    
+    /// <summary>
+    /// Random unpredictable timeline shifts when stability is low.
     /// This creates emergent temporal instability when stability is low.
     /// Only active when "Use Random Shifts" checkbox is enabled in the Inspector.
     /// </summary>
@@ -277,18 +265,39 @@ public class TimelineManager : NetworkBehaviour
     
     /// <summary>
     /// Server-only: Transition player to a different timeline.
-    /// This will eventually trigger FishNet scene loading to move player to different scene instance.
+    /// This triggers FishNet scene loading to move player to different scene instance.
+    /// 
+    /// IMPLEMENTATION DETAILS:
+    /// 1. Store old timeline for later
+    /// 2. Update SyncVar (this triggers OnTimelineChanged on all clients)
+    /// 3. Use TimelineSceneSetup to transition player between scenes
+    /// 4. TimelineSceneSetup handles unloading old scene and loading new scene
+    /// 5. Scene Condition automatically updates visibility based on new scene
     /// </summary>
     [Server]
     private void TransitionTimeline(TimelineState newTimeline)
     {
-        Debug.Log($"[Server] Player {Owner.ClientId} transitioning from {_currentTimeline.Value} to {newTimeline}");
+        if (_timelineSceneSetup == null)
+        {
+            Debug.LogError($"[TimelineManager] ❌ Cannot transition - TimelineSceneSetup not found!");
+            return;
+        }
         
+        TimelineState oldTimeline = _currentTimeline.Value;
+        
+        Debug.Log($"[TimelineManager] [Server] Player {Owner.ClientId} transitioning from {oldTimeline} to {newTimeline}");
+        
+        // Update timeline state (this syncs to all clients automatically)
         _currentTimeline.Value = newTimeline;
         
-        // TODO: Implement FishNet scene transition here
-        // Will use SceneManager.LoadConnectionScenes() to move player to timeline scene instance
-        // For now, just log the transition
+        // Perform scene transition using TimelineSceneSetup
+        // This handles:
+        // 1. Unloading old timeline scene for this player's connection
+        // 2. Loading new timeline scene for this player's connection
+        // 3. Scene Condition automatically updates (client can now see new timeline objects)
+        _timelineSceneSetup.TransitionPlayerTimeline(Owner, oldTimeline, newTimeline);
+        
+        Debug.Log($"[TimelineManager] ✅ [Server] Scene transition initiated for player {Owner.ClientId}: {oldTimeline} → {newTimeline}");
     }
     
     /// <summary>
