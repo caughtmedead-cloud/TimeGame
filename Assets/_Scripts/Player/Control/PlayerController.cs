@@ -1,6 +1,7 @@
 // PlayerController.cs - DIAGNOSTIC VERSION with full logging
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -449,7 +450,7 @@ public class PlayerController : NetworkBehaviour
 
         Vector3 rayStart = transform.position + Vector3.up * characterController.height;
 
-        bool hasObstacle = Physics.SphereCast(
+        bool hasObstacle = gameObject.PhysicsSphereCast(
             rayStart,
             characterController.radius * 0.9f,
             Vector3.up,
@@ -595,7 +596,7 @@ public class PlayerController : NetworkBehaviour
         Vector3 origin = transform.position;
         float radius = characterController.radius * 0.8f;
         
-        bool hit = Physics.SphereCast(origin, radius, Vector3.down, out RaycastHit hitInfo, groundCheckDistance, groundLayer);
+        bool hit = gameObject.PhysicsSphereCast(origin, radius, Vector3.down, out RaycastHit hitInfo, groundCheckDistance, groundLayer);
         
         return hit;
     }

@@ -302,6 +302,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1146464952}
+    - targetCorrespondingSourceObject: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1146464956}
+    - targetCorrespondingSourceObject: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1146464957}
   m_SourcePrefab: {fileID: 100100000, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
 --- !u!1 &1146464951 stripped
 GameObject:
@@ -325,6 +331,37 @@ MonoBehaviour:
   _offlineScene: Assets/_Scenes/MainMenu/Bootstrap.unity
   _onlineScene: 
   _replaceScenes: 0
+--- !u!114 &1146464956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146464951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateOrder: 0
+  _timingType: 0
+  _allowTickDropping: 1
+  _maximumFrameTicks: 3
+  _tickRate: 60
+  _pingInterval: 1
+  _physicsMode: 0
+--- !u!114 &1146464957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146464951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 781de81133b9a2f478e69781ce12ef8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1385714797
 GameObject:
   m_ObjectHideFlags: 0
@@ -361,7 +398,6 @@ MonoBehaviour:
   pastSceneName: Timeline_Past
   presentSceneName: Timeline_Present
   futureSceneName: Timeline_Future
-  physicsMode: 2
 --- !u!114 &1385714799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -465,7 +501,7 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 0}
   playerPrefab: {fileID: -8147693711007459752, guid: a2623a408e0d11049b9f5e9bfa439a8c, type: 3}
   spawnPosition: {x: 0, y: 1, z: 0}
-  maxWaitTime: 10
+  defaultTimeline: 1
 --- !u!114 &2047187396
 MonoBehaviour:
   m_ObjectHideFlags: 0
