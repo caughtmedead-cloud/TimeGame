@@ -14,19 +14,16 @@ public class SceneConditionDebugger : NetworkBehaviour
     public override void OnStartServer()
     {
         base.OnStartServer();
-        Debug.Log($"[SceneConditionDebugger] {sceneName} - Server started for {gameObject.name}");
     }
     
     public override void OnStartClient()
     {
         base.OnStartClient();
-        Debug.Log($"[SceneConditionDebugger] {sceneName} - CLIENT CAN SEE {gameObject.name} (Should only see if in {sceneName})");
     }
     
     public override void OnStopClient()
     {
         base.OnStopClient();
-        Debug.Log($"[SceneConditionDebugger] {sceneName} - Client stopped observing {gameObject.name}");
     }
     
     private void Start()
@@ -34,11 +31,9 @@ public class SceneConditionDebugger : NetworkBehaviour
         // Basic verification that this object exists on the network
         if (NetworkManager != null)
         {
-            Debug.Log($"[SceneConditionDebugger] {sceneName} - NetworkManager found for {gameObject.name}");
         }
         else
         {
-            Debug.LogWarning("[SceneConditionDebugger] ⚠️ NetworkManager not found!");
         }
     }
 }

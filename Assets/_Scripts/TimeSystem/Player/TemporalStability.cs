@@ -77,20 +77,11 @@ public class TemporalStability : NetworkBehaviour
         _currentStability.Value = maxStability;
         wasCritical = false;
         lastLoggedStability = maxStability; // Initialize to prevent first log
-        
-        if (verboseLogging)
-        {
-            Debug.Log($"[TemporalStability] OnStartServer - Player {Owner.ClientId} initialized on server");
-        }
     }
     
     public override void OnStartClient()
     {
         base.OnStartClient();
-        if (verboseLogging)
-        {
-            Debug.Log($"[TemporalStability] OnStartClient - Player {Owner.ClientId} started on client (IsOwner: {IsOwner})");
-        }
     }
     
     /// <summary>
@@ -112,14 +103,12 @@ public class TemporalStability : NetworkBehaviour
         // Only log if verbose logging is enabled AND change is significant
         if (verboseLogging && (lastLoggedStability < 0 || Mathf.Abs(_currentStability.Value - lastLoggedStability) >= logThreshold))
         {
-            Debug.Log($"[TemporalStability] ModifyStability - Player {Owner.ClientId}: {oldValue:F1} + {amount:F1} = {_currentStability.Value:F1}");
             lastLoggedStability = _currentStability.Value;
         }
         
         // Check for depletion
         if (_currentStability.Value <= 0f)
         {
-            Debug.LogWarning($"[Server] Player {Owner.ClientId} stability depleted!");
         }
     }
     
@@ -144,23 +133,13 @@ public class TemporalStability : NetworkBehaviour
         // Only log if verbose logging is enabled AND change is significant
         if (verboseLogging && (lastLoggedStability < 0 || Mathf.Abs(newValue - lastLoggedStability) >= logThreshold))
         {
-            Debug.Log($"[TemporalStability] OnStabilityChanged - Player {Owner.ClientId}, IsOwner: {IsOwner}, asServer: {asServer}, {previousValue:F1}% → {newValue:F1}%");
             lastLoggedStability = newValue;
         }
         
         // Only process on client (owner) for UI updates
         if (!IsOwner) 
         {
-            if (verboseLogging)
-            {
-                Debug.Log($"[TemporalStability] Skipping UI update - not owner (Player {Owner.ClientId})");
-            }
             return;
-        }
-        
-        if (verboseLogging)
-        {
-            Debug.Log($"[TemporalStability] Firing OnStabilityUpdated event for Player {Owner.ClientId}");
         }
         
         // Notify UI
@@ -171,7 +150,6 @@ public class TemporalStability : NetworkBehaviour
         if (isNowCritical && !wasCritical)
         {
             OnCriticalStability?.Invoke();
-            Debug.LogWarning($"[Client] CRITICAL: Temporal stability at {newValue:F1}%");
             wasCritical = true;
         }
         else if (!isNowCritical && wasCritical)
@@ -184,7 +162,6 @@ public class TemporalStability : NetworkBehaviour
         if (newValue <= 0f && previousValue > 0f)
         {
             OnStabilityDepleted?.Invoke();
-            Debug.LogError($"[Client] STABILITY DEPLETED! Player should respawn or transition.");
         }
     }
     

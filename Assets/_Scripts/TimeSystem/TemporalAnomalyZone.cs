@@ -69,7 +69,6 @@ public class TemporalAnomalyZone : NetworkBehaviour
         if (stability != null && !affectedPlayers.Contains(stability))
         {
             affectedPlayers.Add(stability);
-            Debug.Log($"[AnomalyZone] '{zoneName}' - Player {stability.Owner?.ClientId} ENTERED (Total players: {affectedPlayers.Count})");
         }
     }
     
@@ -83,7 +82,6 @@ public class TemporalAnomalyZone : NetworkBehaviour
         
         if (stability != null && affectedPlayers.Remove(stability))
         {
-            Debug.Log($"[AnomalyZone] '{zoneName}' - Player {stability.Owner?.ClientId} EXITED (Total players: {affectedPlayers.Count})");
         }
     }
     

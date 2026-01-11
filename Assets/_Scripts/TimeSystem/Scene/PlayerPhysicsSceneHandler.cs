@@ -70,11 +70,6 @@ public class PlayerPhysicsSceneHandler : NetworkBehaviour
         // Subscribe to timeline transitions
         timelineManager.OnTimelineTransition += OnTimelineTransition;
         
-        if (showDebugLogs)
-        {
-            Debug.Log($"[PlayerPhysicsSceneHandler] ✅ Subscribed to timeline transitions for player {Owner.ClientId}");
-        }
-        
         // Move to current timeline's physics scene immediately
         MoveToTimelinePhysicsScene(timelineManager.CurrentTimeline);
     }
@@ -98,11 +93,6 @@ public class PlayerPhysicsSceneHandler : NetworkBehaviour
     /// </summary>
     private void OnTimelineTransition(TimelineManager.TimelineState newTimeline)
     {
-        if (showDebugLogs)
-        {
-            Debug.Log($"[PlayerPhysicsSceneHandler] Timeline transition detected: {newTimeline}");
-        }
-        
         MoveToTimelinePhysicsScene(newTimeline);
     }
     
@@ -129,10 +119,6 @@ public class PlayerPhysicsSceneHandler : NetworkBehaviour
         // Check if we're already in the correct scene
         if (gameObject.scene == targetScene)
         {
-            if (showDebugLogs)
-            {
-                Debug.Log($"[PlayerPhysicsSceneHandler] Already in scene '{targetScene.name}'");
-            }
             return;
         }
         
@@ -146,13 +132,6 @@ public class PlayerPhysicsSceneHandler : NetworkBehaviour
         
         // Get new physics scene info AFTER moving (for debug)
         PhysicsScene newPhysicsScene = targetScene.GetPhysicsScene();
-        
-        if (showDebugLogs)
-        {
-            Debug.Log($"[PlayerPhysicsSceneHandler] ✅ Moved player to timeline '{timeline}'");
-            Debug.Log($"  - Old Scene: {currentScene.name} (Physics Scene Valid: {currentPhysicsScene.IsValid()})");
-            Debug.Log($"  - New Scene: {targetScene.name} (Physics Scene Valid: {newPhysicsScene.IsValid()})");
-        }
         
         // Verify CharacterController is now using the correct physics scene
         VerifyPhysicsScene(targetScene);
@@ -185,9 +164,6 @@ public class PlayerPhysicsSceneHandler : NetworkBehaviour
         
         if (showDebugLogs)
         {
-            Debug.Log($"[PlayerPhysicsSceneHandler] ✅ Physics scene verification passed");
-            Debug.Log($"  - Scene: {actualScene.name}");
-            Debug.Log($"  - Physics Scene Valid: {physicsScene.IsValid()}");
         }
     }
     

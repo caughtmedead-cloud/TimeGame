@@ -29,8 +29,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         
         _networkTrigger.OnEnter += OnZoneTriggerEnter;
         _networkTrigger.OnExit += OnZoneTriggerExit;
-        
-        Debug.Log($"[PlayerZoneTriggerHandler] ✅ Subscribed to NetworkTrigger events for player {Owner?.ClientId}");
     }
     
     private void OnDestroy()
@@ -45,14 +43,11 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
     private void OnZoneTriggerEnter(Collider other)
     {
         if (!IsOwner) return;
-        
-        Debug.Log($"[PlayerZoneTriggerHandler] 🎯 Trigger entered: {other.gameObject.name}");
+        if (other == null) return;
         
         var temporalZone = other.GetComponent<TemporalAnomalyZone>();
         if (temporalZone != null)
         {
-            Debug.Log($"[PlayerZoneTriggerHandler] ✅ Entered temporal anomaly zone '{temporalZone.zoneName}' - notifying server");
-            
             var zoneNetworkObject = temporalZone.GetComponent<NetworkObject>();
             if (zoneNetworkObject != null)
             {
@@ -68,8 +63,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         var enhancedZone = other.GetComponent<EnhancedTemporalZone>();
         if (enhancedZone != null)
         {
-            Debug.Log($"[PlayerZoneTriggerHandler] ✅ Entered enhanced anomaly zone '{enhancedZone.zoneName}' - notifying server");
-            
             var zoneNetworkObject = enhancedZone.GetComponent<NetworkObject>();
             if (zoneNetworkObject != null)
             {
@@ -85,14 +78,11 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
     private void OnZoneTriggerExit(Collider other)
     {
         if (!IsOwner) return;
-        
-        Debug.Log($"[PlayerZoneTriggerHandler] 🚪 Trigger exited: {other.gameObject.name}");
+        if (other == null) return;
         
         var temporalZone = other.GetComponent<TemporalAnomalyZone>();
         if (temporalZone != null)
         {
-            Debug.Log($"[PlayerZoneTriggerHandler] ✅ Exited temporal anomaly zone '{temporalZone.zoneName}' - notifying server");
-            
             var zoneNetworkObject = temporalZone.GetComponent<NetworkObject>();
             if (zoneNetworkObject != null)
             {
@@ -104,8 +94,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         var enhancedZone = other.GetComponent<EnhancedTemporalZone>();
         if (enhancedZone != null)
         {
-            Debug.Log($"[PlayerZoneTriggerHandler] ✅ Exited enhanced anomaly zone '{enhancedZone.zoneName}' - notifying server");
-            
             var zoneNetworkObject = enhancedZone.GetComponent<NetworkObject>();
             if (zoneNetworkObject != null)
             {
@@ -127,7 +115,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         if (zone != null)
         {
             zone.PlayerEntered(_temporalStability);
-            Debug.Log($"[Server] ✅ Player {sender?.ClientId} entered temporal zone '{zone.zoneName}'");
         }
         else
         {
@@ -148,7 +135,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         if (zone != null)
         {
             zone.PlayerExited(_temporalStability);
-            Debug.Log($"[Server] ✅ Player {sender?.ClientId} exited temporal zone '{zone.zoneName}'");
         }
     }
     
@@ -165,7 +151,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         if (zone != null)
         {
             zone.PlayerEntered(_temporalStability);
-            Debug.Log($"[Server] ✅ Player {sender?.ClientId} entered enhanced zone '{zone.zoneName}'");
         }
         else
         {
@@ -186,7 +171,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         if (zone != null)
         {
             zone.PlayerExited(_temporalStability);
-            Debug.Log($"[Server] ✅ Player {sender?.ClientId} exited enhanced zone '{zone.zoneName}'");
         }
     }
 }

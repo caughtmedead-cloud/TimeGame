@@ -39,10 +39,6 @@ public class PhysicsIsolationDebugger : NetworkBehaviour
         
         if (enableDebug)
         {
-            Debug.Log($"[PhysicsDebugger] ===== PHYSICS ISOLATION DEBUGGER STARTED =====");
-            Debug.Log($"[PhysicsDebugger] Global Physics.simulationMode: {Physics.simulationMode}");
-            Debug.Log($"[PhysicsDebugger] Global Physics.autoSimulation: {Physics.autoSimulation}");
-            
             LogCurrentPhysicsScene();
         }
     }
@@ -55,7 +51,6 @@ public class PhysicsIsolationDebugger : NetworkBehaviour
         Scene currentScene = gameObject.scene;
         if (currentScene.handle != _lastSceneHandle)
         {
-            Debug.Log($"[PhysicsDebugger] 🔄 Scene changed!");
             LogCurrentPhysicsScene();
             _lastSceneHandle = currentScene.handle;
         }
@@ -72,51 +67,6 @@ public class PhysicsIsolationDebugger : NetworkBehaviour
         _currentScene = gameObject.scene;
         _currentPhysicsScene = _currentScene.GetPhysicsScene();
         _lastSceneHandle = _currentScene.handle;
-        
-        Debug.Log($"[PhysicsDebugger] ===== CURRENT PHYSICS SCENE INFO =====");
-        Debug.Log($"[PhysicsDebugger] GameObject: {gameObject.name}");
-        Debug.Log($"[PhysicsDebugger] Scene name: {_currentScene.name}");
-        Debug.Log($"[PhysicsDebugger] Scene handle: {_currentScene.handle}");
-        Debug.Log($"[PhysicsDebugger] Scene is loaded: {_currentScene.isLoaded}");
-        Debug.Log($"[PhysicsDebugger] PhysicsScene valid: {_currentPhysicsScene.IsValid()}");
-        
-        if (_currentPhysicsScene.IsValid())
-        {
-            Debug.Log($"[PhysicsDebugger] PhysicsScene hash: {_currentPhysicsScene.GetHashCode()}");
-            
-            // Test if this is the default physics scene
-            bool isDefaultScene = _currentPhysicsScene == Physics.defaultPhysicsScene;
-            Debug.Log($"[PhysicsDebugger] Is default physics scene: {isDefaultScene}");
-            
-            if (isDefaultScene)
-            {
-                Debug.LogWarning($"[PhysicsDebugger] ⚠️ Player is in DEFAULT physics scene! This will cause cross-timeline physics.");
-            }
-            else
-            {
-                Debug.Log($"[PhysicsDebugger] ✅ Player is in LOCAL physics scene (isolated)");
-            }
-        }
-        else
-        {
-            Debug.LogError($"[PhysicsDebugger] ❌ PhysicsScene is INVALID! Physics will not work correctly.");
-        }
-        
-        // Log all loaded scenes and their physics scenes
-        Debug.Log($"[PhysicsDebugger] ----- ALL LOADED SCENES -----");
-        for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
-        {
-            Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
-            PhysicsScene physicsScene = scene.GetPhysicsScene();
-            bool isDefault = physicsScene == Physics.defaultPhysicsScene;
-            bool isCurrent = scene.handle == _currentScene.handle;
-            
-            string marker = isCurrent ? "👉 " : "   ";
-            string defaultMarker = isDefault ? " (DEFAULT)" : " (LOCAL)";
-            
-            Debug.Log($"[PhysicsDebugger] {marker}Scene: {scene.name}{defaultMarker}");
-            Debug.Log($"[PhysicsDebugger]     Handle: {scene.handle}, Physics valid: {physicsScene.IsValid()}, Physics hash: {physicsScene.GetHashCode()}");
-        }
     }
     
     private void TestPhysicsRaycast()
@@ -148,10 +98,6 @@ public class PhysicsIsolationDebugger : NetworkBehaviour
         
         if (hitLocal != hitDefault)
         {
-            Debug.LogWarning($"[PhysicsDebugger] ⚠️ PHYSICS MISMATCH DETECTED!");
-            Debug.LogWarning($"[PhysicsDebugger]   Local physics hit: {hitLocal} {(hitLocal ? hitInfoLocal.collider.name : "nothing")}");
-            Debug.LogWarning($"[PhysicsDebugger]   Default physics hit: {hitDefault} {(hitDefault ? hitInfoDefault.collider.name : "nothing")}");
-            Debug.LogWarning($"[PhysicsDebugger]   This means physics is NOT properly isolated!");
         }
         
         if (drawDebugRays)
@@ -171,7 +117,6 @@ public class PhysicsIsolationDebugger : NetworkBehaviour
         LogCurrentPhysicsScene();
         
         // Also test raycasts in all directions
-        Debug.Log($"[PhysicsDebugger] ===== TESTING RAYCASTS =====");
         Vector3[] directions = new Vector3[]
         {
             Vector3.forward,
@@ -193,8 +138,6 @@ public class PhysicsIsolationDebugger : NetworkBehaviour
                 testLayerMask, 
                 QueryTriggerInteraction.Ignore
             );
-            
-            Debug.Log($"[PhysicsDebugger] Raycast {dir}: {(hit ? $"HIT {hitInfo.collider.name} at distance {hitInfo.distance:F2}" : "MISS")}");
         }
     }
     

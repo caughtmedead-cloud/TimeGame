@@ -23,8 +23,10 @@ using System;
 ///    - Creates emergent temporal instability for tension
 ///    - Auto-returns to Present when stability restored
 /// 
-/// SCENE TRANSITIONS (NEW):
+/// SCENE TRANSITIONS:
 /// - Uses TimelineSceneSetup to transition player between timeline scenes
+/// - TimelineSceneSetup is SERVER-ONLY (scene object in Bootstrap)
+/// - Clients don't need TimelineSceneSetup - they receive scene changes via FishNet
 /// - Unloads old timeline scene for this player
 /// - Loads new timeline scene for this player
 /// - Scene Condition automatically updates visibility
@@ -76,7 +78,8 @@ public class TimelineManager : NetworkBehaviour
     // Random timeline shift tracking
     private float nextRandomShiftCheck = 0f;
     
-    // Scene transition reference
+    // Scene transition reference (SERVER-ONLY)
+    // Clients don't need this - they receive scene changes from server via FishNet
     private TimelineSceneSetup _timelineSceneSetup;
     
     // Events for other systems to subscribe to
@@ -101,24 +104,34 @@ public class TimelineManager : NetworkBehaviour
             temporalStability = GetComponent<TemporalStability>();
         }
         
-        // Find TimelineSceneSetup
-        _timelineSceneSetup = FindFirstObjectByType<TimelineSceneSetup>();
-        if (_timelineSceneSetup == null)
-        {
-            Debug.LogError("[TimelineManager] ❌ TimelineSceneSetup not found! Timeline transitions will fail.");
-        }
-        
         // Subscribe to SyncVar changes
         _currentTimeline.OnChange += OnTimelineChanged;
+        
+        // DON'T find TimelineSceneSetup here!
+        // It's a scene object in Bootstrap that doesn't replicate to pure clients
+        // Only the server needs it, so we find it in OnStartServer()
     }
     
     /// <summary>
     /// Initialize starting values on server.
     /// From FishNet docs: "OnStartServer() is called when the server starts for this object."
+    /// 
+    /// IMPORTANT: TimelineSceneSetup is found HERE (server-only), not in Awake()
     /// </summary>
     public override void OnStartServer()
     {
         base.OnStartServer();
+        
+        // Find TimelineSceneSetup - SERVER ONLY!
+        // This is a scene object in Bootstrap that doesn't replicate to clients
+        _timelineSceneSetup = FindFirstObjectByType<TimelineSceneSetup>();
+        if (_timelineSceneSetup == null)
+        {
+            Debug.LogError($"[TimelineManager] ❌ TimelineSceneSetup not found on server! Timeline transitions will fail for Player {Owner.ClientId}");
+            return;
+        }
+        
+        Debug.Log($"[TimelineManager] ✅ Found TimelineSceneSetup on server for Player {Owner.ClientId}");
         
         // Set initial timeline state
         _currentTimeline.Value = TimelineState.Present;
@@ -140,10 +153,24 @@ public class TimelineManager : NetworkBehaviour
         }
     }
     
+    public override void OnStopServer()
+    {
+        base.OnStopServer();
+        
+        // Unsubscribe from stability events
+        if (temporalStability != null)
+        {
+            temporalStability.OnStabilityUpdated -= OnStabilityChanged_Server;
+        }
+    }
+    
     public override void OnStartClient()
     {
         base.OnStartClient();
         Debug.Log($"[TimelineManager] OnStartClient - Player {Owner.ClientId} started on client (IsOwner: {IsOwner})");
+        
+        // Clients DON'T need TimelineSceneSetup
+        // They receive scene load/unload commands from the server via FishNet
     }
     
     private void Update()
@@ -279,7 +306,7 @@ public class TimelineManager : NetworkBehaviour
     {
         if (_timelineSceneSetup == null)
         {
-            Debug.LogError($"[TimelineManager] ❌ Cannot transition - TimelineSceneSetup not found!");
+            Debug.LogError($"[TimelineManager] ❌ Cannot transition - TimelineSceneSetup not found on server!");
             return;
         }
         
@@ -302,6 +329,8 @@ public class TimelineManager : NetworkBehaviour
     
     /// <summary>
     /// SyncVar callback: Called on all clients when timeline changes.
+    /// This is where clients update their UI and respond to timeline changes.
+    /// The actual scene loading is handled by the server via FishNet scene management.
     /// </summary>
     private void OnTimelineChanged(TimelineState previousTimeline, TimelineState newTimeline, bool asServer)
     {

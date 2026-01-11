@@ -154,11 +154,6 @@ public class PlayerAnimator : NetworkBehaviour
         {
             networkAnimator.SetTrigger("Jump");
             lastJumpTriggerTime = Time.time;
-            
-            if (showDebugInfo)
-            {
-                Debug.Log("[PlayerAnimator] Jump triggered");
-            }
         }
         
         // Safety: Auto-reset jump trigger if it's been active too long
@@ -167,21 +162,12 @@ public class PlayerAnimator : NetworkBehaviour
             if (networkAnimator.Animator.GetBool(jumpHash))
             {
                 networkAnimator.ResetTrigger("Jump");
-                
-                if (showDebugInfo)
-                {
-                    Debug.LogWarning("[PlayerAnimator] Jump trigger timeout - auto-reset!");
-                }
             }
         }
     }
 
     private void OnLanded()
     {
-        if (showDebugInfo)
-        {
-            Debug.Log("[PlayerAnimator] Player landed");
-        }
     }
 
 
@@ -196,17 +182,9 @@ public class PlayerAnimator : NetworkBehaviour
 
     public void OnJumpLaunch()
     {
-        if (showDebugInfo)
-        {
-            Debug.Log("[PlayerAnimator] OnJumpLaunch animation event");
-        }
     }
 
     public void OnFootstep()
     {
-        if (showDebugInfo)
-        {
-            Debug.Log("[PlayerAnimator] Footstep");
-        }
     }
 }

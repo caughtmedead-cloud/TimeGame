@@ -109,9 +109,6 @@ public class FootIKLocalPhysics : FootIK
             if (float.IsNaN(hit.normal.x) || float.IsNaN(hit.normal.y) || float.IsNaN(hit.normal.z))
             {
                 hit.normal = -rayDirection;
-#if UNITY_EDITOR
-                Debug.LogError($"iStep detected a collider with broken size [GameObject: {hit.collider.name}].");
-#endif
             }
 
             Vector3 normalToUse = hit.normal;

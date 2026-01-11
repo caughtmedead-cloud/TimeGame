@@ -96,13 +96,6 @@ public class PlayerController : NetworkBehaviour
         firstPersonCamera = GetComponent<FirstPersonCamera>();
         
         inputActions = new PlayerInputActions();
-        
-        if (enableLookDebug)
-        {
-            Debug.Log($"[PlayerController.Awake] mouseSensitivity = {mouseSensitivity}");
-            Debug.Log($"[PlayerController.Awake] gamepadSensitivity = {gamepadSensitivity}");
-            Debug.Log($"[PlayerController.Awake] firstPersonCamera assigned = {firstPersonCamera != null}");
-        }
     }
 
     private void OnEnable()
@@ -140,11 +133,6 @@ public class PlayerController : NetworkBehaviour
             }
             
             inputActions.Player.Enable();
-            
-            if (enableLookDebug)
-            {
-                Debug.Log($"[PlayerController.OnStartClient] OWNER - mouseSensitivity = {mouseSensitivity}");
-            }
         }
         else
         {

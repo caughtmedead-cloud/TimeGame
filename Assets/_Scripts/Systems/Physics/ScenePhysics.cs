@@ -19,11 +19,6 @@ public class ScenePhysics : MonoBehaviour
     private void UpdatePhysicsScene()
     {
         _currentPhysicsScene = gameObject.scene.GetPhysicsScene();
-        
-        if (!_currentPhysicsScene.IsValid())
-        {
-            Debug.LogWarning($"ScenePhysics on {gameObject.name}: Invalid PhysicsScene!", this);
-        }
     }
 
     public bool SphereCast(Vector3 origin, float radius, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)

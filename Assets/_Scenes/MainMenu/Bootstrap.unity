@@ -329,7 +329,7 @@ MonoBehaviour:
   _enableGlobalScenes: 1
   _startInOffline: 1
   _offlineScene: Assets/_Scenes/MainMenu/Bootstrap.unity
-  _onlineScene: 
+  _onlineScene: Assets/_Scenes/MainMenu/Bootstrap.unity
   _replaceScenes: 0
 --- !u!114 &1146464956
 MonoBehaviour:
@@ -423,7 +423,7 @@ MonoBehaviour:
   RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
   _isSpawnable: 1
-  _isGlobal: 0
+  _isGlobal: 1
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0

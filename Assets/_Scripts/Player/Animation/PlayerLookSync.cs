@@ -46,7 +46,6 @@ public class PlayerLookSync : NetworkBehaviour
         
         if (lookAnimator == null)
         {
-            Debug.LogError("[PlayerLookSync] FLookAnimator not found!");
             enabled = false;
             return;
         }
@@ -59,7 +58,6 @@ public class PlayerLookSync : NetworkBehaviour
             playerCamera = GetComponentInChildren<Camera>();
             if (playerCamera == null)
             {
-                Debug.LogError("[PlayerLookSync] Camera not found for owner!");
                 enabled = false;
                 return;
             }

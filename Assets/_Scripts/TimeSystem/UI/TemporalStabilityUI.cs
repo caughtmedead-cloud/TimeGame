@@ -48,15 +48,12 @@ public class TemporalStabilityUI : NetworkBehaviour
     {
         base.OnStartClient();
         
-        Debug.Log($"[TemporalStabilityUI] OnStartClient called, IsOwner: {IsOwner}");
-        
         // CRITICAL: Disable canvas for non-owned players
         // This prevents duplicate UIs from stacking in Screen Space - Overlay mode
         Canvas canvas = GetComponent<Canvas>();
         if (canvas != null && !IsOwner)
         {
             canvas.enabled = false;
-            Debug.Log($"[TemporalStabilityUI] Disabled canvas for non-owned player");
             return; // Exit early - no setup needed for non-owned players
         }
         
@@ -69,8 +66,6 @@ public class TemporalStabilityUI : NetworkBehaviour
     /// </summary>
     private void InitializeUI()
     {
-        Debug.Log($"[TemporalStabilityUI] Initializing UI for LOCAL player");
-        
         // Auto-find components if not assigned
         if (playerStability == null)
         {
@@ -90,7 +85,6 @@ public class TemporalStabilityUI : NetworkBehaviour
             
             // Initialize display
             UpdateStabilityDisplay(playerStability.CurrentStability, playerStability.MaxStability);
-            Debug.Log($"[TemporalStabilityUI] Subscribed to TemporalStability events");
         }
         else
         {
@@ -104,7 +98,6 @@ public class TemporalStabilityUI : NetworkBehaviour
             
             // Initialize display
             UpdateTimelineDisplay(timelineManager.CurrentTimeline);
-            Debug.Log($"[TemporalStabilityUI] Subscribed to TimelineManager events");
         }
         else
         {
@@ -120,8 +113,6 @@ public class TemporalStabilityUI : NetworkBehaviour
     
     private void OnDestroy()
     {
-        Debug.Log($"[TemporalStabilityUI] OnDestroy called - unsubscribing from events");
-        
         // Unsubscribe from events to prevent memory leaks
         if (playerStability != null)
         {
@@ -205,8 +196,6 @@ public class TemporalStabilityUI : NetworkBehaviour
     /// </summary>
     private void UpdateTimelineDisplay(TimelineManager.TimelineState timeline)
     {
-        Debug.Log($"[TemporalStabilityUI] UpdateTimelineDisplay called: {timeline}");
-        
         if (timelineText != null)
         {
             timelineText.text = $"Timeline: {timeline}";

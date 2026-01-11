@@ -60,11 +60,6 @@ public class PhysicsSceneSync : NetworkBehaviour
                 
                 if (_isLocalPhysicsScene3D)
                 {
-                    if (showDebugLogs)
-                    {
-                        Debug.Log($"[PhysicsSceneSync] ✅ Scene '{_scene.name}' has LOCAL 3D physics scene " +
-                            $"(hash: {_physicsScene.GetHashCode()})");
-                    }
                 }
                 else
                 {
@@ -90,10 +85,6 @@ public class PhysicsSceneSync : NetworkBehaviour
                 
                 if (_isLocalPhysicsScene2D)
                 {
-                    if (showDebugLogs)
-                    {
-                        Debug.Log($"[PhysicsSceneSync] ✅ Scene '{_scene.name}' has LOCAL 2D physics scene");
-                    }
                 }
                 else
                 {
@@ -111,17 +102,6 @@ public class PhysicsSceneSync : NetworkBehaviour
         if ((_isLocalPhysicsScene3D && synchronize3D) || (_isLocalPhysicsScene2D && synchronize2D))
         {
             base.TimeManager.OnFixedUpdate += TimeManager_OnFixedUpdate;
-            
-            if (showDebugLogs)
-            {
-                Debug.Log($"[PhysicsSceneSync] ✅ Subscribed to FixedUpdate for scene '{_scene.name}'");
-                Debug.Log($"[PhysicsSceneSync]    Physics Mode: {base.TimeManager.PhysicsMode}");
-                Debug.Log($"[PhysicsSceneSync]    Global simulation mode: {Physics.simulationMode}");
-            }
-        }
-        else if (showDebugLogs)
-        {
-            Debug.Log($"[PhysicsSceneSync] ℹ️ Scene '{_scene.name}' uses default physics - no manual simulation needed");
         }
     }
     
@@ -132,11 +112,6 @@ public class PhysicsSceneSync : NetworkBehaviour
         if ((_isLocalPhysicsScene3D && synchronize3D) || (_isLocalPhysicsScene2D && synchronize2D))
         {
             base.TimeManager.OnFixedUpdate -= TimeManager_OnFixedUpdate;
-            
-            if (showDebugLogs)
-            {
-                Debug.Log($"[PhysicsSceneSync] ✅ Unsubscribed from FixedUpdate for scene '{_scene.name}'");
-            }
         }
     }
     
@@ -146,11 +121,6 @@ public class PhysicsSceneSync : NetworkBehaviour
         
         if (_isLocalPhysicsScene3D && synchronize3D && _physicsScene.IsValid())
         {
-            if (showSimulationLogs)
-            {
-                Debug.Log($"[PhysicsSceneSync] Simulating 3D physics for '{_scene.name}' (delta: {delta:F4})");
-            }
-            
             try
             {
                 _physicsScene.Simulate(delta);
@@ -163,11 +133,6 @@ public class PhysicsSceneSync : NetworkBehaviour
         
         if (_isLocalPhysicsScene2D && synchronize2D && _physicsScene2D.IsValid())
         {
-            if (showSimulationLogs)
-            {
-                Debug.Log($"[PhysicsSceneSync] Simulating 2D physics for '{_scene.name}' (delta: {delta:F4})");
-            }
-            
             try
             {
                 _physicsScene2D.Simulate(delta);
