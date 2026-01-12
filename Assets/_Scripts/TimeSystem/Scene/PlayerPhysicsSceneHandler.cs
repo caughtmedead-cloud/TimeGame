@@ -1,86 +1,69 @@
-
-/// <summary>
-/// Handles moving the player's physics components to the correct local physics scene
-/// when transitioning between timelines.
-/// 
-/// CRITICAL FOR TIMELINE PHYSICS ISOLATION:
-/// CharacterController interacts with physics in whatever scene it's currently assigned to.
-/// By default, it uses the DEFAULT physics scene, which means it collides with objects
-/// from ALL timelines.
-/// 
-/// This script ensures the player's CharacterController is moved to the LOCAL physics scene
-/// of their current timeline, isolating physics interactions properly.
-/// 
-/// HOW IT WORKS:
-/// 1. Subscribe to TimelineManager.OnTimelineTransition event
-/// 2. When timeline changes, move player GameObject to new timeline scene
-/// 3. Unity automatically updates CharacterController to use that scene's local physics
-/// 4. Player now only collides with objects in their current timeline
-/// 
-/// ATTACH TO: Player prefab (same GameObject as TimelineManager)
-/// </summary>
-
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Object;
-using FishNet.Managing.Scened;
-using FishNet.Managing.Timing;
-using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 
+/// <summary>
+/// CLIENT-SIDE ONLY: Handles timeline transition feedback and debug information.
+/// 
+/// IMPORTANT: This script does NOT move GameObjects between scenes!
+/// GameObject movement is handled SERVER-SIDE by TimelineSceneSetup.
+/// 
+/// This script only provides:
+/// - Visual/audio feedback when timeline changes
+/// - Debug logging about current scene/physics
+/// - UI updates (if needed in future)
+/// 
+/// The server automatically moves the player GameObject between scenes,
+/// and FishNet replicates this to all clients. This script just reacts to
+/// the timeline change event for client-side feedback.
+/// 
+/// ATTACH TO: Player prefab (same GameObject as TimelineManager)
+/// </summary>
 [RequireComponent(typeof(TimelineManager))]
-[RequireComponent(typeof(CharacterController))]
 public class PlayerPhysicsSceneHandler : NetworkBehaviour
 {
     [Header("References")]
     [Tooltip("Auto-assigned if not set")]
     [SerializeField] private TimelineManager timelineManager;
-    [Tooltip("Auto-assigned if not set")]
-    [SerializeField] private CharacterController characterController;
     
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
-    
-    private TimelineSceneSetup _timelineSceneSetup;
     
     private void Awake()
     {
         // Auto-assign if not set
         if (timelineManager == null)
             timelineManager = GetComponent<TimelineManager>();
-        
-        if (characterController == null)
-            characterController = GetComponent<CharacterController>();
     }
     
     public override void OnStartClient()
     {
         base.OnStartClient();
         
-        // Only the owner needs to handle physics scene transitions
-        if (!IsOwner) return;
-        
-        // Find TimelineSceneSetup
-        _timelineSceneSetup = FindFirstObjectByType<TimelineSceneSetup>();
-        if (_timelineSceneSetup == null)
+        if (showDebugLogs)
         {
-            Debug.LogError("[PlayerPhysicsSceneHandler] ❌ TimelineSceneSetup not found!");
-            return;
+            Debug.Log($"[PlayerPhysicsSceneHandler] OnStartClient - Player {Owner.ClientId} (IsOwner: {IsOwner})");
         }
         
-        // Subscribe to timeline transitions
-        timelineManager.OnTimelineTransition += OnTimelineTransition;
-        
-        // Move to current timeline's physics scene immediately
-        MoveToTimelinePhysicsScene(timelineManager.CurrentTimeline);
+        // Subscribe to timeline changes for feedback only
+        if (IsOwner && timelineManager != null)
+        {
+            timelineManager.OnTimelineTransition += OnTimelineTransition;
+            
+            if (showDebugLogs)
+            {
+                Scene currentScene = gameObject.scene;
+                Debug.Log($"[PlayerPhysicsSceneHandler] [Client] Player {Owner.ClientId} spawned in scene: {currentScene.name}");
+                LogPhysicsSceneInfo();
+            }
+        }
     }
     
     public override void OnStopClient()
     {
         base.OnStopClient();
         
-        if (!IsOwner) return;
-        
-        // Unsubscribe from timeline transitions
+        // Unsubscribe from events
         if (timelineManager != null)
         {
             timelineManager.OnTimelineTransition -= OnTimelineTransition;
@@ -88,96 +71,97 @@ public class PlayerPhysicsSceneHandler : NetworkBehaviour
     }
     
     /// <summary>
-    /// Called when the player's timeline changes.
-    /// Moves the player GameObject to the new timeline scene's local physics.
+    /// Client-side callback when timeline changes.
+    /// Used for UI feedback and local effects only.
+    /// The actual GameObject movement is handled by the server via TimelineSceneSetup.
     /// </summary>
     private void OnTimelineTransition(TimelineManager.TimelineState newTimeline)
     {
-        MoveToTimelinePhysicsScene(newTimeline);
-    }
-    
-    /// <summary>
-    /// Moves the player GameObject to the specified timeline scene.
-    /// This automatically updates the CharacterController to use that scene's local physics.
-    /// </summary>
-    private void MoveToTimelinePhysicsScene(TimelineManager.TimelineState timeline)
-    {
-        if (_timelineSceneSetup == null)
-        {
-            Debug.LogError("[PlayerPhysicsSceneHandler] ❌ TimelineSceneSetup not found!");
-            return;
-        }
-        
-        Scene targetScene = _timelineSceneSetup.GetSceneForTimeline(timeline);
-        
-        if (!targetScene.IsValid())
-        {
-            Debug.LogError($"[PlayerPhysicsSceneHandler] ❌ Invalid scene for timeline {timeline}");
-            return;
-        }
-        
-        // Check if we're already in the correct scene
-        if (gameObject.scene == targetScene)
-        {
-            return;
-        }
-        
-        // Get current physics scene info BEFORE moving (for debug)
-        Scene currentScene = gameObject.scene;
-        PhysicsScene currentPhysicsScene = currentScene.GetPhysicsScene();
-        
-        // Move GameObject to target timeline scene
-        // This automatically updates CharacterController's physics scene!
-        UnitySceneManager.MoveGameObjectToScene(gameObject, targetScene);
-        
-        // Get new physics scene info AFTER moving (for debug)
-        PhysicsScene newPhysicsScene = targetScene.GetPhysicsScene();
-        
-        // Verify CharacterController is now using the correct physics scene
-        VerifyPhysicsScene(targetScene);
-    }
-    
-    /// <summary>
-    /// Verifies that the player's CharacterController is using the correct physics scene.
-    /// This is a debug check to ensure the move worked correctly.
-    /// </summary>
-    private void VerifyPhysicsScene(Scene expectedScene)
-    {
-        Scene actualScene = gameObject.scene;
-        
-        if (actualScene != expectedScene)
-        {
-            Debug.LogError($"[PlayerPhysicsSceneHandler] ❌ PHYSICS SCENE MISMATCH!");
-            Debug.LogError($"  - Expected: {expectedScene.name}");
-            Debug.LogError($"  - Actual: {actualScene.name}");
-            return;
-        }
-        
-        PhysicsScene physicsScene = actualScene.GetPhysicsScene();
-        
-        if (!physicsScene.IsValid())
-        {
-            Debug.LogWarning($"[PlayerPhysicsSceneHandler] ⚠️ Physics scene not valid for '{actualScene.name}'");
-            Debug.LogWarning("  - Make sure timeline scenes are loaded with LocalPhysicsMode.Physics3D");
-            return;
-        }
+        if (!IsOwner) return;
         
         if (showDebugLogs)
         {
+            Debug.Log($"[PlayerPhysicsSceneHandler] [Client] Timeline transition to {newTimeline}");
+            
+            // Wait a frame for scene change to propagate, then log new scene info
+            StartCoroutine(LogSceneInfoNextFrame(newTimeline));
         }
+        
+        // Add client-side effects here:
+        // - Play transition sound
+        // - Camera shake
+        // - Visual effects (screen distortion, particles, etc.)
+        // - UI updates
+        
+        PlayTimelineTransitionEffects(newTimeline);
     }
     
     /// <summary>
-    /// Public method to manually verify current physics scene (for debugging).
+    /// Waits a frame, then logs scene information to verify the transition.
     /// </summary>
-    public void DebugCurrentPhysicsScene()
+    private System.Collections.IEnumerator LogSceneInfoNextFrame(TimelineManager.TimelineState expectedTimeline)
+    {
+        yield return null; // Wait one frame
+        
+        Scene currentScene = gameObject.scene;
+        Debug.Log($"[PlayerPhysicsSceneHandler] [Client] After transition - Player in scene: {currentScene.name}");
+        LogPhysicsSceneInfo();
+    }
+    
+    /// <summary>
+    /// Logs detailed physics scene information for debugging.
+    /// </summary>
+    private void LogPhysicsSceneInfo()
     {
         Scene currentScene = gameObject.scene;
         PhysicsScene physicsScene = currentScene.GetPhysicsScene();
         
-        Debug.Log($"[PlayerPhysicsSceneHandler] DEBUG INFO:");
-        Debug.Log($"  - Current Scene: {currentScene.name} (Handle: {currentScene.handle})");
-        Debug.Log($"  - Physics Scene Valid: {physicsScene.IsValid()}");
-        Debug.Log($"  - Current Timeline: {timelineManager.CurrentTimeline}");
+        Debug.Log($"[PlayerPhysicsSceneHandler] === PHYSICS SCENE DEBUG ===");
+        Debug.Log($"  Current Scene: {currentScene.name} (Handle: {currentScene.handle})");
+        Debug.Log($"  Physics Scene Valid: {physicsScene.IsValid()}");
+        Debug.Log($"  Physics Scene Hash: {physicsScene.GetHashCode()}");
+        Debug.Log($"  Default Physics Hash: {Physics.defaultPhysicsScene.GetHashCode()}");
+        Debug.Log($"  Is Default Physics: {physicsScene.GetHashCode() == Physics.defaultPhysicsScene.GetHashCode()}");
+        Debug.Log($"  Current Timeline: {timelineManager.CurrentTimeline}");
+        Debug.Log($"==========================================");
+    }
+    
+    /// <summary>
+    /// Plays client-side effects when timeline transitions.
+    /// Add your visual/audio feedback here.
+    /// </summary>
+    private void PlayTimelineTransitionEffects(TimelineManager.TimelineState newTimeline)
+    {
+        // Example: Play different sounds based on timeline
+        switch (newTimeline)
+        {
+            case TimelineManager.TimelineState.Past:
+                // Play "warping backwards" sound
+                // Show sepia/desaturated visual effect
+                Debug.Log("[PlayerPhysicsSceneHandler] [Client] Playing PAST transition effects");
+                break;
+                
+            case TimelineManager.TimelineState.Present:
+                // Play "stabilizing" sound
+                // Clear visual effects
+                Debug.Log("[PlayerPhysicsSceneHandler] [Client] Playing PRESENT transition effects");
+                break;
+                
+            case TimelineManager.TimelineState.Future:
+                // Play "warping forwards" sound
+                // Show futuristic/glitchy visual effect
+                Debug.Log("[PlayerPhysicsSceneHandler] [Client] Playing FUTURE transition effects");
+                break;
+        }
+    }
+    
+    /// <summary>
+    /// Public method to manually check current physics scene (for debugging via console).
+    /// Can be called from Unity's console or other scripts.
+    /// </summary>
+    [ContextMenu("Debug Current Physics Scene")]
+    public void DebugCurrentPhysicsScene()
+    {
+        LogPhysicsSceneInfo();
     }
 }

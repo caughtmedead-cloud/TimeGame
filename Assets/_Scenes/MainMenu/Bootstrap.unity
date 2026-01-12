@@ -398,6 +398,7 @@ MonoBehaviour:
   pastSceneName: Timeline_Past
   presentSceneName: Timeline_Present
   futureSceneName: Timeline_Future
+  showDebugLogs: 1
 --- !u!114 &1385714799
 MonoBehaviour:
   m_ObjectHideFlags: 0
