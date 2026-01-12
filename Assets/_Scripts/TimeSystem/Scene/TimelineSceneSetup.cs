@@ -9,16 +9,16 @@ using System.Collections.Generic;
 /// <summary>
 /// SERVER-ONLY: Manages timeline scene loading and player GameObject placement.
 /// 
-/// ARCHITECTURE:
-/// - Server loads 3 shared timeline scenes with LocalPhysics isolation
-/// - ALL clients load ALL 3 timeline scenes (same instances as server)
+/// ARCHITECTURE (CORRECTED):
+/// - Server loads 3 GLOBAL timeline scenes with LocalPhysics isolation
+/// - ALL clients load the SAME 3 global scenes (without LocalPhysics - FishNet design)
 /// - Player GameObjects move between scenes based on timeline state (server-side)
 /// - FishNet Scene Condition handles visibility automatically
-/// 
+///
 /// PHYSICS ARCHITECTURE:
-/// - Each timeline has isolated LocalPhysics (Physics3D)
-/// - Players only collide with objects in their current timeline scene
-/// - PhysicsSceneSync handles manual simulation for each scene
+/// - Server: Each timeline has isolated LocalPhysics (Physics3D)
+/// - Clients: All timelines share default physics (visual-only, no authoritative simulation)
+/// - Server is authoritative for physics, clients just render via NetworkTransform
 /// 
 /// VISIBILITY ARCHITECTURE:
 /// - Clients load all 3 scenes but FishNet Scene Condition controls what they see
@@ -38,9 +38,7 @@ public class TimelineSceneSetup : NetworkBehaviour
     [SerializeField] private bool showDebugLogs = true;
     
     private Dictionary<TimelineManager.TimelineState, Scene> _timelineScenes = new Dictionary<TimelineManager.TimelineState, Scene>();
-    
-    private HashSet<NetworkConnection> _initializedConnections = new HashSet<NetworkConnection>();
-    
+
     private bool timelinesLoaded = false;
     private bool initializationStarted = false;
     
@@ -61,10 +59,8 @@ public class TimelineSceneSetup : NetworkBehaviour
         
         if (showDebugLogs)
             Debug.Log("[TimelineSceneSetup] Starting timeline initialization...");
-        
-        base.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
-        
-        StartCoroutine(LoadAllTimelines());
+
+        StartCoroutine(LoadAllTimelinesGlobally());
     }
     
     private void Start()
@@ -83,102 +79,62 @@ public class TimelineSceneSetup : NetworkBehaviour
             if (showDebugLogs)
                 Debug.Log("[TimelineSceneSetup] Server already started - initializing from Start()");
 
-            base.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
-            StartCoroutine(LoadAllTimelines());
+            StartCoroutine(LoadAllTimelinesGlobally());
         }
     }
     
     public override void OnStopServer()
     {
         base.OnStopServer();
-        
-        if (base.ServerManager != null)
-        {
-            base.ServerManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
-        }
-        
+
         timelinesLoaded = false;
         initializationStarted = false;
-        _initializedConnections.Clear();
         _timelineScenes.Clear();
     }
     
     #endregion
-    
-    #region Connection Events
-    
-    private void ServerManager_OnRemoteConnectionState(NetworkConnection conn, FishNet.Transporting.RemoteConnectionStateArgs args)
-    {
-        if (args.ConnectionState == FishNet.Transporting.RemoteConnectionState.Started)
-        {
-            if (showDebugLogs)
-                Debug.Log($"[TimelineSceneSetup] New connection {conn.ClientId} - queueing timeline load");
-            
-            StartCoroutine(LoadAllTimelinesForConnection(conn));
-        }
-        else if (args.ConnectionState == FishNet.Transporting.RemoteConnectionState.Stopped)
-        {
-            if (_initializedConnections.Contains(conn))
-            {
-                if (showDebugLogs)
-                    Debug.Log($"[TimelineSceneSetup] Connection {conn.ClientId} disconnected - cleaning up");
-                
-                _initializedConnections.Remove(conn);
-            }
-        }
-    }
-    
-    #endregion
-    
+
     #region Server Timeline Loading
     
     /// <summary>
-    /// SERVER-ONLY: Loads all 3 timeline scenes on the server with LocalPhysics isolation
-    /// using Unity's native SceneManager (LocalPhysics works only when the server loads via Unity).
+    /// SERVER-ONLY: Loads all 3 timeline scenes globally with LocalPhysics isolation on server.
+    /// Uses FishNet's LoadGlobalScenes so all clients automatically receive the same scenes.
     /// </summary>
-    private IEnumerator LoadAllTimelines()
+    private IEnumerator LoadAllTimelinesGlobally()
     {
         if (showDebugLogs)
-            Debug.Log("[TimelineSceneSetup] Loading server timeline scenes with LocalPhysics...");
-        
-        yield return StartCoroutine(LoadTimelineScene(TimelineManager.TimelineState.Past, pastSceneName));
-        yield return StartCoroutine(LoadTimelineScene(TimelineManager.TimelineState.Present, presentSceneName));
-        yield return StartCoroutine(LoadTimelineScene(TimelineManager.TimelineState.Future, futureSceneName));
-        
-        timelinesLoaded = true;
-        
-        if (showDebugLogs)
-            Debug.Log("[TimelineSceneSetup] ✅ All server timelines loaded!");
-        
-        VerifyPhysicsIsolation();
+            Debug.Log("[TimelineSceneSetup] Loading global timeline scenes...");
 
-        RegisterHostConnectionIfAvailable();
+        yield return StartCoroutine(LoadTimelineGlobally(TimelineManager.TimelineState.Past, pastSceneName));
+        yield return StartCoroutine(LoadTimelineGlobally(TimelineManager.TimelineState.Present, presentSceneName));
+        yield return StartCoroutine(LoadTimelineGlobally(TimelineManager.TimelineState.Future, futureSceneName));
+
+        timelinesLoaded = true;
+
+        if (showDebugLogs)
+            Debug.Log("[TimelineSceneSetup] ✅ All global timeline scenes loaded!");
+
+        VerifyPhysicsIsolation();
     }
     
     /// <summary>
-    /// Loads a single timeline scene on the server via Unity API so LocalPhysics is honored.
+    /// Loads a single timeline scene globally via FishNet's LoadGlobalScenes.
+    /// LocalPhysics is set on server, clients get default physics (FishNet design).
     /// </summary>
-    private IEnumerator LoadTimelineScene(TimelineManager.TimelineState timeline, string sceneName)
+    private IEnumerator LoadTimelineGlobally(TimelineManager.TimelineState timeline, string sceneName)
     {
         if (showDebugLogs)
-            Debug.Log($"[TimelineSceneSetup] Loading '{sceneName}' with LocalPhysics...");
-        
-        var loadParams = new LoadSceneParameters(LoadSceneMode.Additive, LocalPhysicsMode.Physics3D);
-        AsyncOperation loadOp = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName, loadParams);
+            Debug.Log($"[TimelineSceneSetup] Loading '{sceneName}' globally with LocalPhysics (server-only)...");
 
-        if (loadOp == null)
-        {
-            Debug.LogError($"[TimelineSceneSetup] ❌ Failed to start loading {sceneName}!");
-            yield break;
-        }
+        SceneLoadData sld = new SceneLoadData(sceneName);
+        sld.Options.LocalPhysics = LocalPhysicsMode.Physics3D;
 
-        while (!loadOp.isDone)
-            yield return null;
-        
-        Scene loadedScene = default;
-        float timeout = 5f;
+        base.SceneManager.LoadGlobalScenes(sld);
+
+        float timeout = 10f;
         float elapsed = 0f;
-        
+        Scene loadedScene = default;
+
         while (elapsed < timeout)
         {
             for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++)
@@ -190,157 +146,26 @@ public class TimelineSceneSetup : NetworkBehaviour
                     break;
                 }
             }
-            
-            if (loadedScene.IsValid())
-                break;
-                
-            yield return new WaitForSeconds(0.1f);
-            elapsed += 0.1f;
-        }
-        
-        if (!loadedScene.IsValid())
-        {
-            Debug.LogError($"[TimelineSceneSetup] ❌ Failed to load {sceneName} after {timeout}s!");
-            yield break;
-        }
-        
-        _timelineScenes[timeline] = loadedScene;
-        
-        PhysicsScene physicsScene = loadedScene.GetPhysicsScene();
-        if (physicsScene.IsValid())
-        {
-            int hash = physicsScene.GetHashCode();
-            int defaultHash = Physics.defaultPhysicsScene.GetHashCode();
-            
-            if (hash == defaultHash)
-            {
-                Debug.LogError($"[TimelineSceneSetup] ❌ '{sceneName}' is using DEFAULT physics scene!");
-            }
-            else if (showDebugLogs)
-            {
-                Debug.Log($"[TimelineSceneSetup] ✅ '{sceneName}' has LOCAL physics scene (hash: {hash})");
-            }
-        }
-        else
-        {
-            Debug.LogError($"[TimelineSceneSetup] ❌ '{sceneName}' physics scene is INVALID!");
-        }
-    }
-    
-    #endregion
-    
-    #region Client Timeline Loading
-    
-    /// <summary>
-    /// SERVER-ONLY: Loads ALL 3 timeline scenes for a specific client connection.
-    /// 
-    /// CRITICAL: Clients must have all 3 scenes loaded to receive NetworkObject updates.
-    /// FishNet's Scene Condition handles visibility based on which scene the player GameObject is in.
-    /// 
-    /// This applies to ALL clients including the host's local client - each gets their own
-    /// stacked LocalPhysics instances via LoadConnectionScenes().
-    /// </summary>
-    private IEnumerator LoadAllTimelinesForConnection(NetworkConnection conn)
-    {
-        while (!timelinesLoaded)
-        {
-            yield return null;
-        }
-        
-        if (showDebugLogs)
-            Debug.Log($"[TimelineSceneSetup] Loading all timelines for client {conn.ClientId}...");
-        
-        yield return StartCoroutine(LoadTimelineForConnectionInternal(conn, TimelineManager.TimelineState.Past));
-        yield return StartCoroutine(LoadTimelineForConnectionInternal(conn, TimelineManager.TimelineState.Present));
-        yield return StartCoroutine(LoadTimelineForConnectionInternal(conn, TimelineManager.TimelineState.Future));
-        
-        _initializedConnections.Add(conn);
-        
-        if (showDebugLogs)
-            Debug.Log($"[TimelineSceneSetup] ✅ All timelines loaded for client {conn.ClientId}");
-    }
-    
-    /// <summary>
-    /// Internal coroutine to load a single timeline for a connection.
-    /// Loads stacked LocalPhysics instances for ALL clients (including host's local client).
-    /// </summary>
-    private IEnumerator LoadTimelineForConnectionInternal(NetworkConnection conn, TimelineManager.TimelineState timeline)
-    {
-        Scene targetScene = GetTimelineScene(timeline);
-        
-        if (!targetScene.IsValid())
-        {
-            Debug.LogError($"[TimelineSceneSetup] Invalid scene for timeline {timeline}!");
-            yield break;
-        }
-        
-        string sceneName = timeline switch
-        {
-            TimelineManager.TimelineState.Past => pastSceneName,
-            TimelineManager.TimelineState.Present => presentSceneName,
-            TimelineManager.TimelineState.Future => futureSceneName,
-            _ => ""
-        };
-        
-        if (showDebugLogs)
-            Debug.Log($"[TimelineSceneSetup] Loading {timeline} for client {conn.ClientId}...");
-        
-        // Load stacked scene for ALL clients (including host's local client)
-        SceneLoadData sld = new SceneLoadData(sceneName);
-        sld.Options.LocalPhysics = LocalPhysicsMode.Physics3D;
-        sld.Options.AllowStacking = true;
-        
-        base.SceneManager.LoadConnectionScenes(conn, sld);
-        
-        float timeout = 10f;
-        float elapsed = 0f;
-        Scene loadedScene = default;
-        
-        while (elapsed < timeout)
-        {
-            if (conn.Scenes != null && conn.Scenes.Count > 0)
-            {
-                foreach (Scene scene in conn.Scenes)
-                {
-                    if (scene.name == sceneName)
-                    {
-                        loadedScene = scene;
-                        break;
-                    }
-                }
-                
-                if (loadedScene.IsValid())
-                {
-                    if (showDebugLogs)
-                        Debug.Log($"[TimelineSceneSetup] ✅ Client {conn.ClientId} loaded into {timeline}");
-                    yield break;
-                }
-            }
-            
-            yield return new WaitForSeconds(0.1f);
-            elapsed += 0.1f;
-        }
-        
-        Debug.LogError($"[TimelineSceneSetup] ❌ Timeout loading {timeline} for client {conn.ClientId}");
-    }
 
-    /// <summary>
-    /// PUBLIC: Explicitly loads a specific timeline for a connection.
-    /// Used by CustomPlayerSpawner before spawning a player.
-    /// </summary>
-    public void LoadTimelineForConnection(NetworkConnection conn, TimelineManager.TimelineState timeline)
-    {
-        if (!timelinesLoaded)
-        {
-            Debug.LogError($"[TimelineSceneSetup] Cannot load timeline - server timelines not loaded yet!");
-            return;
+            if (loadedScene.IsValid())
+            {
+                _timelineScenes[timeline] = loadedScene;
+
+                if (showDebugLogs)
+                    Debug.Log($"[TimelineSceneSetup] ✅ '{sceneName}' loaded globally");
+
+                yield break;
+            }
+
+            yield return new WaitForSeconds(0.1f);
+            elapsed += 0.1f;
         }
-        
-        StartCoroutine(LoadTimelineForConnectionInternal(conn, timeline));
+
+        Debug.LogError($"[TimelineSceneSetup] ❌ Failed to load {sceneName} globally after {timeout}s!");
     }
     
     #endregion
-    
+
     #region Player Transitions
     
     /// <summary>
@@ -362,12 +187,6 @@ public class TimelineSceneSetup : NetworkBehaviour
         if (!timelinesLoaded)
         {
             Debug.LogError($"[TimelineSceneSetup] Cannot transition - timelines not loaded!");
-            return;
-        }
-        
-        if (!_initializedConnections.Contains(conn))
-        {
-            Debug.LogError($"[TimelineSceneSetup] Cannot transition - client {conn.ClientId} not initialized!");
             return;
         }
 
@@ -481,7 +300,8 @@ public class TimelineSceneSetup : NetworkBehaviour
         }
         else if (!pastIsDefault && !presentIsDefault && !futureIsDefault)
         {
-            Debug.Log("  ✅ All timelines have ISOLATED LOCAL physics scenes!");
+            Debug.Log("  ✅ All timelines have ISOLATED LOCAL physics scenes on SERVER!");
+            Debug.Log("  ℹ️  Clients will use default physics (expected FishNet behavior)");
         }
     }
     
@@ -539,30 +359,6 @@ public class TimelineSceneSetup : NetworkBehaviour
             Debug.Log($"[TimelineSceneSetup] Refreshed {colliders.Length} colliders and rigidbody");
     }
 
-    /// <summary>
-    /// When running as host, load stacked LocalPhysics timeline scenes for the local connection.
-    /// CRITICAL FIX: Host's local client needs its OWN LocalPhysics scene instances!
-    /// Do NOT use AddConnectionToScene - that just adds to the server's global scenes.
-    /// Instead, load stacked scenes for the local client just like remote clients.
-    /// </summary>
-    private void RegisterHostConnectionIfAvailable()
-    {
-        if (!base.IsHostStarted)
-            return;
-
-        NetworkConnection localConn = base.NetworkManager?.ClientManager?.Connection;
-        if (localConn == null)
-            return;
-
-        if (_initializedConnections.Contains(localConn))
-            return;
-
-        if (showDebugLogs)
-            Debug.Log($"[TimelineSceneSetup] Host detected - loading stacked timeline scenes for LocalConnection {localConn.ClientId}");
-
-        StartCoroutine(LoadAllTimelinesForConnection(localConn));
-    }
-    
     #endregion
     
     #region Helper Methods
@@ -645,16 +441,7 @@ public class TimelineSceneSetup : NetworkBehaviour
     {
         return timelinesLoaded;
     }
-    
-    /// <summary>
-    /// Returns true if a connection has been initialized with all timeline scenes.
-    /// Used by CustomPlayerSpawner to determine if a client is ready for spawning.
-    /// </summary>
-    public bool IsConnectionInitialized(NetworkConnection conn)
-    {
-        return _initializedConnections.Contains(conn);
-    }
-    
+
     /// <summary>
     /// Gets the name of the Past timeline scene.
     /// </summary>
