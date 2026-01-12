@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 3299376288368114052}
   - component: {fileID: 5303266111988293479}
   - component: {fileID: 3651939736433200927}
+  - component: {fileID: 2625226524673245515}
   m_Layer: 0
   m_Name: PlayerCamera
   m_TagString: MainCamera
@@ -170,6 +171,33 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!114 &2625226524673245515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 171035681946397423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 673db127ebcbeb1469f3f1386b9de813, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SubCamera: {fileID: 0}
+  SubcameraExcludedLayers:
+    serializedVersion: 2
+    m_Bits: 34
+  FixedTargetResolution: 720
+  ClampCameraOrthoSize: 1
+  Mode: 2
+  PixelSize: 0.032
+  overrideUsePixelExpansion: 0
+  UsePixelExpansion: 1
+  PixelizationFilter: 0
+  UsePixelArtUpscalingFilter: 1
+  TargetScale: 1
+  FullscreenColorGradingLUT: {fileID: 0}
+  EnableProPixelizer: 1
 --- !u!1 &234326104843410220
 GameObject:
   m_ObjectHideFlags: 0
@@ -4820,6 +4848,10 @@ PrefabInstance:
     - target: {fileID: 4455491220146318131, guid: fda1f34365bcb0d48b2e6f1018ef4eb9, type: 3}
       propertyPath: WasActiveDuringEdit
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4455491220146318131, guid: fda1f34365bcb0d48b2e6f1018ef4eb9, type: 3}
+      propertyPath: _initializedTimestamp
+      value: -8584334153496387085
       objectReference: {fileID: 0}
     - target: {fileID: 7397720599584098142, guid: fda1f34365bcb0d48b2e6f1018ef4eb9, type: 3}
       propertyPath: m_Name

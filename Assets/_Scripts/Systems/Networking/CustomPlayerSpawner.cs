@@ -4,27 +4,33 @@ using FishNet.Object;
 using FishNet.Connection;
 using FishNet.Managing.Scened;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Spawns players using FishNet's scene management system.
-/// Fixed to properly detect when connection is added to existing stacked scenes.
+/// Ensures players are properly loaded into timeline scenes before spawning.
 /// </summary>
 public class CustomPlayerSpawner : NetworkBehaviour
 {
     [Header("Player Prefab")]
     [SerializeField] private NetworkObject playerPrefab;
-    
+
     [Header("Spawn Settings")]
     [SerializeField] private Vector3 spawnPosition = new Vector3(0, 2, 0);
     [SerializeField] private TimelineManager.TimelineState defaultTimeline = TimelineManager.TimelineState.Present;
-    
+
+    [Header("Debug")]
+    [SerializeField] private bool showDebugLogs = true;
+
     private TimelineSceneSetup timelineSetup;
+    
+    private static HashSet<NetworkConnection> spawnedConnections = new HashSet<NetworkConnection>();
 
     public override void OnStartServer()
     {
         base.OnStartServer();
         
-        timelineSetup = FindObjectOfType<TimelineSceneSetup>();
+        timelineSetup = FindFirstObjectByType<TimelineSceneSetup>();
         if (timelineSetup == null)
         {
             Debug.LogError("[CustomPlayerSpawner] No TimelineSceneSetup found!");
@@ -32,7 +38,34 @@ public class CustomPlayerSpawner : NetworkBehaviour
         }
         
         base.SceneManager.OnClientLoadedStartScenes += SceneManager_OnClientLoadedStartScenes;
-        Debug.Log("[CustomPlayerSpawner] ✅ Subscribed to OnClientLoadedStartScenes");
+        base.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
+        
+        if (showDebugLogs)
+            Debug.Log("[CustomPlayerSpawner] ✅ Subscribed to OnClientLoadedStartScenes");
+    }
+
+    private void Start()
+    {
+        // For scene objects, OnStartServer might not be called if server started before scene load
+        // Check if server is already running and initialize if needed
+        if (base.IsServerStarted && timelineSetup == null)
+        {
+            if (showDebugLogs)
+                Debug.Log("[CustomPlayerSpawner] Server already started - initializing from Start()");
+
+            timelineSetup = FindFirstObjectByType<TimelineSceneSetup>();
+            if (timelineSetup == null)
+            {
+                Debug.LogError("[CustomPlayerSpawner] No TimelineSceneSetup found!");
+                return;
+            }
+
+            base.SceneManager.OnClientLoadedStartScenes += SceneManager_OnClientLoadedStartScenes;
+            base.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
+
+            if (showDebugLogs)
+                Debug.Log("[CustomPlayerSpawner] ✅ Subscribed to OnClientLoadedStartScenes");
+        }
     }
 
     public override void OnStopServer()
@@ -43,6 +76,26 @@ public class CustomPlayerSpawner : NetworkBehaviour
         {
             base.SceneManager.OnClientLoadedStartScenes -= SceneManager_OnClientLoadedStartScenes;
         }
+        
+        if (base.ServerManager != null)
+        {
+            base.ServerManager.OnRemoteConnectionState -= ServerManager_OnRemoteConnectionState;
+        }
+        
+        spawnedConnections.Clear();
+    }
+
+    private void ServerManager_OnRemoteConnectionState(NetworkConnection conn, FishNet.Transporting.RemoteConnectionStateArgs args)
+    {
+        if (args.ConnectionState == FishNet.Transporting.RemoteConnectionState.Stopped)
+        {
+            if (spawnedConnections.Contains(conn))
+            {
+                if (showDebugLogs)
+                    Debug.Log($"[CustomPlayerSpawner] Removing tracking for disconnected client {conn.ClientId}");
+                spawnedConnections.Remove(conn);
+            }
+        }
     }
 
     private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn, bool asServer)
@@ -52,79 +105,68 @@ public class CustomPlayerSpawner : NetworkBehaviour
             return;
         }
         
-        Debug.Log($"[CustomPlayerSpawner] Client {conn.ClientId} loaded start scenes - beginning spawn sequence");
+        if (spawnedConnections.Contains(conn))
+        {
+            if (showDebugLogs)
+                Debug.LogWarning($"[CustomPlayerSpawner] Client {conn.ClientId} already has a player spawned - skipping");
+            return;
+        }
+        
+        if (showDebugLogs)
+            Debug.Log($"[CustomPlayerSpawner] Client {conn.ClientId} loaded start scenes - beginning spawn sequence");
+        
         StartCoroutine(WaitForScenesAndSpawn(conn));
     }
 
     private IEnumerator WaitForScenesAndSpawn(NetworkConnection conn)
     {
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Waiting for server timeline scenes...");
+        if (showDebugLogs)
+            Debug.Log($"[CustomPlayerSpawner] Waiting for timelines to load for client {conn.ClientId}...");
         
-        // Wait for server to finish loading all timeline scenes
+        // Wait for server timelines
         while (!timelineSetup.AreTimelinesLoaded())
         {
             yield return null;
         }
         
-        Debug.Log($"[CustomPlayerSpawner] ✅ [Client {conn.ClientId}] Server timeline scenes ready!");
+        // CRITICAL: Wait for THIS connection to have all timelines loaded
+        while (!timelineSetup.IsConnectionInitialized(conn))
+        {
+            yield return null;
+        }
         
-        // Get the target timeline scene
+        if (showDebugLogs)
+            Debug.Log($"[CustomPlayerSpawner] ✅ Client {conn.ClientId} has all timelines loaded!");
+        
         Scene targetScene = timelineSetup.GetTimelineScene(defaultTimeline);
         
         if (!targetScene.IsValid())
         {
-            Debug.LogError($"[CustomPlayerSpawner] ❌ [Client {conn.ClientId}] Target timeline scene is invalid!");
+            Debug.LogError($"[CustomPlayerSpawner] ❌ Invalid target scene!");
             yield break;
         }
         
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Loading {defaultTimeline} timeline...");
-        
-        // Load the connection into the timeline scene
-        timelineSetup.LoadTimelineForConnection(conn, defaultTimeline);
-        
-        // Wait for connection to be added to the scene
-        // When loading into an existing scene, it takes a few frames for FishNet to process
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Waiting for connection to join scene...");
-        
-        float timeout = 10f;
-        float elapsed = 0f;
-        bool connectionInScene = false;
-        
-        while (elapsed < timeout)
+        // Verify connection is in a scene with the target name (works for host and remote)
+        bool inTargetByName = false;
+        if (conn.Scenes != null)
         {
-            // Check if connection is now in the target scene
-            // NetworkConnection.Scenes is a HashSet<Scene> that contains all scenes the connection is in
-            if (conn.Scenes != null && conn.Scenes.Contains(targetScene))
+            foreach (Scene s in conn.Scenes)
             {
-                connectionInScene = true;
-                Debug.Log($"[CustomPlayerSpawner] ✅ [Client {conn.ClientId}] Connection is now in {defaultTimeline} timeline!");
-                break;
-            }
-            
-            yield return null;
-            elapsed += Time.deltaTime;
-        }
-        
-        if (!connectionInScene)
-        {
-            Debug.LogError($"[CustomPlayerSpawner] ❌ [Client {conn.ClientId}] Timeout - connection never joined scene!");
-            Debug.LogError($"[CustomPlayerSpawner]    Target scene: {targetScene.name} (handle: {targetScene.handle})");
-            Debug.LogError($"[CustomPlayerSpawner]    Connection scenes count: {conn.Scenes?.Count ?? 0}");
-            
-            if (conn.Scenes != null)
-            {
-                foreach (Scene s in conn.Scenes)
+                if (s.IsValid() && s.name == targetScene.name)
                 {
-                    Debug.LogError($"[CustomPlayerSpawner]      - {s.name} (handle: {s.handle})");
+                    inTargetByName = true;
+                    break;
                 }
             }
-            
+        }
+        if (!inTargetByName)
+        {
+            Debug.LogError($"[CustomPlayerSpawner] ❌ Client {conn.ClientId} not in {defaultTimeline} scene by name!");
             yield break;
         }
         
-        // Spawn the player
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Spawning player...");
         SpawnPlayer(conn, targetScene);
+        spawnedConnections.Add(conn);
     }
 
     private void SpawnPlayer(NetworkConnection conn, Scene scene)
@@ -137,17 +179,15 @@ public class CustomPlayerSpawner : NetworkBehaviour
         
         NetworkObject playerInstance = Instantiate(playerPrefab, spawnPosition, Quaternion.identity);
         
-        // Move player to the timeline scene BEFORE spawning
         UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(playerInstance.gameObject, scene);
         
-        // Spawn for this connection in this scene
         base.ServerManager.Spawn(playerInstance, conn, scene);
         
-        Debug.Log($"[CustomPlayerSpawner] ✅ Player spawned for client {conn.ClientId} in scene '{scene.name}'");
+        if (showDebugLogs)
+            Debug.Log($"[CustomPlayerSpawner] ✅ Player spawned for client {conn.ClientId} in scene '{scene.name}'");
         
-        // Verify player is in correct physics scene
-        var playerPhysicsScene = playerInstance.gameObject.scene.GetPhysicsScene();
-        var defaultPhysicsScene = Physics.defaultPhysicsScene;
+        PhysicsScene playerPhysicsScene = playerInstance.gameObject.scene.GetPhysicsScene();
+        PhysicsScene defaultPhysicsScene = Physics.defaultPhysicsScene;
         bool isDefault = playerPhysicsScene.GetHashCode() == defaultPhysicsScene.GetHashCode();
         
         if (isDefault)
@@ -157,8 +197,32 @@ public class CustomPlayerSpawner : NetworkBehaviour
         }
         else
         {
-            Debug.Log($"[CustomPlayerSpawner] ✅ Player is in LOCAL physics scene");
-            Debug.Log($"[CustomPlayerSpawner]    Physics hash: {playerPhysicsScene.GetHashCode()}");
+            if (showDebugLogs)
+            {
+                Debug.Log($"[CustomPlayerSpawner] ✅ Player is in LOCAL physics scene");
+                Debug.Log($"[CustomPlayerSpawner]    Physics hash: {playerPhysicsScene.GetHashCode()}");
+            }
         }
+        
+        RefreshPlayerPhysics(playerInstance.gameObject);
+    }
+
+    private void RefreshPlayerPhysics(GameObject player)
+    {
+        Collider[] colliders = player.GetComponentsInChildren<Collider>();
+        foreach (Collider col in colliders)
+        {
+            col.enabled = false;
+            col.enabled = true;
+        }
+        
+        Rigidbody rb = player.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.WakeUp();
+        }
+        
+        if (showDebugLogs)
+            Debug.Log($"[CustomPlayerSpawner] Refreshed physics components for player");
     }
 }

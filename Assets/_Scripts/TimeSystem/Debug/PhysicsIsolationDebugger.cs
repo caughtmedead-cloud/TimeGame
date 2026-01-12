@@ -170,6 +170,6 @@ public class PhysicsIsolationDebugger : NetworkBehaviour
         GUI.Label(new Rect(x, y, 600, lineHeight), $"Simulation Mode: {Physics.simulationMode}", style);
         y += lineHeight;
         
-        GUI.Label(new Rect(x, y, 600, lineHeight), $"Auto Simulation: {Physics.autoSimulation}", style);
+        GUI.Label(new Rect(x, y, 600, lineHeight), $"Simulation Mode: {Physics.simulationMode}", style);
     }
 }

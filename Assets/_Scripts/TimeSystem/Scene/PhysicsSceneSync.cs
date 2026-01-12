@@ -154,7 +154,7 @@ public class PhysicsSceneSync : NetworkBehaviour
         Debug.Log($"[PhysicsSceneSync] === PHYSICS DEBUG INFO for '{_scene.name}' ===");
         Debug.Log($"  TimeManager Physics Mode: {(base.NetworkManager != null ? base.TimeManager.PhysicsMode.ToString() : "N/A")}");
         Debug.Log($"  Global simulation mode: {Physics.simulationMode}");
-        Debug.Log($"  Global auto-simulation: {Physics.autoSimulation}");
+        Debug.Log($"  Global simulation mode: {Physics.simulationMode}");
         Debug.Log($"  3D PhysicsScene valid: {_physicsScene.IsValid()}");
         Debug.Log($"  3D is local scene: {_isLocalPhysicsScene3D}");
         
