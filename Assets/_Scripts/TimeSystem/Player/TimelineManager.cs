@@ -2,36 +2,11 @@ using UnityEngine;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using System;
+using System.Collections;  // ADDED for IEnumerator
 
 /// <summary>
 /// Manages timeline state and transitions for a player.
-/// This component handles ALL timeline logic that was previously in TemporalStability.
-/// It subscribes to TemporalStability changes and updates the timeline accordingly.
-/// 
-/// SINGLE RESPONSIBILITY: Manage timeline state and transitions.
-/// 
-/// TWO MODES AVAILABLE:
-/// 
-/// 1. SIMPLE MODE (useRandomShifts = false) - For Testing
-///    - Predictable threshold-based transitions
-///    - 100-60% = Present, 59-20% = Future, 19-0% = Past
-///    - Immediate transitions when crossing thresholds
-/// 
-/// 2. RANDOM MODE (useRandomShifts = true) - For Gameplay
-///    - Unpredictable timeline shifts when stability drops below threshold
-///    - Random checks every 5-15 seconds with configurable shift chance
-///    - Creates emergent temporal instability for tension
-///    - Auto-returns to Present when stability restored
-/// 
-/// SCENE TRANSITIONS:
-/// - Uses TimelineSceneSetup to transition player between timeline scenes
-/// - TimelineSceneSetup is SERVER-ONLY (scene object in Bootstrap)
-/// - Clients don't need TimelineSceneSetup - they receive scene changes via FishNet
-/// - Unloads old timeline scene for this player
-/// - Loads new timeline scene for this player
-/// - Scene Condition automatically updates visibility
-/// 
-/// FishNet v4 Reference: Uses SyncVar<T> class (not [SyncVar] attribute which is obsolete).
+/// FIXED: Uses singleton pattern to reliably find TimelineSceneSetup for pure clients.
 /// </summary>
 [RequireComponent(typeof(TemporalStability))]
 public class TimelineManager : NetworkBehaviour
@@ -67,25 +42,15 @@ public class TimelineManager : NetworkBehaviour
     [Tooltip("Below futureThreshold but above this = Future timeline (20-59%)")]
     [SerializeField] private float pastTransitionThreshold = 20f;
     
-    /// <summary>
-    /// Current timeline the player exists in.
-    /// FishNet v4 SyncVar - automatically synchronizes from server to all clients.
-    /// </summary>
     private readonly SyncVar<TimelineState> _currentTimeline = new SyncVar<TimelineState>(
         new SyncTypeSettings(WritePermission.ServerOnly, ReadPermission.Observers)
     );
     
-    // Random timeline shift tracking
     private float nextRandomShiftCheck = 0f;
-    
-    // Scene transition reference (SERVER-ONLY)
-    // Clients don't need this - they receive scene changes from server via FishNet
     private TimelineSceneSetup _timelineSceneSetup;
     
-    // Events for other systems to subscribe to
     public event Action<TimelineState> OnTimelineTransition;
     
-    // Timeline states
     public enum TimelineState
     {
         Past,
@@ -93,55 +58,82 @@ public class TimelineManager : NetworkBehaviour
         Future
     }
     
-    // Public getter
     public TimelineState CurrentTimeline => _currentTimeline.Value;
     
     private void Awake()
     {
-        // Auto-find TemporalStability if not assigned
         if (temporalStability == null)
         {
             temporalStability = GetComponent<TemporalStability>();
         }
         
-        // Subscribe to SyncVar changes
         _currentTimeline.OnChange += OnTimelineChanged;
-        
-        // DON'T find TimelineSceneSetup here!
-        // It's a scene object in Bootstrap that doesn't replicate to pure clients
-        // Only the server needs it, so we find it in OnStartServer()
     }
     
     /// <summary>
-    /// Initialize starting values on server.
-    /// From FishNet docs: "OnStartServer() is called when the server starts for this object."
-    /// 
-    /// IMPORTANT: TimelineSceneSetup is found HERE (server-only), not in Awake()
+    /// FIXED: Uses singleton pattern instead of FindFirstObjectByType for reliable pure client support.
     /// </summary>
     public override void OnStartServer()
     {
         base.OnStartServer();
         
-        // Find TimelineSceneSetup - SERVER ONLY!
-        // This is a scene object in Bootstrap that doesn't replicate to clients
-        _timelineSceneSetup = FindFirstObjectByType<TimelineSceneSetup>();
+        // FIXED: Use singleton instead of FindFirstObjectByType
+        // FindFirstObjectByType fails for pure clients due to unpredictable scene search order
+        _timelineSceneSetup = TimelineSceneSetup.Instance;
+        
         if (_timelineSceneSetup == null)
         {
-            Debug.LogError($"[TimelineManager] ❌ TimelineSceneSetup not found on server! Timeline transitions will fail for Player {Owner.ClientId}");
+            Debug.LogWarning($"[TimelineManager] ⚠️ TimelineSceneSetup singleton not registered yet for Player {Owner.ClientId} - waiting...");
+            StartCoroutine(WaitForTimelineSceneSetup());
             return;
         }
         
-        Debug.Log($"[TimelineManager] ✅ Found TimelineSceneSetup on server for Player {Owner.ClientId}");
+        Debug.Log($"[TimelineManager] ✅ Found TimelineSceneSetup singleton for Player {Owner.ClientId}");
+        InitializeServerState();
+    }
+    
+    /// <summary>
+    /// ADDED: Coroutine to wait for TimelineSceneSetup singleton registration.
+    /// This handles race conditions where players spawn before Bootstrap scene completes initialization.
+    /// </summary>
+    private IEnumerator WaitForTimelineSceneSetup()
+    {
+        Debug.Log($"[TimelineManager] ⏳ Waiting for TimelineSceneSetup singleton for Player {Owner.ClientId}...");
         
-        // Set initial timeline state
+        float timeout = Time.time + 5f;
+        int attempts = 0;
+        
+        while (_timelineSceneSetup == null && Time.time < timeout)
+        {
+            _timelineSceneSetup = TimelineSceneSetup.Instance;
+            
+            if (_timelineSceneSetup != null)
+            {
+                Debug.Log($"[TimelineManager] ✅ Found TimelineSceneSetup singleton (after {attempts} attempts) for Player {Owner.ClientId}");
+                InitializeServerState();
+                yield break;
+            }
+            
+            attempts++;
+            yield return null;
+        }
+        
+        if (_timelineSceneSetup == null)
+        {
+            Debug.LogError($"[TimelineManager] ❌ TimelineSceneSetup STILL not found after {attempts} attempts! Player {Owner.ClientId} CANNOT transition timelines!");
+        }
+    }
+    
+    /// <summary>
+    /// ADDED: Helper method to initialize server state once TimelineSceneSetup is found.
+    /// </summary>
+    private void InitializeServerState()
+    {
         _currentTimeline.Value = TimelineState.Present;
-        
-        // Reset random shift tracking
         nextRandomShiftCheck = 0f;
         
         Debug.Log($"[TimelineManager] OnStartServer - Player {Owner.ClientId} initialized on server");
         
-        // Subscribe to stability changes
         if (temporalStability != null)
         {
             temporalStability.OnStabilityUpdated += OnStabilityChanged_Server;
@@ -157,7 +149,6 @@ public class TimelineManager : NetworkBehaviour
     {
         base.OnStopServer();
         
-        // Unsubscribe from stability events
         if (temporalStability != null)
         {
             temporalStability.OnStabilityUpdated -= OnStabilityChanged_Server;
@@ -168,17 +159,12 @@ public class TimelineManager : NetworkBehaviour
     {
         base.OnStartClient();
         Debug.Log($"[TimelineManager] OnStartClient - Player {Owner.ClientId} started on client (IsOwner: {IsOwner})");
-        
-        // Clients DON'T need TimelineSceneSetup
-        // They receive scene load/unload commands from the server via FishNet
     }
     
     private void Update()
     {
-        // Only server processes timeline logic
         if (!IsServerStarted) return;
         
-        // Reset random shift timer when stability recovers (only if using random shifts)
         if (useRandomShifts && temporalStability != null)
         {
             if (temporalStability.CurrentStability >= randomShiftThreshold && nextRandomShiftCheck != 0f)
@@ -189,16 +175,11 @@ public class TimelineManager : NetworkBehaviour
         }
     }
     
-    /// <summary>
-    /// Server-only: Called when stability changes.
-    /// This triggers timeline transition checks.
-    /// </summary>
     [Server]
     private void OnStabilityChanged_Server(float newStability, float maxStability)
     {
         if (useRandomShifts)
         {
-            // RANDOM MODE: Check if we should start random shifts
             if (newStability < randomShiftThreshold)
             {
                 CheckRandomTimelineShift();
@@ -206,15 +187,10 @@ public class TimelineManager : NetworkBehaviour
         }
         else
         {
-            // SIMPLE MODE: Threshold-based transitions
             CheckSimpleTimelineTransition(newStability);
         }
     }
     
-    /// <summary>
-    /// Simple threshold-based timeline transitions (for testing).
-    /// 100-60% = Present, 59-20% = Future, 19-0% = Past
-    /// </summary>
     [Server]
     private void CheckSimpleTimelineTransition(float stability)
     {
@@ -233,7 +209,6 @@ public class TimelineManager : NetworkBehaviour
             targetTimeline = TimelineState.Past;
         }
         
-        // Only transition if different from current
         if (targetTimeline != _currentTimeline.Value)
         {
             Debug.Log($"[Server] Player {Owner.ClientId} stability {stability:F1}% - transitioning to {targetTimeline}");
@@ -241,15 +216,9 @@ public class TimelineManager : NetworkBehaviour
         }
     }
     
-    /// <summary>
-    /// Random unpredictable timeline shifts when stability is low.
-    /// This creates emergent temporal instability when stability is low.
-    /// Only active when "Use Random Shifts" checkbox is enabled in the Inspector.
-    /// </summary>
     [Server]
     private void CheckRandomTimelineShift()
     {
-        // Initialize next check time if this is the first time below threshold
         if (nextRandomShiftCheck == 0f)
         {
             nextRandomShiftCheck = Time.time + UnityEngine.Random.Range(minShiftInterval, maxShiftInterval);
@@ -257,18 +226,14 @@ public class TimelineManager : NetworkBehaviour
             return;
         }
         
-        // Check if it's time for a random shift check
         if (Time.time >= nextRandomShiftCheck)
         {
-            // Roll the dice - should we shift?
             if (UnityEngine.Random.value <= shiftChance)
             {
-                // Randomly choose Past or Future
                 TimelineState randomTimeline = (UnityEngine.Random.value > 0.5f) 
                     ? TimelineState.Future 
                     : TimelineState.Past;
                 
-                // Only shift if not already in that timeline
                 if (randomTimeline != _currentTimeline.Value)
                 {
                     Debug.Log($"[Server] Random temporal tear! Shifting player {Owner.ClientId} to {randomTimeline}");
@@ -277,7 +242,6 @@ public class TimelineManager : NetworkBehaviour
             }
             else
             {
-                // No shift this time - maybe return to Present if we're in Past/Future
                 if (_currentTimeline.Value != TimelineState.Present && UnityEngine.Random.value > 0.5f)
                 {
                     Debug.Log($"[Server] Temporal tear stabilized - returning player {Owner.ClientId} to Present");
@@ -285,28 +249,16 @@ public class TimelineManager : NetworkBehaviour
                 }
             }
             
-            // Schedule next check
             nextRandomShiftCheck = Time.time + UnityEngine.Random.Range(minShiftInterval, maxShiftInterval);
         }
     }
     
-    /// <summary>
-    /// Server-only: Transition player to a different timeline.
-    /// This triggers FishNet scene loading to move player to different scene instance.
-    /// 
-    /// IMPLEMENTATION DETAILS:
-    /// 1. Store old timeline for later
-    /// 2. Update SyncVar (this triggers OnTimelineChanged on all clients)
-    /// 3. Use TimelineSceneSetup to transition player between scenes
-    /// 4. TimelineSceneSetup handles unloading old scene and loading new scene
-    /// 5. Scene Condition automatically updates visibility based on new scene
-    /// </summary>
     [Server]
     private void TransitionTimeline(TimelineState newTimeline)
     {
         if (_timelineSceneSetup == null)
         {
-            Debug.LogError($"[TimelineManager] ❌ Cannot transition - TimelineSceneSetup not found on server!");
+            Debug.LogError($"[TimelineManager] ❌ Cannot transition - TimelineSceneSetup not found on server for Player {Owner.ClientId}!");
             return;
         }
         
@@ -314,29 +266,16 @@ public class TimelineManager : NetworkBehaviour
         
         Debug.Log($"[TimelineManager] [Server] Player {Owner.ClientId} transitioning from {oldTimeline} to {newTimeline}");
         
-        // Update timeline state (this syncs to all clients automatically)
         _currentTimeline.Value = newTimeline;
-        
-        // Perform scene transition using TimelineSceneSetup
-        // This handles:
-        // 1. Unloading old timeline scene for this player's connection
-        // 2. Loading new timeline scene for this player's connection
-        // 3. Scene Condition automatically updates (client can now see new timeline objects)
-        _timelineSceneSetup.TransitionPlayerTimeline(Owner, oldTimeline, newTimeline);
+        _timelineSceneSetup.TransitionPlayerTimeline(NetworkObject, oldTimeline, newTimeline);
         
         Debug.Log($"[TimelineManager] ✅ [Server] Scene transition initiated for player {Owner.ClientId}: {oldTimeline} → {newTimeline}");
     }
     
-    /// <summary>
-    /// SyncVar callback: Called on all clients when timeline changes.
-    /// This is where clients update their UI and respond to timeline changes.
-    /// The actual scene loading is handled by the server via FishNet scene management.
-    /// </summary>
     private void OnTimelineChanged(TimelineState previousTimeline, TimelineState newTimeline, bool asServer)
     {
         Debug.Log($"[TimelineManager] OnTimelineChanged - Player {Owner.ClientId}, IsOwner: {IsOwner}, asServer: {asServer}, {previousTimeline} → {newTimeline}");
         
-        // Only process on client (owner) for UI updates
         if (!IsOwner)
         {
             Debug.Log($"[TimelineManager] Skipping UI update - not owner (Player {Owner.ClientId})");

@@ -7,7 +7,7 @@ using System.Collections;
 
 /// <summary>
 /// Spawns players using FishNet's scene management system.
-/// Fixed to properly detect when connection is added to existing stacked scenes.
+/// Updated to use demo patterns: MovedNetworkObjects and PreferredActiveScene.
 /// </summary>
 public class CustomPlayerSpawner : NetworkBehaviour
 {
@@ -24,7 +24,8 @@ public class CustomPlayerSpawner : NetworkBehaviour
     {
         base.OnStartServer();
         
-        timelineSetup = FindObjectOfType<TimelineSceneSetup>();
+        // FIX #1: Use FindFirstObjectByType instead of deprecated FindObjectOfType
+        timelineSetup = FindFirstObjectByType<TimelineSceneSetup>();
         if (timelineSetup == null)
         {
             Debug.LogError("[CustomPlayerSpawner] No TimelineSceneSetup found!");
@@ -52,13 +53,13 @@ public class CustomPlayerSpawner : NetworkBehaviour
             return;
         }
         
-        Debug.Log($"[CustomPlayerSpawner] Client {conn.ClientId} loaded start scenes - beginning spawn sequence");
-        StartCoroutine(WaitForScenesAndSpawn(conn));
+        Debug.Log($"[CustomPlayerSpawner] 👤 Client {conn.ClientId} loaded start scenes - beginning spawn sequence");
+        StartCoroutine(WaitForTimelinesAndSpawn(conn));
     }
 
-    private IEnumerator WaitForScenesAndSpawn(NetworkConnection conn)
+    private IEnumerator WaitForTimelinesAndSpawn(NetworkConnection conn)
     {
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Waiting for server timeline scenes...");
+        Debug.Log($"[CustomPlayerSpawner] ⏳ [Client {conn.ClientId}] Waiting for server timeline scenes...");
         
         // Wait for server to finish loading all timeline scenes
         while (!timelineSetup.AreTimelinesLoaded())
@@ -68,7 +69,7 @@ public class CustomPlayerSpawner : NetworkBehaviour
         
         Debug.Log($"[CustomPlayerSpawner] ✅ [Client {conn.ClientId}] Server timeline scenes ready!");
         
-        // Get the target timeline scene
+        // FIX #2: GetTimelineScene exists in TimelineSceneSetup
         Scene targetScene = timelineSetup.GetTimelineScene(defaultTimeline);
         
         if (!targetScene.IsValid())
@@ -77,87 +78,68 @@ public class CustomPlayerSpawner : NetworkBehaviour
             yield break;
         }
         
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Loading {defaultTimeline} timeline...");
-        
-        // Load the connection into the timeline scene
-        timelineSetup.LoadTimelineForConnection(conn, defaultTimeline);
-        
-        // Wait for connection to be added to the scene
-        // When loading into an existing scene, it takes a few frames for FishNet to process
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Waiting for connection to join scene...");
-        
-        float timeout = 10f;
-        float elapsed = 0f;
-        bool connectionInScene = false;
-        
-        while (elapsed < timeout)
-        {
-            // Check if connection is now in the target scene
-            // NetworkConnection.Scenes is a HashSet<Scene> that contains all scenes the connection is in
-            if (conn.Scenes != null && conn.Scenes.Contains(targetScene))
-            {
-                connectionInScene = true;
-                Debug.Log($"[CustomPlayerSpawner] ✅ [Client {conn.ClientId}] Connection is now in {defaultTimeline} timeline!");
-                break;
-            }
-            
-            yield return null;
-            elapsed += Time.deltaTime;
-        }
-        
-        if (!connectionInScene)
-        {
-            Debug.LogError($"[CustomPlayerSpawner] ❌ [Client {conn.ClientId}] Timeout - connection never joined scene!");
-            Debug.LogError($"[CustomPlayerSpawner]    Target scene: {targetScene.name} (handle: {targetScene.handle})");
-            Debug.LogError($"[CustomPlayerSpawner]    Connection scenes count: {conn.Scenes?.Count ?? 0}");
-            
-            if (conn.Scenes != null)
-            {
-                foreach (Scene s in conn.Scenes)
-                {
-                    Debug.LogError($"[CustomPlayerSpawner]      - {s.name} (handle: {s.handle})");
-                }
-            }
-            
-            yield break;
-        }
+        Debug.Log($"[CustomPlayerSpawner] 🎯 [Client {conn.ClientId}] Spawning player in {defaultTimeline} timeline (Scene: {targetScene.name})...");
         
         // Spawn the player
-        Debug.Log($"[CustomPlayerSpawner] [Client {conn.ClientId}] Spawning player...");
         SpawnPlayer(conn, targetScene);
     }
 
-    private void SpawnPlayer(NetworkConnection conn, Scene scene)
+    /// <summary>
+    /// Spawns a player for the connection in the specified timeline scene.
+    /// Uses demo pattern: spawn player, then use LoadConnectionScenes with MovedNetworkObjects.
+    /// </summary>
+    private void SpawnPlayer(NetworkConnection conn, Scene targetScene)
     {
-        if (!scene.IsValid())
+        if (!targetScene.IsValid())
         {
-            Debug.LogError($"[CustomPlayerSpawner] Cannot spawn player - invalid scene!");
+            Debug.LogError($"[CustomPlayerSpawner] ❌ [Client {conn.ClientId}] Cannot spawn player - invalid scene!");
             return;
         }
         
+        // Instantiate player at spawn position
         NetworkObject playerInstance = Instantiate(playerPrefab, spawnPosition, Quaternion.identity);
         
-        // Move player to the timeline scene BEFORE spawning
-        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(playerInstance.gameObject, scene);
+        // Spawn the player for this connection (starts in DontDestroyOnLoad)
+        base.ServerManager.Spawn(playerInstance, conn);
         
-        // Spawn for this connection in this scene
-        base.ServerManager.Spawn(playerInstance, conn, scene);
+        Debug.Log($"[CustomPlayerSpawner] 📍 [Client {conn.ClientId}] Player spawned, moving to timeline...");
         
-        Debug.Log($"[CustomPlayerSpawner] ✅ Player spawned for client {conn.ClientId} in scene '{scene.name}'");
+        // Use demo pattern: LoadConnectionScenes with MovedNetworkObjects
+        SceneLookupData lookupData = new SceneLookupData(targetScene);
+        SceneLoadData sld = new SceneLoadData(lookupData)
+        {
+            Options = new LoadOptions()
+            {
+                AutomaticallyUnload = false
+            },
+            MovedNetworkObjects = new NetworkObject[] { playerInstance },
+            ReplaceScenes = ReplaceOption.None,
+            PreferredActiveScene = new PreferredScene(lookupData)
+        };
+        
+        // This single call handles everything!
+        base.SceneManager.LoadConnectionScenes(conn, sld);
+        
+        Debug.Log($"[CustomPlayerSpawner] ✅ [Client {conn.ClientId}] Player spawned successfully in {targetScene.name}!");
         
         // Verify player is in correct physics scene
-        var playerPhysicsScene = playerInstance.gameObject.scene.GetPhysicsScene();
+        VerifyPlayerPhysicsScene(playerInstance.gameObject, targetScene);
+    }
+
+    private void VerifyPlayerPhysicsScene(GameObject player, Scene scene)
+    {
+        var playerPhysicsScene = player.scene.GetPhysicsScene();
         var defaultPhysicsScene = Physics.defaultPhysicsScene;
         bool isDefault = playerPhysicsScene.GetHashCode() == defaultPhysicsScene.GetHashCode();
         
         if (isDefault)
         {
-            Debug.LogError($"[CustomPlayerSpawner] ⚠️ Player is in DEFAULT physics scene!");
+            Debug.LogError($"[CustomPlayerSpawner] ⚠️ Player is in DEFAULT physics scene (server-side)!");
             Debug.LogError($"[CustomPlayerSpawner]    This will cause cross-timeline collisions!");
         }
         else
         {
-            Debug.Log($"[CustomPlayerSpawner] ✅ Player is in LOCAL physics scene");
+            Debug.Log($"[CustomPlayerSpawner] ✅ Player is in LOCAL physics scene (server-side)");
             Debug.Log($"[CustomPlayerSpawner]    Physics hash: {playerPhysicsScene.GetHashCode()}");
         }
     }

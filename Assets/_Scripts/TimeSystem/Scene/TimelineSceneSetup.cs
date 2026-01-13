@@ -1,153 +1,144 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using FishNet.Object;
-using FishNet.Managing.Scened;
 using FishNet.Connection;
+using FishNet.Managing.Scened;
 using System.Collections;
-using System.Collections.Generic;
+using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 
 /// <summary>
-/// Handles loading timeline scenes using FishNet's scene management for proper physics isolation.
-/// Based on actual FishNet documentation at https://fish-networking.gitbook.io/docs/
+/// Manages loading of timeline scenes and player transitions between them.
+/// FIXED: Uses singleton pattern to ensure reliable access from TimelineManager.
 /// </summary>
 public class TimelineSceneSetup : NetworkBehaviour
 {
+    // Singleton instance (SERVER-ONLY)
+    // This ensures TimelineManager can always find it reliably
+    private static TimelineSceneSetup _instance;
+    public static TimelineSceneSetup Instance => _instance;
+    
     [Header("Timeline Scene Names")]
     [SerializeField] private string pastSceneName = "Timeline_Past";
     [SerializeField] private string presentSceneName = "Timeline_Present";
     [SerializeField] private string futureSceneName = "Timeline_Future";
 
-    // Track loaded timeline scenes
+    // Timeline scene references
     private Scene pastScene;
     private Scene presentScene;
     private Scene futureScene;
+    
+    // Track if timelines are loaded
     private bool timelinesLoaded = false;
-
-    // Track scene loads
-    private Dictionary<string, Scene> pendingSceneLoads = new Dictionary<string, Scene>();
 
     public override void OnStartServer()
     {
         base.OnStartServer();
         
-        Debug.Log("[TimelineSceneSetup] Server starting - using FishNet scene management");
+        // Register singleton (SERVER-ONLY)
+        if (_instance != null && _instance != this)
+        {
+            Debug.LogWarning("[TimelineSceneSetup] Multiple TimelineSceneSetup instances detected! Using first instance.");
+            return;
+        }
         
-        // Subscribe to OnLoadEnd to track loaded scenes
+        _instance = this;
+        Debug.Log("[TimelineSceneSetup] 🚀 Registered as singleton - Server starting - loading GLOBAL timeline scenes");
+        
+        // Subscribe to scene load events
         base.SceneManager.OnLoadEnd += OnSceneLoadEnd;
         
-        StartCoroutine(LoadTimelineScenesOnServer());
+        // Start loading timeline scenes globally
+        StartCoroutine(LoadGlobalTimelineScenes());
     }
 
     public override void OnStopServer()
     {
         base.OnStopServer();
         
+        // Unregister singleton
+        if (_instance == this)
+        {
+            _instance = null;
+            Debug.Log("[TimelineSceneSetup] Singleton unregistered");
+        }
+        
         if (base.SceneManager != null)
         {
             base.SceneManager.OnLoadEnd -= OnSceneLoadEnd;
         }
+        
+        timelinesLoaded = false;
     }
 
-    /// <summary>
-    /// Called when scenes finish loading. Tracks loaded scenes.
-    /// Based on FishNet docs: args.LoadedScenes contains Scene references
-    /// </summary>
-    private void OnSceneLoadEnd(SceneLoadEndEventArgs args)
+    private IEnumerator LoadGlobalTimelineScenes()
     {
-        // Only process on server
-        if (!args.QueueData.AsServer)
-            return;
-
-        // Check each loaded scene
-        foreach (Scene scene in args.LoadedScenes)
+        Debug.Log("[TimelineSceneSetup] 📦 Loading all timeline scenes globally...");
+        
+        string[] sceneNames = new string[] 
+        { 
+            pastSceneName, 
+            presentSceneName, 
+            futureSceneName 
+        };
+        
+        SceneLoadData sld = new SceneLoadData(sceneNames);
+        sld.Options.LocalPhysics = LocalPhysicsMode.Physics3D;
+        sld.Options.AutomaticallyUnload = false;
+        sld.ReplaceScenes = ReplaceOption.None;
+        
+        Debug.Log("[TimelineSceneSetup] Global scenes will be sent to all current and future clients");
+        Debug.Log("[TimelineSceneSetup] Creating SINGLE SHARED timeline instances (not per-player)");
+        
+        base.SceneManager.LoadGlobalScenes(sld);
+        
+        while (!timelinesLoaded)
         {
-            if (pendingSceneLoads.ContainsKey(scene.name))
-            {
-                pendingSceneLoads[scene.name] = scene;
-                Debug.Log($"[TimelineSceneSetup] ✅ Scene '{scene.name}' loaded (Handle: {scene.handle})");
-            }
+            yield return null;
         }
-    }
-
-    private IEnumerator LoadTimelineScenesOnServer()
-    {
-        Debug.Log("[TimelineSceneSetup] Loading timeline scenes through FishNet SceneManager");
         
-        // Load all three timelines
-        yield return StartCoroutine(LoadTimelineScene(pastSceneName));
-        pastScene = pendingSceneLoads[pastSceneName];
-        
-        yield return StartCoroutine(LoadTimelineScene(presentSceneName));
-        presentScene = pendingSceneLoads[presentSceneName];
-        
-        yield return StartCoroutine(LoadTimelineScene(futureSceneName));
-        futureScene = pendingSceneLoads[futureSceneName];
-        
-        timelinesLoaded = true;
-        
-        Debug.Log($"[TimelineSceneSetup] ✅ All timeline scenes loaded!");
-        Debug.Log($"  - Past: {pastScene.name} (Handle: {pastScene.handle})");
-        Debug.Log($"  - Present: {presentScene.name} (Handle: {presentScene.handle})");
-        Debug.Log($"  - Future: {futureScene.name} (Handle: {futureScene.handle})");
+        Debug.Log("[TimelineSceneSetup] ✅ All timeline scenes loaded globally!");
+        Debug.Log($"  📍 Past: {pastScene.name} (Handle: {pastScene.handle})");
+        Debug.Log($"  📍 Present: {presentScene.name} (Handle: {presentScene.handle})");
+        Debug.Log($"  📍 Future: {futureScene.name} (Handle: {futureScene.handle})");
         
         VerifyPhysicsIsolation();
     }
 
-    private IEnumerator LoadTimelineScene(string sceneName)
+    private void OnSceneLoadEnd(SceneLoadEndEventArgs args)
     {
-        Debug.Log($"[TimelineSceneSetup] Loading '{sceneName}' through FishNet...");
-        
-        // Register this scene as pending
-        pendingSceneLoads[sceneName] = default;
-        
-        // Create scene load data with LOCAL PHYSICS
-        SceneLoadData sld = new SceneLoadData(sceneName);
-        sld.Options.AllowStacking = true;
-        sld.Options.LocalPhysics = LocalPhysicsMode.Physics3D;
-        sld.Options.AutomaticallyUnload = false;
-        
-        // Load the scene through FishNet
-        base.SceneManager.LoadConnectionScenes(sld);
-        
-        // Wait for scene to be registered via OnSceneLoadEnd
-        float timeout = 10f;
-        float elapsed = 0f;
-        while (!pendingSceneLoads[sceneName].IsValid() && elapsed < timeout)
+        foreach (Scene loadedScene in args.LoadedScenes)
         {
-            yield return null;
-            elapsed += Time.deltaTime;
+            if (loadedScene.name == pastSceneName)
+            {
+                pastScene = loadedScene;
+                Debug.Log($"[TimelineSceneSetup] ✅ Past timeline loaded: {pastScene.name} (Handle: {pastScene.handle})");
+            }
+            else if (loadedScene.name == presentSceneName)
+            {
+                presentScene = loadedScene;
+                Debug.Log($"[TimelineSceneSetup] ✅ Present timeline loaded: {presentScene.name} (Handle: {presentScene.handle})");
+            }
+            else if (loadedScene.name == futureSceneName)
+            {
+                futureScene = loadedScene;
+                Debug.Log($"[TimelineSceneSetup] ✅ Future timeline loaded: {futureScene.name} (Handle: {futureScene.handle})");
+            }
         }
         
-        if (!pendingSceneLoads[sceneName].IsValid())
+        if (pastScene.IsValid() && presentScene.IsValid() && futureScene.IsValid())
         {
-            Debug.LogError($"[TimelineSceneSetup] ❌ Failed to load '{sceneName}' - timeout!");
-            yield break;
-        }
-        
-        Scene loadedScene = pendingSceneLoads[sceneName];
-        
-        // Verify local physics scene was created
-        PhysicsScene physicsScene = loadedScene.GetPhysicsScene();
-        bool isDefault = physicsScene.GetHashCode() == Physics.defaultPhysicsScene.GetHashCode();
-        
-        if (isDefault)
-        {
-            Debug.LogError($"[TimelineSceneSetup] ❌ '{sceneName}' is using DEFAULT physics scene!");
-        }
-        else
-        {
-            Debug.Log($"[TimelineSceneSetup] ✅ '{sceneName}' has LOCAL physics scene (hash: {physicsScene.GetHashCode()})");
+            timelinesLoaded = true;
         }
     }
 
     private void VerifyPhysicsIsolation()
     {
-        Debug.Log("[TimelineSceneSetup] === PHYSICS ISOLATION VERIFICATION ===");
+        Debug.Log("[TimelineSceneSetup] 🔬 === PHYSICS ISOLATION VERIFICATION ===");
         
-        var pastPhysics = pastScene.GetPhysicsScene();
-        var presentPhysics = presentScene.GetPhysicsScene();
-        var futurePhysics = futureScene.GetPhysicsScene();
-        var defaultPhysics = Physics.defaultPhysicsScene;
+        PhysicsScene pastPhysics = pastScene.GetPhysicsScene();
+        PhysicsScene presentPhysics = presentScene.GetPhysicsScene();
+        PhysicsScene futurePhysics = futureScene.GetPhysicsScene();
+        PhysicsScene defaultPhysics = Physics.defaultPhysicsScene;
         
         int pastHash = pastPhysics.GetHashCode();
         int presentHash = presentPhysics.GetHashCode();
@@ -159,131 +150,85 @@ public class TimelineSceneSetup : NetworkBehaviour
         Debug.Log($"  Future physics hash: {futureHash}");
         Debug.Log($"  Default physics hash: {defaultHash}");
         
-        bool allDifferent = (pastHash != presentHash) && (pastHash != futureHash) && (presentHash != futureHash);
-        bool noneDefault = (pastHash != defaultHash) && (presentHash != defaultHash) && (futureHash != defaultHash);
+        bool isolated = (pastHash != presentHash) && 
+                       (pastHash != futureHash) && 
+                       (presentHash != futureHash) &&
+                       (pastHash != defaultHash) &&
+                       (presentHash != defaultHash) &&
+                       (futureHash != defaultHash);
         
-        if (allDifferent && noneDefault)
+        if (isolated)
         {
-            Debug.Log("[TimelineSceneSetup] ✅ PHYSICS ISOLATION WORKING!");
+            Debug.Log("[TimelineSceneSetup] ✅ PHYSICS ISOLATION WORKING - Each timeline has unique physics scene!");
         }
         else
         {
-            Debug.LogError("[TimelineSceneSetup] ❌ PHYSICS ISOLATION BROKEN!");
-            if (!allDifferent) Debug.LogError("  Timeline scenes are sharing physics scenes!");
-            if (!noneDefault) Debug.LogError("  One or more timelines using default physics scene!");
+            Debug.LogError("[TimelineSceneSetup] ❌ PHYSICS ISOLATION FAILED - Timelines share physics scenes!");
         }
     }
 
-    /// <summary>
-    /// Loads a specific timeline for a connection.
-    /// This adds the connection to an existing timeline scene.
-    /// </summary>
-    public void LoadTimelineForConnection(NetworkConnection conn, TimelineManager.TimelineState timeline)
+    [Server]
+    public void TransitionPlayerTimeline(NetworkObject player, TimelineManager.TimelineState oldTimeline, TimelineManager.TimelineState newTimeline)
     {
-        if (!timelinesLoaded)
+        if (player == null || !player.IsSpawned)
         {
-            Debug.LogError($"[TimelineSceneSetup] Cannot load timeline - timelines not loaded yet!");
+            Debug.LogError("[TimelineSceneSetup] Cannot transition - invalid player!");
             return;
         }
         
-        Scene targetScene = GetTimelineScene(timeline);
-        
-        if (!targetScene.IsValid())
+        NetworkConnection owner = player.Owner;
+        if (!owner.IsActive)
         {
-            Debug.LogError($"[TimelineSceneSetup] Invalid scene for timeline {timeline}!");
+            Debug.LogError("[TimelineSceneSetup] Cannot transition - no active owner!");
             return;
         }
         
-        Debug.Log($"[TimelineSceneSetup] Loading {timeline} timeline for client {conn.ClientId}...");
+        Scene oldScene = player.gameObject.scene;
+        Scene newScene = GetTimelineScene(newTimeline);
         
-        string sceneName = timeline switch
+        if (!newScene.IsValid())
         {
-            TimelineManager.TimelineState.Past => pastSceneName,
-            TimelineManager.TimelineState.Present => presentSceneName,
-            TimelineManager.TimelineState.Future => futureSceneName,
-            _ => ""
+            Debug.LogError($"[TimelineSceneSetup] Cannot transition - invalid {newTimeline} scene!");
+            return;
+        }
+        
+        if (oldScene == newScene)
+        {
+            Debug.LogWarning($"[TimelineSceneSetup] Player {owner.ClientId} already in {newTimeline}");
+            return;
+        }
+        
+        Debug.Log($"[TimelineSceneSetup] 🔄 Transitioning Player {owner.ClientId} from {oldScene.name} to {newScene.name}");
+        
+        // Remove connection from old scene FIRST
+        if (oldScene.IsValid())
+        {
+            Debug.Log($"[TimelineSceneSetup] Removing connection from {oldScene.name}");
+            base.SceneManager.RemoveConnectionsFromScene(new NetworkConnection[] { owner }, oldScene);
+        }
+        
+        // Move player to new timeline
+        SceneLookupData lookupData = new SceneLookupData(newScene);
+        SceneLoadData sld = new SceneLoadData(lookupData)
+        {
+            Options = new LoadOptions()
+            {
+                AutomaticallyUnload = false
+            },
+            MovedNetworkObjects = new NetworkObject[] { player },
+            ReplaceScenes = ReplaceOption.None,
+            PreferredActiveScene = new PreferredScene(lookupData)
         };
         
-        // Create scene load data to load client into existing scene
-        SceneLoadData sld = new SceneLoadData(sceneName);
-        sld.Options.LocalPhysics = LocalPhysicsMode.Physics3D;
-        sld.Options.AllowStacking = true;
+        base.SceneManager.LoadConnectionScenes(owner, sld);
         
-        // Use scene handle to load into EXISTING stacked scene
-        sld.SceneLookupDatas = new SceneLookupData[] { new SceneLookupData(targetScene) };
+        // Rebuild observers for visibility update
+        Debug.Log($"[TimelineSceneSetup] 🔍 Rebuilding observers for all objects...");
+        base.ServerManager.Objects.RebuildObservers();
         
-        base.SceneManager.LoadConnectionScenes(conn, sld);
-        
-        Debug.Log($"[TimelineSceneSetup] ✅ {timeline} timeline loading for client {conn.ClientId}");
+        Debug.Log($"[TimelineSceneSetup] ✅ Player {owner.ClientId} transitioned to {newTimeline}, observers rebuilt");
     }
 
-    /// <summary>
-    /// Unloads a timeline from a specific connection (client-side only).
-    /// The scene remains loaded on the server for other players.
-    /// </summary>
-    private void UnloadTimelineForConnection(NetworkConnection conn, TimelineManager.TimelineState timeline)
-    {
-        Scene targetScene = GetTimelineScene(timeline);
-        
-        if (!targetScene.IsValid())
-        {
-            Debug.LogWarning($"[TimelineSceneSetup] Cannot unload {timeline} - invalid scene!");
-            return;
-        }
-        
-        string sceneName = timeline switch
-        {
-            TimelineManager.TimelineState.Past => pastSceneName,
-            TimelineManager.TimelineState.Present => presentSceneName,
-            TimelineManager.TimelineState.Future => futureSceneName,
-            _ => ""
-        };
-        
-        Debug.Log($"[TimelineSceneSetup] Unloading {timeline} timeline from client {conn.ClientId}...");
-        
-        // Create scene unload data
-        SceneUnloadData sud = new SceneUnloadData(sceneName);
-        
-        // Use scene handle to unload the correct stacked instance
-        sud.SceneLookupDatas = new SceneLookupData[] { new SceneLookupData(targetScene) };
-        
-        // Unload for this specific connection only
-        // The scene stays loaded on the server for other players
-        base.SceneManager.UnloadConnectionScenes(conn, sud);
-        
-        Debug.Log($"[TimelineSceneSetup] ✅ {timeline} timeline unloading from client {conn.ClientId}");
-    }
-
-    /// <summary>
-    /// Transitions a player from one timeline to another.
-    /// Unloads old timeline from client, loads new timeline.
-    /// </summary>
-    public void TransitionPlayerTimeline(NetworkConnection conn, 
-        TimelineManager.TimelineState oldTimeline, 
-        TimelineManager.TimelineState newTimeline)
-    {
-        if (!timelinesLoaded)
-        {
-            Debug.LogError($"[TimelineSceneSetup] Cannot transition - timelines not loaded!");
-            return;
-        }
-
-        Debug.Log($"[TimelineSceneSetup] Transitioning client {conn.ClientId} from {oldTimeline} to {newTimeline}");
-
-        // CRITICAL: Unload old timeline from this client's view
-        // This removes the visual clutter of objects from the old timeline
-        UnloadTimelineForConnection(conn, oldTimeline);
-        
-        // Load new timeline for this client
-        LoadTimelineForConnection(conn, newTimeline);
-        
-        Debug.Log($"[TimelineSceneSetup] ✅ Transition complete for client {conn.ClientId}");
-    }
-
-    /// <summary>
-    /// Gets the scene for a specific timeline.
-    /// Required by PlayerPhysicsSceneHandler and other systems.
-    /// </summary>
     public Scene GetTimelineScene(TimelineManager.TimelineState timeline)
     {
         return timeline switch
@@ -295,16 +240,13 @@ public class TimelineSceneSetup : NetworkBehaviour
         };
     }
 
-    /// <summary>
-    /// Alternative name for GetTimelineScene to match your existing code.
-    /// </summary>
     public Scene GetSceneForTimeline(TimelineManager.TimelineState timeline)
     {
         return GetTimelineScene(timeline);
     }
 
-    /// <summary>
-    /// Checks if all timelines are loaded.
-    /// </summary>
-    public bool AreTimelinesLoaded() => timelinesLoaded;
+    public bool AreTimelinesLoaded()
+    {
+        return timelinesLoaded;
+    }
 }

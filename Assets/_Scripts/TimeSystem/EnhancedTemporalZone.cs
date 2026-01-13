@@ -140,6 +140,15 @@ public class EnhancedTemporalZone : NetworkBehaviour
                 continue;
             }
             
+            // ✅ FIX: Validate player is in same scene as zone
+            // This prevents cross-timeline draining when MovedNetworkObjects transitions players
+            // Scene transitions don't fire OnTriggerExit, so we need this safety check
+            if (stability.gameObject.scene != gameObject.scene)
+            {
+                affectedPlayers.RemoveAt(i);
+                continue;
+            }
+            
             float drainMultiplier = 1f;
             
             if (useIntensityGradient)

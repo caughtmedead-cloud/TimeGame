@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: WoodSpool_M
+  m_Name: M_en_RubbleContainer_01
   m_Shader: {fileID: -6465566751694194690, guid: 877d2d61e529c384b8cb9cadb0f115e8, type: 3}
   m_Parent: {fileID: 2100000, guid: 57343d6624411314cbdb8d618ccfec6e, type: 2}
   m_ModifiedSerializedProperties: 0
@@ -27,11 +27,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: a6230b8d1f05eef4b991649833ee5d02, type: 3}
+        m_Texture: {fileID: 2800000, guid: 6c3db233d525f984db4b7cc3672d407c, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: eca9849cc87226e47adfc563ba74e3c8, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1b28037c08245214cb19301943349fc2, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
