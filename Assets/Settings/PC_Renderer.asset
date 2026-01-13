@@ -76,7 +76,7 @@ MonoBehaviour:
   PixelizedLayers:
     serializedVersion: 2
     m_Bits: 0
-  EditorPixelExpansion: 0
+  EditorPixelExpansion: 1
   GenerateWarnings: 1
   PixelizationMapShaders:
     PixelizationMap: {fileID: 4800000, guid: 8dd346b62451e76418dabc2355815f15, type: 3}

@@ -189,13 +189,13 @@ MonoBehaviour:
     m_Bits: 34
   FixedTargetResolution: 720
   ClampCameraOrthoSize: 1
-  Mode: 2
+  Mode: 1
   PixelSize: 0.032
   overrideUsePixelExpansion: 0
   UsePixelExpansion: 1
   PixelizationFilter: 0
   UsePixelArtUpscalingFilter: 1
-  TargetScale: 1
+  TargetScale: 0.5
   FullscreenColorGradingLUT: {fileID: 0}
   EnableProPixelizer: 1
 --- !u!1 &234326104843410220

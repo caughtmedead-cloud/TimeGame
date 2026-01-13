@@ -595,7 +595,6 @@ Transform:
   - {fileID: 558107427}
   - {fileID: 1671845090}
   - {fileID: 1793791684}
-  - {fileID: 1147061008}
   - {fileID: 1035423391}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1528,7 +1527,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 505702790}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 622520870944925261, guid: 5314250082d4d2b4098f154e11003260, type: 3}
       propertyPath: m_Name
@@ -1536,7 +1535,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 622520870944925261, guid: 5314250082d4d2b4098f154e11003260, type: 3}
       propertyPath: m_Layer
-      value: 3
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 1843921886885973564, guid: 5314250082d4d2b4098f154e11003260, type: 3}
       propertyPath: strutCount
@@ -2241,7 +2240,7 @@ GameObject:
   - component: {fileID: 1832002037}
   - component: {fileID: 1832002036}
   - component: {fileID: 1832002035}
-  m_Layer: 3
+  m_Layer: 6
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2627,3 +2626,4 @@ SceneRoots:
   - {fileID: 604712594}
   - {fileID: 505702790}
   - {fileID: 1621643195}
+  - {fileID: 1147061007}
