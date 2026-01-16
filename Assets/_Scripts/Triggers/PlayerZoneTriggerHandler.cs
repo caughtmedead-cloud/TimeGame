@@ -45,21 +45,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         if (!IsOwner) return;
         if (other == null) return;
         
-        var temporalZone = other.GetComponent<TemporalAnomalyZone>();
-        if (temporalZone != null)
-        {
-            var zoneNetworkObject = temporalZone.GetComponent<NetworkObject>();
-            if (zoneNetworkObject != null)
-            {
-                NotifyServerTemporalZoneEntered_ServerRpc(zoneNetworkObject);
-            }
-            else
-            {
-                Debug.LogWarning($"[PlayerZoneTriggerHandler] ⚠️ Temporal anomaly zone '{temporalZone.zoneName}' has no NetworkObject component!");
-            }
-            return;
-        }
-        
         var enhancedZone = other.GetComponent<EnhancedTemporalZone>();
         if (enhancedZone != null)
         {
@@ -80,17 +65,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
         if (!IsOwner) return;
         if (other == null) return;
         
-        var temporalZone = other.GetComponent<TemporalAnomalyZone>();
-        if (temporalZone != null)
-        {
-            var zoneNetworkObject = temporalZone.GetComponent<NetworkObject>();
-            if (zoneNetworkObject != null)
-            {
-                NotifyServerTemporalZoneExited_ServerRpc(zoneNetworkObject);
-            }
-            return;
-        }
-        
         var enhancedZone = other.GetComponent<EnhancedTemporalZone>();
         if (enhancedZone != null)
         {
@@ -99,42 +73,6 @@ public class PlayerZoneTriggerHandler : NetworkBehaviour
             {
                 NotifyServerEnhancedZoneExited_ServerRpc(zoneNetworkObject);
             }
-        }
-    }
-    
-    [ServerRpc(RequireOwnership = false)]
-    private void NotifyServerTemporalZoneEntered_ServerRpc(NetworkObject zoneNetworkObject, NetworkConnection sender = null)
-    {
-        if (zoneNetworkObject == null)
-        {
-            Debug.LogWarning($"[Server] ⚠️ Zone NetworkObject is null!");
-            return;
-        }
-        
-        var zone = zoneNetworkObject.GetComponent<TemporalAnomalyZone>();
-        if (zone != null)
-        {
-            zone.PlayerEntered(_temporalStability);
-        }
-        else
-        {
-            Debug.LogWarning($"[Server] ⚠️ Zone NetworkObject has no TemporalAnomalyZone component!");
-        }
-    }
-    
-    [ServerRpc(RequireOwnership = false)]
-    private void NotifyServerTemporalZoneExited_ServerRpc(NetworkObject zoneNetworkObject, NetworkConnection sender = null)
-    {
-        if (zoneNetworkObject == null)
-        {
-            Debug.LogWarning($"[Server] ⚠️ Zone NetworkObject is null!");
-            return;
-        }
-        
-        var zone = zoneNetworkObject.GetComponent<TemporalAnomalyZone>();
-        if (zone != null)
-        {
-            zone.PlayerExited(_temporalStability);
         }
     }
     
