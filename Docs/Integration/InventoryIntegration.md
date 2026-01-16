@@ -4,7 +4,8 @@
 This document tracks the integration of Ultimate Grid Inventory (UGI) with FishNet Pro networking for the New Thelos cooperative survival horror game.
 
 **Last Updated**: January 16, 2026  
-**Current Phase**: Phase 1 - Network Foundation (IN PROGRESS)
+**Current Phase**: Phase 1 - Network Foundation (COMPLETE ✅)  
+**Location**: `Assets/_Scripts/Systems/Inventory/`
 
 ---
 
@@ -47,7 +48,8 @@ This document tracks the integration of Ultimate Grid Inventory (UGI) with FishN
 ### Components Implemented
 
 #### 1. NetworkedItemData.cs
-**Location**: `Assets/_Scripts/Inventory/Networking/NetworkedItemData.cs`
+**Location**: `Assets/_Scripts/Systems/Inventory/Networking/NetworkedItemData.cs`  
+**Namespace**: `NewThelos.Systems.Inventory.Networking`
 
 **Purpose**: Serializable struct for transmitting item data over FishNet.
 
@@ -64,7 +66,8 @@ This document tracks the integration of Ultimate Grid Inventory (UGI) with FishN
 ---
 
 #### 2. ItemDataRegistry.cs
-**Location**: `Assets/_Scripts/Inventory/Utils/ItemDataRegistry.cs`
+**Location**: `Assets/_Scripts/Systems/Inventory/Utils/ItemDataRegistry.cs`  
+**Namespace**: `NewThelos.Systems.Inventory.Utils`
 
 **Purpose**: Singleton that maps item names (strings) to ItemDataSo references.
 
@@ -87,7 +90,8 @@ Client: string → ItemDataRegistry.GetItemByName() → ItemDataSo
 ---
 
 #### 3. NetworkedPlayerInventory.cs
-**Location**: `Assets/_Scripts/Inventory/Networking/NetworkedPlayerInventory.cs`
+**Location**: `Assets/_Scripts/Systems/Inventory/Networking/NetworkedPlayerInventory.cs`  
+**Namespace**: `NewThelos.Systems.Inventory.Networking`
 
 **Purpose**: Server-authoritative networked player inventory component.
 
@@ -121,12 +125,24 @@ Client: string → ItemDataRegistry.GetItemByName() → ItemDataSo
 ```
 Assets/
 ├── _Scripts/
-│   └── Inventory/
-│       ├── Networking/
-│       │   ├── NetworkedPlayerInventory.cs     ✅ Created
-│       │   └── NetworkedItemData.cs            ✅ Created
-│       └── Utils/
-│           └── ItemDataRegistry.cs             ✅ Created
+│   ├── Systems/
+│   │   └── Inventory/                          ✅ NEW LOCATION
+│   │       ├── Networking/
+│   │       │   ├── NetworkedPlayerInventory.cs ✅ Created
+│   │       │   └── NetworkedItemData.cs        ✅ Created
+│   │       ├── Utils/
+│   │       │   └── ItemDataRegistry.cs         ✅ Created
+│   │       └── README.md                       ✅ Quick reference
+│   ├── Player/
+│   │   ├── Temporal/
+│   │   │   ├── TemporalStability.cs            (Reference pattern)
+│   │   │   └── TimelineManager.cs
+│   │   └── Control/
+│   │       └── PlayerZoneTriggerHandler.cs     (Reference pattern)
+│   └── Core/
+│       ├── Extensions/
+│       ├── Interfaces/
+│       └── ScriptableObjects/
 ├── Inventory/ (UGI Asset - READ ONLY)
 │   └── Scripts/
 │       ├── Core/
@@ -154,6 +170,8 @@ Assets/
 - ✅ XML documentation on all public methods
 - ✅ Debug logging with toggle
 - ✅ ContextMenu debug commands
+- ✅ Reorganized into Systems/Inventory folder
+- ✅ Updated namespaces to NewThelos.Systems.Inventory
 
 ### Setup Requirements
 - ⏳ ItemDataRegistry attached to NetworkManager
@@ -244,12 +262,12 @@ All inventory operations follow this flow:
 
 NetworkedPlayerInventory follows patterns from existing components:
 
-**From TemporalStability.cs**:
+**From TemporalStability.cs** (`Assets/_Scripts/Player/Temporal/`):
 - SyncVar usage with WritePermission.ServerOnly
 - OnChange callback pattern
 - Server-side validation in [Server] methods
 
-**From PlayerZoneTriggerHandler.cs**:
+**From PlayerZoneTriggerHandler.cs** (`Assets/_Scripts/Player/Control/`):
 - ServerRPC validation (sender == Owner check)
 - NetworkConnection sender parameter
 - Debug logging with client/server context
@@ -261,7 +279,8 @@ NetworkedPlayerInventory follows patterns from existing components:
 ### Planned Components
 
 #### InventoryUIBridge.cs
-**Purpose**: Connect NetworkedPlayerInventory to UGI's UI system.
+**Purpose**: Connect NetworkedPlayerInventory to UGI's UI system.  
+**Location**: `Assets/_Scripts/Systems/Inventory/UI/InventoryUIBridge.cs`
 
 **Responsibilities**:
 1. Subscribe to NetworkedPlayerInventory events
@@ -342,21 +361,24 @@ NetworkedPlayerInventory follows patterns from existing components:
 - Check Assets/Inventory/Documentation/ for UGI-specific docs
 
 ### Project Patterns
-- See `TemporalStability.cs` for SyncVar patterns
-- See `PlayerZoneTriggerHandler.cs` for ServerRPC patterns
-- See `TimelineManager.cs` for scene persistence patterns
+- See `Assets/_Scripts/Player/Temporal/TemporalStability.cs` for SyncVar patterns
+- See `Assets/_Scripts/Player/Control/PlayerZoneTriggerHandler.cs` for ServerRPC patterns
+- See `Assets/_Scripts/Player/Temporal/TimelineManager.cs` for scene persistence patterns
 
 ---
 
 ## Change Log
 
-### 2026-01-16 - Phase 1 Implementation
+### 2026-01-16 - Phase 1 Implementation & Reorganization
 - Created NetworkedItemData struct
 - Created ItemDataRegistry component
 - Created NetworkedPlayerInventory component
 - Implemented all Phase 1 ServerRPCs
 - Added comprehensive documentation
 - Created test plan (InventoryPhase1Tests.md)
+- **Reorganized**: Moved from `Assets/_Scripts/Inventory/` to `Assets/_Scripts/Systems/Inventory/`
+- **Updated namespaces**: From `NewThelos.Inventory` to `NewThelos.Systems.Inventory`
+- Aligned with project-wide script reorganization
 
 ---
 
@@ -365,5 +387,6 @@ NetworkedPlayerInventory follows patterns from existing components:
 For questions or issues:
 1. Check this documentation
 2. Review test plan (Docs/Testing/InventoryPhase1Tests.md)
-3. Enable verbose logging for debugging
-4. Check FishNet documentation for networking questions
+3. Check quick reference (Assets/_Scripts/Systems/Inventory/README.md)
+4. Enable verbose logging for debugging
+5. Check FishNet documentation for networking questions
