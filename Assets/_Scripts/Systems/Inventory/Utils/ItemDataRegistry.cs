@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UltimateGridInventory.Core.ScriptableObjects.Items;
+using Inventory.Scripts.Core.ScriptableObjects.Items;
 
-namespace NewThelos.Systems.Inventory.Utils
+namespace NewThelos.Inventory.Utils
 {
     /// <summary>
     /// Singleton registry that maps string identifiers to ItemDataSo ScriptableObjects.
