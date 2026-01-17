@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6bfcf9e2fce946e4882715cf22885977
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 122971
+  packageName: Wondering stalker
+  packageVersion: 1.0
+  assetPath: Assets/Stalker/prefab/stalker.prefab
+  uploadId: 255460

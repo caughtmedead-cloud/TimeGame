@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6b834ab4891b8d4c8bc57fc5919e440, type: 3}
+  m_Name: TestItem_2
+  m_EditorClassIdentifier: 
+  uniqueUid:
+    uid: 0cb532cd-7bce-46cc-ad57-73b03e1220fd
+  displayName: TestItem_2
+  description: Inventory Test Item 2
+  dimensionsSo: {fileID: 11400000, guid: dfe86e5095dbc324296b59d248913753, type: 2}
+  icon: {fileID: 0}
+  prefab: {fileID: 0}
+  itemDataTypeSo: {fileID: 0}
+  audioCueSo: {fileID: 0}
+  iconSizeSo: {fileID: 0}
+  inHolderIconSizeSo: {fileID: 0}
+  optionsSo: []

@@ -324,6 +324,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1146464957}
+    - targetCorrespondingSourceObject: {fileID: 7443408887813606051, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1146464958}
   m_SourcePrefab: {fileID: 100100000, guid: 0b650fca685f2eb41a86538aa883e4c1, type: 3}
 --- !u!1 &1146464951 stripped
 GameObject:
@@ -378,6 +381,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 781de81133b9a2f478e69781ce12ef8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1146464958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1146464951}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7e02112f2962fa4d9efa0e548b73b89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allItems:
+  - {fileID: 11400000, guid: cfad90085d4503642b0cffa18a8b60f5, type: 2}
+  - {fileID: 11400000, guid: 7553565188bca224bb5143b83f6d5b77, type: 2}
+  - {fileID: 11400000, guid: ea07eae31d0d4fb4cb2a08c30fd84495, type: 2}
+  verboseLogging: 1
 --- !u!1 &1385714797
 GameObject:
   m_ObjectHideFlags: 0
@@ -461,7 +481,7 @@ MonoBehaviour:
   <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 0
-  SceneId: 1543175654
+  SceneId: 1270669311
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 0}
@@ -515,7 +535,7 @@ MonoBehaviour:
   _componentIndexCache: 255
   _addedNetworkObject: {fileID: 2047187396}
   _networkObjectCache: {fileID: 0}
-  playerPrefab: {fileID: -8147693711007459752, guid: a2623a408e0d11049b9f5e9bfa439a8c, type: 3}
+  playerPrefab: {fileID: -8147693711007459752, guid: 70dd4aa551993914fbf967a2cc37b9f5, type: 3}
   spawnPosition: {x: 0, y: 5, z: 0}
   defaultTimeline: 1
 --- !u!114 &2047187396
@@ -565,7 +585,7 @@ MonoBehaviour:
   <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 0
-  SceneId: 2076164039
+  SceneId: 3720199623
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 0}

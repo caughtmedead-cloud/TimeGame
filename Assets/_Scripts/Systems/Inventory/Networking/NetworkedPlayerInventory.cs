@@ -481,8 +481,10 @@ namespace NewThelos.Systems.Inventory.Networking
                 return;
             }
             
-            // This will need to be updated with an actual item name from your registry
-            AddItem_ServerRpc("TestItem", 0, 0, 0, false, 1, Owner);
+            // Add TestItem_1, TestItem_2, and TestItem_3 for testing
+            AddItem_ServerRpc("TestItem_1", 0, 0, 0, false, 1, Owner);
+            AddItem_ServerRpc("TestItem_2", 0, 1, 0, false, 1, Owner);
+            AddItem_ServerRpc("TestItem_3", 0, 2, 0, false, 1, Owner);
         }
     }
 }
