@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Inventory.Scripts.Core.ScriptableObjects.Items;
 
-namespace NewThelos.Inventory.Utils
+namespace NewThelos.Systems.Inventory.Utils
 {
     /// <summary>
     /// Singleton registry that maps string identifiers to ItemDataSo ScriptableObjects.
