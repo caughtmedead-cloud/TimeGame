@@ -3,6 +3,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
+using NewThelos.Systems.Input;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using DG.Tweening;
@@ -58,6 +59,7 @@ public class PlayerController : NetworkBehaviour
     private CharacterController characterController;
     private Camera playerCamera;
     private PlayerInputActions inputActions;
+    private InputModeManager inputModeManager;
 
     private Vector3 velocity;
     private Vector3 currentVelocity;
@@ -94,6 +96,7 @@ public class PlayerController : NetworkBehaviour
         characterController = GetComponent<CharacterController>();
         playerCamera = GetComponentInChildren<Camera>();
         firstPersonCamera = GetComponent<FirstPersonCamera>();
+        inputModeManager = GetComponent<InputModeManager>();
         
         inputActions = new PlayerInputActions();
     }
@@ -158,6 +161,9 @@ public class PlayerController : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+
+        if (inputModeManager != null && !inputModeManager.IsGameplayMode())
+            return;
 
         ReadInput();
         HandleGroundCheck();

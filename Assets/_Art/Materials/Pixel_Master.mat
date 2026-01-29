@@ -121,7 +121,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DiffuseVertexColorWeight: 1
+    - _DiffuseVertexColorWeight: 0
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EdgeBevelWeight: 0
@@ -149,7 +149,7 @@ Material:
     - _ZWrite: 1
     - _ZWriteControl: 0
     m_Colors:
-    - _AmbientLight: {r: 0.09999997, g: 0.09999997, b: 0.09999997, a: 0.5}
+    - _AmbientLight: {r: 0.7660377, g: 0.7660377, b: 0.7660377, a: 0.5}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EdgeHighlightColor: {r: 0.5924529, g: 0.5924529, b: 0.5924529, a: 0.5058824}

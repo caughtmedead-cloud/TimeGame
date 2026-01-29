@@ -2994,7 +2994,6 @@ GameObject:
   - component: {fileID: 3166874489748539819}
   - component: {fileID: 8817975478013292757}
   - component: {fileID: -6580369775363461953}
-  - component: {fileID: 7250271687982619950}
   m_Layer: 0
   m_Name: IKRig_TFP
   m_TagString: Untagged
@@ -3054,7 +3053,7 @@ MonoBehaviour:
   - {fileID: 3166874489748539819}
   - {fileID: 8817975478013292757}
   - {fileID: -6580369775363461953}
-  - {fileID: 7250271687982619950}
+  - {fileID: 0}
   - {fileID: 4836224069964464589}
   - {fileID: 9114039164303258155}
   InitializedParentNetworkBehaviour: {fileID: 0}
@@ -3793,26 +3792,6 @@ MonoBehaviour:
   drawDebugRays: 1
   rayColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   hitColor: {r: 1, g: 0, b: 0, a: 1}
---- !u!114 &7250271687982619950
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6660607704666664321}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 04352d5e4e650874fa19be9b8cea9456, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 12
-  _addedNetworkObject: {fileID: -8147693711007459752}
-  _networkObjectCache: {fileID: -8147693711007459752}
-  gridWidth: 5
-  gridHeight: 4
-  enableCollisionDetection: 1
-  enableBoundaryValidation: 1
-  verboseLogging: 1
 --- !u!1 &6870919701239428864
 GameObject:
   m_ObjectHideFlags: 0
