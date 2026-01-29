@@ -14,46 +14,49 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.02
   subtype: freeProjectFiles
-  lastShownTimestamp: 1765293554
+  lastShownTimestamp: 1769718329
   lastUpdateResponse:
     version: 1.02
     versionUrl: https://unitycodemonkey.com
     enabled: 0
-  checkedLastUpdateTimestamp: 1765293554
+  checkedLastUpdateTimestamp: 1769718330
   lastQOTDResponse:
-    questionId: 250
-    questionText: 'Does this code have an error?
+    questionId: 267
+    questionText: 'What is the position of the transform after running this code?
 
-      <p>int myNewX = 10;</p>
+      <p>Vector3
+      targetPosition = new Vector3(10, 0, 0);</p>
 
-      <p>transform.position.x
-      = myNewX;</p>'
-    answerA: Yes
-    answerB: No
-    answerC: Only if GameObject does not have a Transform component
+      <p>transform.position =
+      targetPosition;</p>
+
+      <p>targetPosition.x = 20;</p>'
+    answerA: (10, 0, 0)
+    answerB: (20, 0, 0)
+    answerC: Unknown
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1765293554
+  lastQotdTimestamp: 1769718330
   lastDynamicHeaderResponse:
-    topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/unityBlackFridayAssetStoreDec25.png
-    topText: Unity Asset Store is still having their BLACK FRIDAY deals!
-    topLink: unityassetstore
+    topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/gameDevReport_2.png
+    topText: Stay up to date with the latest in Game Dev straight to your inbox!
+    topLink: gamedevreport
     bottomText: My 10+ Years of C# Knowledge in 1 Course!
     bottomLink: csharpcourse
-  lastDynamicHeaderTimestamp: 1765293554
+  lastDynamicHeaderTimestamp: 1769718330
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freeprojectfiles">Browse all the FREE Project
       Files! Click Here!</a><br><a href="https://cmonkey.co/freecourses">Check out
       all my FREE courses! Click Here!</a>
-  websiteLatestMessageTimestamp: 1765293554
+  websiteLatestMessageTimestamp: 1769718330
   websiteLatestVideos:
     videos:
-    - youTubeId: j7mZEZzNq9o
-      title: TOP 10 NEW Games, Made with Unity! (NOVEMBER 2025)
-    - youTubeId: wAI7TNtW7xM
-      title: How MUCH is your Time WORTH?
-    - youTubeId: c4tyM-o2uJQ
-      title: Make your Console 10X BETTER with this Tool! (50% OFF!)
-    - youTubeId: 2AG3POM9wOs
-      title: What are Unity Building Blocks?
-  websiteLatestVideosTimestamp: 1765293554
+    - youTubeId: dYImrPahrME
+      title: STUCK for HOURS trying to write Code? Watch this!
+    - youTubeId: ZxPFiJgEQT0
+      title: TOP 10 NEW Systems and Tools JANUARY 2026! | Unity Asset Store
+    - youTubeId: 4ZcETvXRfl0
+      title: Roadmaps for Game Dev SUCCESS in 2026! (Beginner, Intermediate and Marketing)
+    - youTubeId: 3hrhAS-q3Z0
+      title: TOP 10 FREE NEW Assets JANUARY 2026!
+  websiteLatestVideosTimestamp: 1769718330

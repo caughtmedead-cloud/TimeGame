@@ -25,6 +25,7 @@
   <Project Path="DTT.RuntimeUtilities.Demo.csproj" />
   <Project Path="DTT.EditorUtilities.Demo.csproj" />
   <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
+  <Project Path="V_Animation.csproj" />
   <Project Path="CodeMonkeyFreeEditor.csproj" />
   <Project Path="Bezi.Editor.csproj" />
   <Project Path="UMotionSourceApplication.csproj" />
