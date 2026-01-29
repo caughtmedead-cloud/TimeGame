@@ -111,30 +111,40 @@ namespace TimeGame.Systems.Inventory
             // Convert direction index back to enum
             PlacedObjectTypeSO.Dir direction = (PlacedObjectTypeSO.Dir)directionIndex;
 
-            // Use CodeMonkey's validation logic - if it says no, we don't place it
-            bool canPlace = _localInventory.TryPlaceItem(itemSO, gridPosition, direction, out PlacedObject placedObject);
+            // Use CodeMonkey's validation logic - returns true if placement succeeded
+            bool canPlace = _localInventory.TryPlaceItem(itemSO, gridPosition, direction);
 
-            if (canPlace && placedObject != null)
+            if (canPlace)
             {
-                // Success! Generate a unique ID for this item instance
-                Guid itemUID = Guid.NewGuid();
+                // Success! Get the PlacedObject that CodeMonkey just created
+                PlacedObject placedObject = _localInventory.GetGrid().GetGridObject(gridPosition.x, gridPosition.y).GetPlacedObject();
 
-                // Track it locally for when we need to remove it
-                _uidToPlacedObject[itemUID] = placedObject;
-
-                // Add to synced list - FishNet automatically sends this to all clients
-                NetworkedItemPlacementData itemData = new NetworkedItemPlacementData(
-                    itemName,
-                    gridPosition,
-                    directionIndex,
-                    itemUID
-                );
-
-                _syncedItems.Add(itemData);
-
-                if (_verboseLogging)
+                if (placedObject != null)
                 {
-                    Debug.Log($"[NetworkedInventoryTetris] Server placed: {itemName} at {gridPosition} dir={direction} uid={itemUID}");
+                    // Generate a unique ID for this item instance
+                    Guid itemUID = Guid.NewGuid();
+
+                    // Track it locally for when we need to remove it
+                    _uidToPlacedObject[itemUID] = placedObject;
+
+                    // Add to synced list - FishNet automatically sends this to all clients
+                    NetworkedItemPlacementData itemData = new NetworkedItemPlacementData(
+                        itemName,
+                        gridPosition,
+                        directionIndex,
+                        itemUID
+                    );
+
+                    _syncedItems.Add(itemData);
+
+                    if (_verboseLogging)
+                    {
+                        Debug.Log($"[NetworkedInventoryTetris] Server placed: {itemName} at {gridPosition} dir={direction} uid={itemUID}");
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"[NetworkedInventoryTetris] Server placed item but couldn't retrieve PlacedObject!");
                 }
             }
             else
@@ -310,17 +320,27 @@ namespace TimeGame.Systems.Inventory
             // Convert direction
             PlacedObjectTypeSO.Dir direction = (PlacedObjectTypeSO.Dir)itemData.directionIndex;
 
-            // Place using CodeMonkey's logic
-            bool placed = _localInventory.TryPlaceItem(itemSO, itemData.gridPosition, direction, out PlacedObject placedObject);
+            // Place using CodeMonkey's logic - returns true if placement succeeded
+            bool placed = _localInventory.TryPlaceItem(itemSO, itemData.gridPosition, direction);
 
-            if (placed && placedObject != null)
+            if (placed)
             {
-                // Track for future removal
-                _uidToPlacedObject[itemData.itemUID] = placedObject;
+                // Get the PlacedObject that CodeMonkey just created
+                PlacedObject placedObject = _localInventory.GetGrid().GetGridObject(itemData.gridPosition.x, itemData.gridPosition.y).GetPlacedObject();
 
-                if (_verboseLogging)
+                if (placedObject != null)
                 {
-                    Debug.Log($"[NetworkedInventoryTetris] Client replicated add: {itemData.itemSOName} at {itemData.gridPosition}");
+                    // Track for future removal
+                    _uidToPlacedObject[itemData.itemUID] = placedObject;
+
+                    if (_verboseLogging)
+                    {
+                        Debug.Log($"[NetworkedInventoryTetris] Client replicated add: {itemData.itemSOName} at {itemData.gridPosition}");
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"[NetworkedInventoryTetris] Client placed item but couldn't retrieve PlacedObject!");
                 }
             }
             else
