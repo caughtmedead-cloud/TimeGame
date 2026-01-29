@@ -161,25 +161,37 @@ namespace NewThelos.UI.Inventory
         }
         
         /// <summary>
-        /// Convert world position (local to items container) to grid coordinates.
-        /// Uses top-left cell as the grid position for consistency.
+        /// Convert world position to grid coordinates.
+        /// localPoint comes from ScreenPointToLocalPointInRectangle on the grid's RectTransform.
         /// </summary>
         public Vector2Int WorldToGridPosition(Vector2 localPoint, ItemDefinitionSO definition, bool isRotated = false)
         {
-            // localPoint is already relative to the grid RectTransform, but we need it relative to items container
-            // Account for the items container offset
-            Vector2 adjustedPoint = localPoint - _itemsContainer.anchoredPosition;
+            // CRITICAL FIX: Get the position relative to the items container directly
+            // Instead of doing coordinate math, ask Unity to convert to container's local space
+            
+            RectTransform gridRect = GetComponent<RectTransform>();
+            
+            // Convert the grid-local point to world position first
+            Vector3 worldPoint = gridRect.TransformPoint(localPoint);
+            
+            // Then convert from world back to items container local space
+            Vector2 containerLocalPoint = _itemsContainer.InverseTransformPoint(worldPoint);
             
             int width = isRotated ? definition.height : definition.width;
             int height = isRotated ? definition.width : definition.height;
             
-            // Remove the centering offset to get top-left position
-            float topLeftX = adjustedPoint.x - (width * _cellSize.x * 0.5f);
-            float topLeftY = adjustedPoint.y + (height * _cellSize.y * 0.5f);
+            // containerLocalPoint is now in items container space
+            // Items container has anchor/pivot at (0,1) = top-left
+            // So containerLocalPoint.x is positive going right, containerLocalPoint.y is negative going down
+            
+            // Account for item's center pivot
+            // Items are rendered with their center at the calculated position
+            float itemCenterX = containerLocalPoint.x - (width * _cellSize.x * 0.5f);
+            float itemCenterY = -containerLocalPoint.y - (height * _cellSize.y * 0.5f);
             
             // Convert to grid coordinates
-            int gridX = Mathf.RoundToInt(topLeftX / _cellSize.x);
-            int gridY = Mathf.RoundToInt(-topLeftY / _cellSize.y);
+            int gridX = Mathf.RoundToInt(itemCenterX / _cellSize.x);
+            int gridY = Mathf.RoundToInt(itemCenterY / _cellSize.y);
             
             // Clamp to valid grid range
             gridX = Mathf.Clamp(gridX, 0, _width - width);
@@ -245,49 +257,58 @@ namespace NewThelos.UI.Inventory
             }
         }
         
+        /// <summary>
+        /// FIXED: Reposition existing UI instead of destroying and recreating.
+        /// This prevents icon duplication when items move rapidly.
+        /// </summary>
         private void HandleItemMoved(NetworkedItemData itemData)
         {
-            UnityEngine.Debug.Log($"[InventoryGridUI] HandleItemMoved START: {itemData.itemDefinitionId} | GridId: {itemData.gridId} | Pos: ({itemData.posX},{itemData.posY})");
+            // Check if this item is currently in our grid
+            bool wasInGrid = _itemUIs.ContainsKey(itemData.instanceId);
+            bool nowInGrid = (itemData.gridId == _gridId);
             
-            // First check if item was in this grid (remove it)
-            if (_itemUIs.ContainsKey(itemData.instanceId))
+            if (wasInGrid && !nowInGrid)
             {
-                UnityEngine.Debug.Log($"[InventoryGridUI] Destroying old UI for {itemData.instanceId.Substring(0,8)}...");
+                // Item moved OUT of this grid → destroy UI
                 DestroyItemUI(itemData.instanceId);
             }
-            
-            // Then check if item moved TO this grid (add it)
-            if (itemData.gridId == _gridId)
+            else if (!wasInGrid && nowInGrid)
             {
+                // Item moved INTO this grid → create new UI
                 var clientGrid = _inventory.GetClientGrid(_gridId);
-                if (clientGrid == null)
+                if (clientGrid != null)
                 {
-                    UnityEngine.Debug.LogError($"[InventoryGridUI] Could not get client grid '{_gridId}'!");
-                    return;
-                }
-                
-                UnityEngine.Debug.Log($"[InventoryGridUI] Calling GetItemById for {itemData.instanceId.Substring(0,8)}...");
-                var item = clientGrid.GetItemById(itemData.instanceId);
-                
-                if (item != null)
-                {
-                    UnityEngine.Debug.Log($"[InventoryGridUI] GetItemById returned: Pos=({item.posX},{item.posY}) | Expected: ({itemData.posX},{itemData.posY})");
-                    
-                    if (item.posX != itemData.posX || item.posY != itemData.posY)
+                    var item = clientGrid.GetItemById(itemData.instanceId);
+                    if (item != null)
                     {
-                        UnityEngine.Debug.LogError($"[InventoryGridUI] ❌ POSITION MISMATCH!");
-                        UnityEngine.Debug.LogError($"   Expected from NetworkedItemData: ({itemData.posX},{itemData.posY})");
-                        UnityEngine.Debug.LogError($"   Got from GetItemById: ({item.posX},{item.posY})");
-                        UnityEngine.Debug.LogError($"   This means the grid has stale data!");
+                        SpawnItemUI(item);
                     }
-                    
-                    SpawnItemUI(item);
-                }
-                else
-                {
-                    UnityEngine.Debug.LogError($"[InventoryGridUI] ❌ GetItemById returned null for {itemData.instanceId.Substring(0,8)}...");
                 }
             }
+            else if (wasInGrid && nowInGrid)
+            {
+                // Item moved WITHIN this grid → reposition existing UI
+                RepositionItemUI(itemData.instanceId);
+            }
+        }
+        
+        /// <summary>
+        /// Reposition an existing item UI to match its current grid data.
+        /// This is more efficient than destroying and recreating UI elements.
+        /// </summary>
+        private void RepositionItemUI(string instanceId)
+        {
+            if (!_itemUIs.TryGetValue(instanceId, out InventoryItemUI itemUI))
+                return;
+            
+            var clientGrid = _inventory.GetClientGrid(_gridId);
+            if (clientGrid == null) return;
+            
+            var item = clientGrid.GetItemById(instanceId);
+            if (item == null) return;
+            
+            // Update the ItemUI with new position data
+            itemUI.UpdatePosition(item.posX, item.posY, item.isRotated, _cellSize);
         }
         
         private void SpawnItemUI(InventoryItem item)

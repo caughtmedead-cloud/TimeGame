@@ -10,7 +10,7 @@ namespace NewThelos.UI.Inventory
 {
     /// <summary>
     /// Handles drag & drop for inventory items with real-time collision detection and visual feedback.
-    /// Supports item swapping when dropping on occupied slots.
+    /// Supports item swapping when dropping on occupied slots and rotation during drag.
     /// </summary>
     public class InventoryItemDragHandler : MonoBehaviour, 
         IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
@@ -34,6 +34,8 @@ namespace NewThelos.UI.Inventory
         private Vector2Int originalGridPosition;
         private Transform originalParent;
         private int originalSiblingIndex;
+        private bool originalRotation; // Track original rotation state
+        private bool currentRotation;  // Track current rotation during drag
         
         // Preview state
         private GameObject previewObject;
@@ -88,6 +90,8 @@ namespace NewThelos.UI.Inventory
             originalGridPosition = itemUI.GridPosition;
             originalParent = transform.parent;
             originalSiblingIndex = transform.GetSiblingIndex();
+            originalRotation = itemUI.Item.isRotated;
+            currentRotation = originalRotation; // Start with original rotation
             
             // Visual feedback - make semi-transparent
             canvasGroup.alpha = dragAlpha;
@@ -110,6 +114,12 @@ namespace NewThelos.UI.Inventory
             
             // Follow cursor
             rectTransform.anchoredPosition += eventData.delta / canvas.scaleFactor;
+            
+            // Check for rotation input (R key)
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                ToggleRotation();
+            }
             
             // Update preview position and validity
             UpdatePreviewPosition(eventData);
@@ -136,17 +146,65 @@ namespace NewThelos.UI.Inventory
             Vector2Int dropGridPosition = GetGridPositionFromMouse(eventData);
             
             // Validate and execute drop
-            if (isValidPlacement && dropGridPosition != originalGridPosition)
+            // Allow drop if: valid placement AND (position changed OR rotation changed)
+            bool positionChanged = dropGridPosition != originalGridPosition;
+            bool rotationChanged = currentRotation != originalRotation;
+            
+            if (isValidPlacement && (positionChanged || rotationChanged))
             {
                 ItemDefinitionSO def = itemUI.Definition;
-                Debug.Log($"[InventoryItemDragHandler] Dropping {def.displayName} at ({dropGridPosition.x},{dropGridPosition.y})");
-                ExecuteDrop(dropGridPosition);
+                string rotInfo = rotationChanged ? $" (rotated: {currentRotation})" : "";
+                Debug.Log($"[InventoryItemDragHandler] Dropping {def.displayName} at ({dropGridPosition.x},{dropGridPosition.y}){rotInfo}");
+                ExecuteDrop(dropGridPosition, currentRotation);
             }
             else
             {
-                Debug.Log($"[InventoryItemDragHandler] Invalid drop or same position, returning to ({originalGridPosition.x},{originalGridPosition.y})");
+                Debug.Log($"[InventoryItemDragHandler] Invalid drop or no changes, returning to ({originalGridPosition.x},{originalGridPosition.y})");
                 ReturnToOriginalPosition();
             }
+        }
+
+        #endregion
+
+        #region Rotation
+
+        /// <summary>
+        /// Toggle rotation state during drag
+        /// </summary>
+        private void ToggleRotation()
+        {
+            currentRotation = !currentRotation;
+            
+            ItemDefinitionSO def = itemUI.Definition;
+            
+            // Update the dragged item's visual rotation
+            // Swap width/height visually
+            int newWidth = currentRotation ? def.height : def.width;
+            int newHeight = currentRotation ? def.width : def.height;
+            
+            Vector2 cellSize = gridUI.CellSize;
+            rectTransform.sizeDelta = new Vector2(newWidth * cellSize.x, newHeight * cellSize.y);
+            
+            // Update preview to match new rotation
+            UpdatePreviewRotation();
+            
+            Debug.Log($"[InventoryItemDragHandler] Rotated {def.displayName} to {currentRotation}");
+        }
+
+        /// <summary>
+        /// Update preview object to match current rotation
+        /// </summary>
+        private void UpdatePreviewRotation()
+        {
+            if (previewObject == null || itemUI?.Definition == null) return;
+            
+            ItemDefinitionSO def = itemUI.Definition;
+            int newWidth = currentRotation ? def.height : def.width;
+            int newHeight = currentRotation ? def.width : def.height;
+            
+            Vector2 cellSize = gridUI.CellSize;
+            RectTransform previewRect = previewObject.GetComponent<RectTransform>();
+            previewRect.sizeDelta = new Vector2(newWidth * cellSize.x, newHeight * cellSize.y);
         }
 
         #endregion
@@ -202,15 +260,14 @@ namespace NewThelos.UI.Inventory
             ItemDefinitionSO definition = itemUI.Definition;
             if (definition == null) return;
 
-            // Convert local point to grid coordinates
-            // WorldToGridPosition handles the items container offset internally
+            // Convert local point to grid coordinates using CURRENT rotation state
             Vector2Int targetGridPos = gridUI.WorldToGridPosition(
                 localPoint,           // Position relative to grid RectTransform
                 definition,
-                itemUI.Item.isRotated
+                currentRotation       // Use current rotation, not original!
             );
 
-            // Check if placement is valid at this position
+            // Check if placement is valid at this position with current rotation
             CheckPlacementValidity(targetGridPos);
 
             // Update preview color based on validity
@@ -220,17 +277,12 @@ namespace NewThelos.UI.Inventory
             Vector2 previewWorldPos = gridUI.GridToWorldPosition(
                 targetGridPos,
                 definition,
-                itemUI.Item.isRotated
+                currentRotation       // Use current rotation
             );
 
             // Position the preview
             RectTransform previewRect = previewObject.GetComponent<RectTransform>();
             previewRect.anchoredPosition = previewWorldPos;
-
-            // Log for debugging
-            ItemDefinitionSO collidingDef = collidingItem != null ? ItemDefinitionRegistry.GetItemDefinition(collidingItem.itemDefinitionId) : null;
-            string collisionInfo = collidingDef != null ? $", colliding with {collidingDef.displayName}" : "";
-            Debug.Log($"[InventoryItemDragHandler] Preview at ({targetGridPos.x},{targetGridPos.y}), valid: {isValidPlacement}{collisionInfo}");
         }
 
         private void CheckPlacementValidity(Vector2Int gridPos)
@@ -245,12 +297,12 @@ namespace NewThelos.UI.Inventory
             
             InventoryGrid grid = gridUI.Grid;
             ItemDefinitionSO definition = itemUI.Definition;
-            bool isRotated = itemUI.Item.isRotated;
+            
+            // Use CURRENT rotation state for validation
+            int width = currentRotation ? definition.height : definition.width;
+            int height = currentRotation ? definition.width : definition.height;
             
             // Check bounds
-            int width = isRotated ? definition.height : definition.width;
-            int height = isRotated ? definition.width : definition.height;
-            
             if (gridPos.x < 0 || gridPos.y < 0 ||
                 gridPos.x + width > grid.Width ||
                 gridPos.y + height > grid.Height)
@@ -353,15 +405,15 @@ namespace NewThelos.UI.Inventory
                 out localPoint
             );
             
-            // Convert to grid coordinates
-            return gridUI.WorldToGridPosition(localPoint, itemUI.Definition, itemUI.Item.isRotated);
+            // Convert to grid coordinates using CURRENT rotation
+            return gridUI.WorldToGridPosition(localPoint, itemUI.Definition, currentRotation);
         }
 
         #endregion
 
         #region Drop Execution
 
-        private void ExecuteDrop(Vector2Int targetPosition)
+        private void ExecuteDrop(Vector2Int targetPosition, bool targetRotation)
         {
             if (itemUI?.Item == null)
             {
@@ -378,17 +430,13 @@ namespace NewThelos.UI.Inventory
                 return;
             }
             
-            // Send move request to server
-            // The server will validate and update the grid, including swapping if necessary
+            // Send move request to server with new rotation
             string gridId = gridUI.GridId;
             string itemId = itemUI.Item.instanceId;
             
-            // Get current rotation to preserve it
-            bool currentRotation = itemUI.Item.isRotated;
+            inventory.MoveItemWithSwap_ServerRpc(itemId, gridId, targetPosition.x, targetPosition.y, targetRotation);
             
-            inventory.MoveItemWithSwap_ServerRpc(itemId, gridId, targetPosition.x, targetPosition.y, currentRotation);
-            
-            Debug.Log($"[InventoryItemDragHandler] Sent move request: {itemId} to ({targetPosition.x},{targetPosition.y})");
+            Debug.Log($"[InventoryItemDragHandler] Sent move request: {itemId} to ({targetPosition.x},{targetPosition.y}) rot:{targetRotation}");
             
             // Return to original position temporarily
             // The server will send back the update which will reposition correctly
@@ -403,6 +451,16 @@ namespace NewThelos.UI.Inventory
             
             // Restore position
             rectTransform.anchoredPosition = originalPosition;
+            
+            // Restore original size (in case rotation changed it)
+            if (itemUI?.Definition != null)
+            {
+                ItemDefinitionSO def = itemUI.Definition;
+                int width = originalRotation ? def.height : def.width;
+                int height = originalRotation ? def.width : def.height;
+                Vector2 cellSize = gridUI.CellSize;
+                rectTransform.sizeDelta = new Vector2(width * cellSize.x, height * cellSize.y);
+            }
             
             // Restore visual state
             canvasGroup.alpha = 1f;

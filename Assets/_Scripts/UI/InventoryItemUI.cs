@@ -13,12 +13,7 @@ namespace NewThelos.UI.Inventory
     [RequireComponent(typeof(Image))]
     public class InventoryItemUI : MonoBehaviour
     {
-        [Header("Visual Settings")]
-        [SerializeField] private Color borderColor = new Color(1f, 1f, 1f, 0.8f);
-        [SerializeField] private float borderWidth = 3f;
-        
         private Image _itemImage;
-        private Outline _outline;
         private InventoryItem _itemData;
         private ItemDefinitionSO _definition;
         private InventoryGridUI _parentGrid;
@@ -39,10 +34,6 @@ namespace NewThelos.UI.Inventory
         {
             _itemImage = GetComponent<Image>();
             _itemImage.raycastTarget = true;
-            
-            _outline = gameObject.AddComponent<Outline>();
-            _outline.effectColor = borderColor;
-            _outline.effectDistance = new Vector2(borderWidth, borderWidth);
         }
         
         public void Initialize(InventoryItem item, InventoryGridUI parentGrid, Vector2 cellSize)
@@ -94,6 +85,41 @@ namespace NewThelos.UI.Inventory
             HighlightOccupiedCells(true);
             
             gameObject.name = $"Item_{_definition.itemId}_{InstanceId}";
+        }
+        
+        /// <summary>
+        /// Update position when item moves within the same grid.
+        /// This is more efficient than destroying and recreating the UI.
+        /// </summary>
+        public void UpdatePosition(int newX, int newY, bool newRotation, Vector2 cellSize)
+        {
+            // Clear old cell highlights
+            HighlightOccupiedCells(false);
+            
+            // Update internal state
+            GridX = newX;
+            GridY = newY;
+            IsRotated = newRotation;
+            
+            // Update item data reference
+            _itemData.posX = newX;
+            _itemData.posY = newY;
+            _itemData.isRotated = newRotation;
+            
+            // Recalculate size if rotation changed
+            int width = IsRotated ? _definition.height : _definition.width;
+            int height = IsRotated ? _definition.width : _definition.height;
+            
+            RectTransform rect = GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(cellSize.x * width, cellSize.y * height);
+            
+            // Reposition
+            PositionInGrid(cellSize);
+            
+            // Highlight new cells
+            HighlightOccupiedCells(true);
+            
+            Debug.Log($"[InventoryItemUI] Repositioned {_definition.itemId} to ({GridX},{GridY})");
         }
         
         private void PositionInGrid(Vector2 cellSize)
