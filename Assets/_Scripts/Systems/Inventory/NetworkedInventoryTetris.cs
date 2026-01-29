@@ -9,29 +9,28 @@ namespace TimeGame.Systems.Inventory
     /// <summary>
     /// FishNet NetworkBehaviour wrapper for InventoryTetris.
     /// 
-    /// This script sits next to InventoryTetris and adds networking.
-    /// It does NOT modify any CodeMonkey code - just wraps it.
-    /// 
     /// How it works:
     /// 1. Client wants to place item → calls RequestPlaceItem()
-    /// 2. RequestPlaceItem() sends ServerRpc to server
+    /// 2. → Sends ServerRpc to server
     /// 3. Server validates using CodeMonkey's TryPlaceItem()
-    /// 4. If valid, server adds to SyncList
+    /// 4. If valid → adds to SyncList
     /// 5. SyncList automatically replicates to all clients
-    /// 6. Clients receive callback and place item locally using CodeMonkey
+    /// 6. Clients receive callback → place item locally using CodeMonkey
+    /// 
+    /// CodeMonkey code is NEVER modified - we just wrap it!
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
     public class NetworkedInventoryTetris : NetworkBehaviour
     {
         [Header("References")]
-        [Tooltip("Drag the InventoryTetris component here (CodeMonkey system)")]
+        [Tooltip("The local InventoryTetris instance (CodeMonkey system, unchanged)")]
         [SerializeField] private InventoryTetris _localInventory;
 
-        [Tooltip("Drag the InventoryTetrisRegistry asset here")]
+        [Tooltip("Registry for looking up ItemTetrisSO by name")]
         [SerializeField] private InventoryTetrisRegistry _itemRegistry;
 
-        [Header("Debug")]
-        [Tooltip("Enable to see detailed logs in console")]
+        [Header("Configuration")]
+        [Tooltip("Enable detailed logging for debugging network issues")]
         [SerializeField] private bool _verboseLogging = false;
 
         /// <summary>
@@ -42,7 +41,7 @@ namespace TimeGame.Systems.Inventory
         private readonly SyncList<NetworkedItemPlacementData> _syncedItems = new SyncList<NetworkedItemPlacementData>();
 
         /// <summary>
-        /// Local tracking: Maps item UID to the actual PlacedObject.
+        /// Tracks which PlacedObject corresponds to which UID.
         /// Used for fast removal lookups.
         /// </summary>
         private Dictionary<Guid, PlacedObject> _uidToPlacedObject = new Dictionary<Guid, PlacedObject>();
@@ -51,15 +50,15 @@ namespace TimeGame.Systems.Inventory
 
         private void Awake()
         {
-            // Validate references are assigned
+            // Validate that references are assigned
             if (_localInventory == null)
             {
-                Debug.LogError("[NetworkedInventoryTetris] Missing InventoryTetris reference! Drag it in the inspector.", this);
+                Debug.LogError("[NetworkedInventoryTetris] Missing InventoryTetris reference! Assign in inspector.", this);
             }
 
             if (_itemRegistry == null)
             {
-                Debug.LogError("[NetworkedInventoryTetris] Missing InventoryTetrisRegistry reference! Drag it in the inspector.", this);
+                Debug.LogError("[NetworkedInventoryTetris] Missing InventoryTetrisRegistry reference! Assign in inspector.", this);
             }
         }
 
@@ -67,8 +66,7 @@ namespace TimeGame.Systems.Inventory
         {
             base.OnStartNetwork();
 
-            // Subscribe to SyncList changes
-            // This callback fires whenever the list changes (add/remove/etc)
+            // Subscribe to SyncList changes - this is how clients learn about inventory updates
             _syncedItems.OnChange += OnSyncedItemsChanged;
 
             if (_verboseLogging)
@@ -87,11 +85,11 @@ namespace TimeGame.Systems.Inventory
 
         #endregion
 
-        #region Server Authority - Validation & Execution
+        #region Server RPCs (Client → Server Requests)
 
         /// <summary>
-        /// SERVER ONLY: Client requests to place an item.
-        /// Server validates using CodeMonkey logic, then adds to SyncList if valid.
+        /// Client requests to place an item in the inventory.
+        /// Server validates and executes if placement is valid.
         /// </summary>
         [ServerRpc(RequireOwnership = false)]
         public void ServerPlaceItem(string itemName, Vector2Int gridPosition, int directionIndex)
@@ -102,7 +100,7 @@ namespace TimeGame.Systems.Inventory
                 return;
             }
 
-            // Step 1: Look up the actual ItemTetrisSO from the registry
+            // Look up the item in our registry
             ItemTetrisSO itemSO = _itemRegistry.GetItem(itemName);
             if (itemSO == null)
             {
@@ -110,21 +108,21 @@ namespace TimeGame.Systems.Inventory
                 return;
             }
 
-            // Step 2: Convert direction int back to enum
+            // Convert direction index back to enum
             PlacedObjectTypeSO.Dir direction = (PlacedObjectTypeSO.Dir)directionIndex;
 
-            // Step 3: Validate placement using CodeMonkey's logic (unchanged!)
+            // Use CodeMonkey's validation logic - if it says no, we don't place it
             bool canPlace = _localInventory.TryPlaceItem(itemSO, gridPosition, direction, out PlacedObject placedObject);
 
             if (canPlace && placedObject != null)
             {
-                // Success! Generate unique ID for this item instance
+                // Success! Generate a unique ID for this item instance
                 Guid itemUID = Guid.NewGuid();
 
-                // Track locally for removal operations
+                // Track it locally for when we need to remove it
                 _uidToPlacedObject[itemUID] = placedObject;
 
-                // Add to synced list - FishNet automatically sends to all clients
+                // Add to synced list - FishNet automatically sends this to all clients
                 NetworkedItemPlacementData itemData = new NetworkedItemPlacementData(
                     itemName,
                     gridPosition,
@@ -136,22 +134,21 @@ namespace TimeGame.Systems.Inventory
 
                 if (_verboseLogging)
                 {
-                    Debug.Log($"[NetworkedInventoryTetris] ✅ Server placed: {itemName} at {gridPosition} dir={direction} uid={itemUID}");
+                    Debug.Log($"[NetworkedInventoryTetris] Server placed: {itemName} at {gridPosition} dir={direction} uid={itemUID}");
                 }
             }
             else
             {
-                // Placement failed - CodeMonkey validation rejected it
                 if (_verboseLogging)
                 {
-                    Debug.LogWarning($"[NetworkedInventoryTetris] ❌ Server rejected placement: {itemName} at {gridPosition}");
+                    Debug.LogWarning($"[NetworkedInventoryTetris] Server rejected placement: {itemName} at {gridPosition} (collision or out of bounds)");
                 }
             }
         }
 
         /// <summary>
-        /// SERVER ONLY: Client requests to remove an item.
-        /// Server finds the item, removes it using CodeMonkey logic, then removes from SyncList.
+        /// Client requests to remove an item from the inventory.
+        /// Server validates and executes if item exists.
         /// </summary>
         [ServerRpc(RequireOwnership = false)]
         public void ServerRemoveItem(Vector2Int gridPosition)
@@ -162,7 +159,7 @@ namespace TimeGame.Systems.Inventory
                 return;
             }
 
-            // Find which item occupies this grid position
+            // Find which item (if any) occupies this grid position
             NetworkedItemPlacementData? foundItem = null;
             int foundIndex = -1;
 
@@ -170,13 +167,11 @@ namespace TimeGame.Systems.Inventory
             {
                 NetworkedItemPlacementData item = _syncedItems[i];
                 
-                // Look up the item to get its occupied cells
+                // Get the item SO to check its occupied cells
                 ItemTetrisSO itemSO = _itemRegistry.GetItem(item.itemSOName);
                 if (itemSO == null) continue;
 
                 PlacedObjectTypeSO.Dir direction = (PlacedObjectTypeSO.Dir)item.directionIndex;
-                
-                // Get all cells this item occupies (CodeMonkey handles multi-cell)
                 List<Vector2Int> occupiedCells = itemSO.GetGridPositionList(item.gridPosition, direction);
 
                 // Check if the clicked position is in this item's cells
@@ -190,35 +185,35 @@ namespace TimeGame.Systems.Inventory
 
             if (foundItem.HasValue && foundIndex >= 0)
             {
-                // Remove from local inventory using CodeMonkey logic
+                // Remove from CodeMonkey's inventory
                 _localInventory.RemoveItemAt(gridPosition);
 
-                // Remove from tracking dictionary
+                // Remove from our UID tracking
                 if (_uidToPlacedObject.ContainsKey(foundItem.Value.itemUID))
                 {
                     _uidToPlacedObject.Remove(foundItem.Value.itemUID);
                 }
 
-                // Remove from synced list - FishNet sends removal to all clients
+                // Remove from synced list - FishNet automatically sends removal to all clients
                 _syncedItems.RemoveAt(foundIndex);
 
                 if (_verboseLogging)
                 {
-                    Debug.Log($"[NetworkedInventoryTetris] ✅ Server removed: {foundItem.Value.itemSOName} uid={foundItem.Value.itemUID}");
+                    Debug.Log($"[NetworkedInventoryTetris] Server removed: {foundItem.Value.itemSOName} uid={foundItem.Value.itemUID}");
                 }
             }
             else
             {
                 if (_verboseLogging)
                 {
-                    Debug.LogWarning($"[NetworkedInventoryTetris] ❌ Server found no item to remove at {gridPosition}");
+                    Debug.LogWarning($"[NetworkedInventoryTetris] Server found no item to remove at {gridPosition}");
                 }
             }
         }
 
         /// <summary>
-        /// SERVER ONLY: Client requests to move an item (drag and drop).
-        /// Implemented as remove from old position + place at new position.
+        /// Client requests to move an item within the inventory.
+        /// Implemented as remove + place for simplicity.
         /// </summary>
         [ServerRpc(RequireOwnership = false)]
         public void ServerMoveItem(Vector2Int fromPosition, Vector2Int toPosition, int newDirectionIndex)
@@ -229,7 +224,7 @@ namespace TimeGame.Systems.Inventory
                 return;
             }
 
-            // Find item at source position
+            // Find the item at the source position
             NetworkedItemPlacementData? foundItem = null;
 
             for (int i = 0; i < _syncedItems.Count; i++)
@@ -254,30 +249,25 @@ namespace TimeGame.Systems.Inventory
                 // Remove from old position
                 ServerRemoveItem(fromPosition);
 
-                // Place at new position with new rotation
+                // Place at new position with potentially new rotation
                 ServerPlaceItem(foundItem.Value.itemSOName, toPosition, newDirectionIndex);
-
-                if (_verboseLogging)
-                {
-                    Debug.Log($"[NetworkedInventoryTetris] ✅ Server moved: {foundItem.Value.itemSOName} from {fromPosition} to {toPosition}");
-                }
             }
         }
 
         #endregion
 
-        #region Client Replication - SyncList Callbacks
+        #region SyncList Callbacks (Server → Client Replication)
 
         /// <summary>
-        /// Called on clients when the SyncList changes.
-        /// Replicates the server's changes to the local CodeMonkey inventory.
+        /// Called automatically by FishNet when the synced items list changes.
+        /// This is how clients learn about inventory changes and replicate them locally.
         /// </summary>
         private void OnSyncedItemsChanged(SyncListOperation op, int index, NetworkedItemPlacementData oldItem, NetworkedItemPlacementData newItem, bool asServer)
         {
-            // Server already updated locally in ServerRpc methods, skip double-update
+            // Server already updated locally in the ServerRpc methods, don't do it twice
             if (asServer) return;
 
-            // Client replication based on operation type
+            // Client-side replication based on what changed
             switch (op)
             {
                 case SyncListOperation.Add:
@@ -289,7 +279,7 @@ namespace TimeGame.Systems.Inventory
                     break;
 
                 case SyncListOperation.Set:
-                    // Item was replaced - remove old, add new
+                    // Item was updated (shouldn't happen in our use case, but handle it)
                     ClientReplicateRemove(oldItem);
                     ClientReplicateAdd(newItem);
                     break;
@@ -305,11 +295,11 @@ namespace TimeGame.Systems.Inventory
         }
 
         /// <summary>
-        /// CLIENT ONLY: Replicate item addition from server.
+        /// Client replication: Add an item to local CodeMonkey inventory.
         /// </summary>
         private void ClientReplicateAdd(NetworkedItemPlacementData itemData)
         {
-            // Look up the ItemTetrisSO from registry
+            // Look up the item SO
             ItemTetrisSO itemSO = _itemRegistry.GetItem(itemData.itemSOName);
             if (itemSO == null)
             {
@@ -320,34 +310,34 @@ namespace TimeGame.Systems.Inventory
             // Convert direction
             PlacedObjectTypeSO.Dir direction = (PlacedObjectTypeSO.Dir)itemData.directionIndex;
 
-            // Place item using CodeMonkey logic (same code as server!)
+            // Place using CodeMonkey's logic
             bool placed = _localInventory.TryPlaceItem(itemSO, itemData.gridPosition, direction, out PlacedObject placedObject);
 
             if (placed && placedObject != null)
             {
-                // Track for removal
+                // Track for future removal
                 _uidToPlacedObject[itemData.itemUID] = placedObject;
 
                 if (_verboseLogging)
                 {
-                    Debug.Log($"[NetworkedInventoryTetris] 📥 Client replicated add: {itemData.itemSOName} at {itemData.gridPosition}");
+                    Debug.Log($"[NetworkedInventoryTetris] Client replicated add: {itemData.itemSOName} at {itemData.gridPosition}");
                 }
             }
             else
             {
-                Debug.LogError($"[NetworkedInventoryTetris] ❌ Client failed to replicate add: {itemData.itemSOName} at {itemData.gridPosition}");
+                Debug.LogError($"[NetworkedInventoryTetris] Client failed to replicate add: {itemData.itemSOName} at {itemData.gridPosition}");
             }
         }
 
         /// <summary>
-        /// CLIENT ONLY: Replicate item removal from server.
+        /// Client replication: Remove an item from local CodeMonkey inventory.
         /// </summary>
         private void ClientReplicateRemove(NetworkedItemPlacementData itemData)
         {
-            // Remove using CodeMonkey logic
+            // Remove using CodeMonkey's logic
             _localInventory.RemoveItemAt(itemData.gridPosition);
 
-            // Remove from tracking
+            // Remove from UID tracking
             if (_uidToPlacedObject.ContainsKey(itemData.itemUID))
             {
                 _uidToPlacedObject.Remove(itemData.itemUID);
@@ -355,12 +345,12 @@ namespace TimeGame.Systems.Inventory
 
             if (_verboseLogging)
             {
-                Debug.Log($"[NetworkedInventoryTetris] 📥 Client replicated remove: {itemData.itemSOName} uid={itemData.itemUID}");
+                Debug.Log($"[NetworkedInventoryTetris] Client replicated remove: {itemData.itemSOName} uid={itemData.itemUID}");
             }
         }
 
         /// <summary>
-        /// CLIENT ONLY: Clear all items (rarely used).
+        /// Client replication: Clear all items from local inventory.
         /// </summary>
         private void ClientReplicateClear()
         {
@@ -368,17 +358,17 @@ namespace TimeGame.Systems.Inventory
 
             if (_verboseLogging)
             {
-                Debug.Log("[NetworkedInventoryTetris] 📥 Client replicated clear");
+                Debug.Log("[NetworkedInventoryTetris] Client replicated clear");
             }
         }
 
         #endregion
 
-        #region Public API - For UI/Input Systems
+        #region Public API (For UI/Input Systems)
 
         /// <summary>
-        /// Request to place an item. Routes to server for validation.
-        /// Call this from your UI or input code.
+        /// Request to place an item. Call this from your UI/input code.
+        /// Routes to server for validation.
         /// </summary>
         public void RequestPlaceItem(ItemTetrisSO item, Vector2Int position, PlacedObjectTypeSO.Dir direction)
         {
@@ -392,8 +382,8 @@ namespace TimeGame.Systems.Inventory
         }
 
         /// <summary>
-        /// Request to remove an item. Routes to server for validation.
-        /// Call this from your UI when player clicks to remove.
+        /// Request to remove an item. Call this from your UI/input code.
+        /// Routes to server for validation.
         /// </summary>
         public void RequestRemoveItem(Vector2Int position)
         {
@@ -401,8 +391,8 @@ namespace TimeGame.Systems.Inventory
         }
 
         /// <summary>
-        /// Request to move/rotate an item. Routes to server for validation.
-        /// Call this from drag-drop UI code.
+        /// Request to move/rotate an item. Call this from your UI/input code.
+        /// Routes to server for validation.
         /// </summary>
         public void RequestMoveItem(Vector2Int fromPosition, Vector2Int toPosition, PlacedObjectTypeSO.Dir newDirection)
         {
@@ -411,7 +401,7 @@ namespace TimeGame.Systems.Inventory
 
         /// <summary>
         /// Get the local InventoryTetris instance.
-        /// Use this for read-only operations like checking if space is available.
+        /// Use this for read-only operations like checking what's in the inventory.
         /// </summary>
         public InventoryTetris GetLocalInventory()
         {
