@@ -4,7 +4,8 @@ namespace TimeGame.Systems.GridPlacement
 {
     /// <summary>
     /// Represents a single cell in the grid.
-    /// Tracks what object (if any) occupies this cell.
+    /// Tracks what item (if any) occupies this cell.
+    /// Multiple cells can reference the same PlacedItem for multi-cell objects.
     /// </summary>
     public class GridCell
     {
@@ -12,53 +13,53 @@ namespace TimeGame.Systems.GridPlacement
         private readonly int y;
 
         /// <summary>
-        /// The object placement that occupies this cell.
+        /// The placed item that occupies this cell.
         /// Null if cell is empty.
-        /// Multiple cells can reference the same placement (for multi-cell objects).
+        /// For multi-cell items, multiple GridCells will reference the same PlacedItem.
         /// </summary>
-        public ObjectPlacement OccupyingPlacement { get; private set; }
+        public PlacedItem OccupyingItem { get; private set; }
 
         public GridCell(int x, int y)
         {
             this.x = x;
             this.y = y;
-            OccupyingPlacement = null;
+            OccupyingItem = null;
         }
 
         /// <summary>
-        /// Grid position of this cell
+        /// Grid position of this cell.
         /// </summary>
         public Vector2Int Position => new Vector2Int(x, y);
 
         /// <summary>
         /// Is this cell available for placement?
         /// </summary>
-        public bool IsAvailable => OccupyingPlacement == null;
+        public bool IsAvailable => OccupyingItem == null;
 
         /// <summary>
-        /// Is this cell occupied by any object?
+        /// Is this cell occupied by any item?
         /// </summary>
-        public bool IsOccupied => OccupyingPlacement != null;
+        public bool IsOccupied => OccupyingItem != null;
 
         /// <summary>
-        /// Set which object placement occupies this cell
+        /// Set which item occupies this cell.
         /// </summary>
-        public void SetOccupyingPlacement(ObjectPlacement placement)
+        public void SetOccupyingItem(PlacedItem item)
         {
-            OccupyingPlacement = placement;
+            OccupyingItem = item;
         }
 
         /// <summary>
-        /// Clear this cell (make it available)
+        /// Clear this cell (make it available).
         /// </summary>
         public void Clear()
         {
-            OccupyingPlacement = null;
+            OccupyingItem = null;
         }
 
         public override string ToString()
         {
-            return $"Cell({x},{y}) - {(IsOccupied ? $"Occupied by {OccupyingPlacement.PlaceableObject.ObjectTypeName}" : "Empty")}";
+            return $"Cell({x},{y}) - {(IsOccupied ? $"Occupied by {OccupyingItem.ItemDefinition.ItemName}" : "Empty")}";
         }
     }
 }
