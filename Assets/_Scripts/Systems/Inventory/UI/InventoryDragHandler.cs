@@ -17,12 +17,15 @@ namespace TimeGame.Systems.Inventory.UI
 
         [Header("Input Settings")]
         [SerializeField] private KeyCode rotateKey = KeyCode.R;
+        [SerializeField] private float dragStartDelay = 0.1f; // Minimum time before drag registers
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = true;
 
         // Drag state
         private bool isDragging = false;
+        private bool isMouseDown = false;
+        private float mouseDownTime = 0f;
         private PlacedItem draggedItem;
         private Vector2Int originalPosition;
         private GridDirection originalRotation;
@@ -57,7 +60,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void Update()
         {
-            if (inventorySystem == null || gridVisual == null) return;
+            if (inventorySystem == null || gridVisual == null || ghost == null) return;
 
             // Handle drag input
             if (isDragging)
@@ -75,8 +78,15 @@ namespace TimeGame.Systems.Inventory.UI
         /// </summary>
         private void CheckStartDrag()
         {
-            // Left mouse button pressed
+            // Mouse button pressed - start tracking
             if (Input.GetMouseButtonDown(0))
+            {
+                isMouseDown = true;
+                mouseDownTime = Time.time;
+            }
+
+            // Mouse held long enough - check for drag start
+            if (isMouseDown && !isDragging && (Time.time - mouseDownTime) >= dragStartDelay)
             {
                 // Convert mouse position to grid position
                 Vector2Int gridPos = GetMouseGridPosition();
@@ -88,6 +98,17 @@ namespace TimeGame.Systems.Inventory.UI
                 {
                     StartDrag(item);
                 }
+                else
+                {
+                    // No item found, reset tracking
+                    isMouseDown = false;
+                }
+            }
+
+            // Mouse released without dragging
+            if (Input.GetMouseButtonUp(0))
+            {
+                isMouseDown = false;
             }
         }
 
@@ -108,9 +129,14 @@ namespace TimeGame.Systems.Inventory.UI
             // Show ghost
             InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
             ghost.Initialize(itemDef, item.Rotation, gridVisual.CellSize);
+            
+            // Position ghost at current mouse
+            UpdateGhostPosition();
+            
             ghost.Show();
 
             isDragging = true;
+            isMouseDown = false; // Clear mouse down flag
         }
 
         /// <summary>
@@ -224,6 +250,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             ghost.Hide();
             isDragging = false;
+            isMouseDown = false;
             draggedItem = null;
         }
 
@@ -241,7 +268,7 @@ namespace TimeGame.Systems.Inventory.UI
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 gridRect,
                 mousePos,
-                parentCanvas.worldCamera,
+                parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : parentCanvas.worldCamera,
                 out Vector2 localPoint
             );
 
