@@ -54,10 +54,38 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void Update()
         {
+            // Debug keyboard check
+            if (Keyboard.current == null)
+            {
+                Debug.LogWarning("[InventoryDragHandler] Keyboard.current is NULL!");
+                return;
+            }
+
+            if (isDragging)
+            {
+                Log($"Update() - Dragging, checking R key...");
+            }
+
             if (!isDragging) return;
 
-            // Handle rotation input
-            if (Keyboard.current != null && Keyboard.current[rotateKey].wasPressedThisFrame)
+            // Handle rotation input - Try multiple input methods
+            bool rPressed = false;
+            
+            // Method 1: New Input System with Key enum
+            if (Keyboard.current[rotateKey].wasPressedThisFrame)
+            {
+                Log("R detected via Keyboard.current[Key.R]");
+                rPressed = true;
+            }
+            
+            // Method 2: Old Input System fallback
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                Log("R detected via Input.GetKeyDown(KeyCode.R)");
+                rPressed = true;
+            }
+
+            if (rPressed)
             {
                 RotateDraggedItem();
             }
@@ -200,7 +228,11 @@ namespace TimeGame.Systems.Inventory.UI
         private void RotateDraggedItem()
         {
             InventoryItemSO itemDef = draggedItem.ItemDefinition as InventoryItemSO;
-            if (itemDef == null || !itemDef.CanRotate) return;
+            if (itemDef == null || !itemDef.CanRotate)
+            {
+                Log("Cannot rotate - item doesn't support rotation");
+                return;
+            }
 
             // Get next rotation
             currentRotation = itemDef.GetNextRotation(currentRotation);
