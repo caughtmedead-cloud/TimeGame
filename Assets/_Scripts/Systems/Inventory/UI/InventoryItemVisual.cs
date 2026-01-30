@@ -6,13 +6,15 @@ namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Simple visual representation of a placed inventory item.
-    /// Just displays the sprite - no interaction logic here.
+    /// Uses a two-transform hierarchy for proper rotation:
+    /// - Outer: Grid-aligned positioning (pivot 0,0)
+    /// - Inner: Visual rotation (pivot 0.5,0.5 - center)
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    [RequireComponent(typeof(Image))]
     public class InventoryItemVisual : MonoBehaviour
     {
         private RectTransform rectTransform;
+        private RectTransform visualTransform; // Child that actually rotates
         private Image image;
 
         /// <summary>
@@ -28,7 +30,32 @@ namespace TimeGame.Systems.Inventory.UI
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
-            image = GetComponent<Image>();
+            
+            // Create child for visual rotation
+            CreateVisualChild();
+        }
+
+        /// <summary>
+        /// Create the child GameObject that holds the rotatable visual.
+        /// </summary>
+        private void CreateVisualChild()
+        {
+            // Create child GameObject
+            GameObject visualObj = new GameObject("Visual");
+            visualObj.transform.SetParent(transform, false);
+            
+            // Setup RectTransform
+            visualTransform = visualObj.AddComponent<RectTransform>();
+            visualTransform.anchorMin = Vector2.zero;
+            visualTransform.anchorMax = Vector2.one;
+            visualTransform.sizeDelta = Vector2.zero;
+            visualTransform.anchoredPosition = Vector2.zero;
+            
+            // This will rotate around its center (0.5, 0.5)
+            visualTransform.pivot = new Vector2(0.5f, 0.5f);
+            
+            // Add Image component
+            image = visualObj.AddComponent<Image>();
         }
 
         /// <summary>
@@ -39,13 +66,32 @@ namespace TimeGame.Systems.Inventory.UI
             PlacedItem = placedItem;
             ItemDefinition = itemDef;
 
-            // CRITICAL: Set pivot to bottom-left to match grid cells
-            // This ensures items are positioned from their bottom-left corner, not center
+            // Ensure visual child exists
+            if (visualTransform == null)
+            {
+                CreateVisualChild();
+            }
+
+            // OUTER TRANSFORM: Grid-aligned positioning (bottom-left pivot)
             rectTransform.pivot = new Vector2(0, 0);
             rectTransform.anchorMin = new Vector2(0, 0);
             rectTransform.anchorMax = new Vector2(0, 0);
 
-            // Set sprite
+            // Calculate size based on item dimensions
+            int width = itemDef.GetRotatedWidth(placedItem.Rotation);
+            int height = itemDef.GetRotatedHeight(placedItem.Rotation);
+
+            rectTransform.sizeDelta = new Vector2(width * cellSize, height * cellSize);
+            
+            // No rotation on outer transform
+            rectTransform.localRotation = Quaternion.identity;
+
+            // INNER TRANSFORM: Visual rotation (center pivot)
+            // Set rotation on the visual child
+            float angle = itemDef.GetRotationAngle(placedItem.Rotation);
+            visualTransform.localRotation = Quaternion.Euler(0, 0, -angle);
+
+            // Set sprite on visual child
             if (itemDef.ItemIcon != null)
             {
                 image.sprite = itemDef.ItemIcon;
@@ -58,16 +104,6 @@ namespace TimeGame.Systems.Inventory.UI
                 image.color = GetColorForRarity(itemDef.Rarity);
                 image.enabled = true;
             }
-
-            // Calculate size based on item dimensions
-            int width = itemDef.GetRotatedWidth(placedItem.Rotation);
-            int height = itemDef.GetRotatedHeight(placedItem.Rotation);
-
-            rectTransform.sizeDelta = new Vector2(width * cellSize, height * cellSize);
-
-            // Set rotation
-            float angle = itemDef.GetRotationAngle(placedItem.Rotation);
-            rectTransform.localRotation = Quaternion.Euler(0, 0, -angle);
 
             // Position is set by InventoryGridVisual
         }
