@@ -65,6 +65,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Called when user begins dragging an item.
+        /// CRITICAL: Don't remove item from inventory yet! (CodeMonkey pattern)
         /// </summary>
         public void OnItemBeginDrag(System.Guid itemInstanceID)
         {
@@ -94,8 +95,8 @@ namespace TimeGame.Systems.Inventory.UI
 
             Log($"Started dragging {draggedItem.ItemDefinition.name} from {originalPosition}");
 
-            // Remove from grid (don't destroy visual - it goes semi-transparent via InventoryItemDragDrop)
-            inventorySystem.RemoveItem(itemInstanceID);
+            // DON'T REMOVE YET! Item stays in inventory during drag (like CodeMonkey)
+            // The visual becomes semi-transparent via InventoryItemDragDrop component
 
             // Show ghost
             InventoryItemSO itemDef = draggedItem.ItemDefinition as InventoryItemSO;
@@ -110,17 +111,28 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Called when user stops dragging an item.
+        /// NOW we remove from inventory and try to place (CodeMonkey pattern)
         /// </summary>
         public void OnItemEndDrag(System.Guid itemInstanceID)
         {
-            if (!isDragging) return;
+            if (!isDragging)
+            {
+                Log("OnItemEndDrag called but not dragging!");
+                return;
+            }
 
-            // Try to place at current mouse position
+            Log("OnItemEndDrag called - processing drop");
+
+            // Calculate target position
             Vector2 mouseLocalPos = GetMouseLocalPosition();
             Vector2Int targetGridPos = gridVisual.LocalPositionToGridPosition(mouseLocalPos);
             targetGridPos -= mouseDragGridPositionOffset; // Apply offset
 
-            // Try to place
+            // NOW remove from current position (like CodeMonkey does in StoppedDragging)
+            inventorySystem.RemoveItem(itemInstanceID);
+            Log($"Removed item from {originalPosition}");
+
+            // Try to place at new position
             bool success = inventorySystem.TryAddItem(
                 ghost.CurrentItem,
                 targetGridPos,
@@ -130,12 +142,12 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (success)
             {
-                Log($"Dropped {ghost.CurrentItem.name} at {targetGridPos} facing {currentRotation}");
+                Log($"✓ Dropped {ghost.CurrentItem.name} at {targetGridPos} facing {currentRotation}");
             }
             else
             {
-                // Failed - return to original position
-                Log($"Drop failed, returning to {originalPosition}");
+                // Failed - return to original position (like CodeMonkey)
+                Log($"✗ Drop failed, returning to {originalPosition}");
                 inventorySystem.TryAddItem(
                     ghost.CurrentItem,
                     originalPosition,
@@ -166,7 +178,8 @@ namespace TimeGame.Systems.Inventory.UI
             Vector2 snappedLocalPos = gridVisual.GridPositionToLocalPosition(targetGridPos);
             ghost.SetPosition(snappedLocalPos);
 
-            // Validate placement
+            // Validate placement (checking if we COULD place here)
+            // Item is still in original position, so we need to temporarily ignore it
             bool canPlace = inventorySystem.CanAddItem(
                 ghost.CurrentItem,
                 targetGridPos,
@@ -227,6 +240,7 @@ namespace TimeGame.Systems.Inventory.UI
             ghost.Hide();
             isDragging = false;
             draggedItem = null;
+            Log("Drag ended, cleanup complete");
         }
 
         /// <summary>
