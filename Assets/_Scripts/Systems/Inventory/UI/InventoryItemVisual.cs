@@ -59,9 +59,9 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Initialize this visual with item data.
+        /// Initialize this visual with item data and grid reference.
         /// </summary>
-        public void Initialize(PlacedItem placedItem, InventoryItemSO itemDef, float cellSize)
+        public void Initialize(PlacedItem placedItem, InventoryItemSO itemDef, float cellSize, InventoryGridVisual gridVisual)
         {
             PlacedItem = placedItem;
             ItemDefinition = itemDef;
@@ -104,6 +104,23 @@ namespace TimeGame.Systems.Inventory.UI
                 image.color = GetColorForRarity(itemDef.Rarity);
                 image.enabled = true;
             }
+
+            // Add drag-drop component if not present
+            InventoryItemDragDrop dragDrop = gameObject.GetComponent<InventoryItemDragDrop>();
+            if (dragDrop == null)
+            {
+                dragDrop = gameObject.AddComponent<InventoryItemDragDrop>();
+            }
+
+            // Also need CanvasGroup for drag-drop
+            CanvasGroup canvasGroup = gameObject.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            // Setup drag-drop component
+            dragDrop.Setup(gridVisual, placedItem.InstanceID);
 
             // Position is set by InventoryGridVisual
         }
