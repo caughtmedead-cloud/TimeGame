@@ -33,6 +33,11 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2Int mouseDragGridPositionOffset;
 
         /// <summary>
+        /// Is a drag operation currently active?
+        /// </summary>
+        public bool IsDragging => isDragging;
+
+        /// <summary>
         /// Initialize with inventory system reference.
         /// </summary>
         public void Initialize(InventorySystem inventory)
