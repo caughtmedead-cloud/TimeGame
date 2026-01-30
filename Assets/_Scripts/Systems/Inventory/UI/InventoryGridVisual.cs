@@ -274,8 +274,8 @@ namespace TimeGame.Systems.Inventory.UI
                 return;
             }
 
-            // Initialize visual
-            visual.Initialize(placedItem, itemDef, cellSize);
+            // Initialize visual (pass gridVisual reference for drag-drop)
+            visual.Initialize(placedItem, itemDef, cellSize, this);
 
             // Position at grid location
             Vector2 localPos = GridPositionToLocalPosition(placedItem.AnchorPosition);
