@@ -37,8 +37,7 @@ namespace TimeGame.Systems.Inventory
         /// Network-synchronized list of all items in this inventory.
         /// FishNet automatically replicates changes to all clients.
         /// </summary>
-        [SyncObject]
-        private readonly SyncList<NetworkedItemPlacementData> _syncedItems = new SyncList<NetworkedItemPlacementData>();
+        private readonly SyncList<NetworkedItemPlacementData> _syncedItems = new();
 
         /// <summary>
         /// Tracks which PlacedObject corresponds to which UID.

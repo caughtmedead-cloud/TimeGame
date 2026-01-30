@@ -3529,6 +3529,7 @@ GameObject:
   - component: {fileID: 74732551349139366}
   - component: {fileID: 3166874489748539819}
   - component: {fileID: 8817975478013292757}
+  - component: {fileID: 6967609907479775648}
   m_Layer: 0
   m_Name: IKRig_TFP 1
   m_TagString: Untagged
@@ -3549,9 +3550,9 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 6748231427665981747}
   - {fileID: 5775613561789262388}
   - {fileID: 5775613561789262398}
-  - {fileID: 6748231427665981747}
   - {fileID: 6800518851491151973}
   - {fileID: 9190377433747502334}
   m_Father: {fileID: 0}
@@ -4361,6 +4362,20 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: -8147693711007459752}
   _networkObjectCache: {fileID: -8147693711007459752}
   lookAnimator: {fileID: 3469835464399464619}
+--- !u!114 &6967609907479775648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6660607704666664321}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0299c31249e80f40acdf375a58c3df3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startLocked: 1
+  showDebugMessages: 1
 --- !u!1 &7128777773101445970
 GameObject:
   m_ObjectHideFlags: 0
