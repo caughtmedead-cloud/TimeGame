@@ -11,7 +11,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// - 1: Spawn test item at (2,2)
     /// - 2: Spawn test item at (5,5)
     /// - 3: Spawn test item at (0,0)
-    /// - R: Rotate next spawn
+    /// - R: Rotate next spawn (only when NOT dragging)
     /// - N: Cycle test item
     /// - X: Remove item at (2,2)
     /// - Z: Remove item at (5,5)
@@ -21,7 +21,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// 
     /// DRAG-DROP (if DragHandler is set up):
     /// - Left Click + Drag: Move items
-    /// - R while dragging: Rotate item
+    /// - R while dragging: Rotate item (handled by DragHandler)
     /// - Right Click: Cancel drag
     /// </summary>
     public class InventoryTestHarness : MonoBehaviour
@@ -49,6 +49,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         // Runtime
         private InventorySystem inventorySystem;
+        private InventoryDragHandler dragHandler;
         private int currentTestItemIndex = 0;
         private GridDirection currentRotation = GridDirection.Down;
 
@@ -71,7 +72,7 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             // Initialize drag handler if present
-            InventoryDragHandler dragHandler = GetComponentInChildren<InventoryDragHandler>();
+            dragHandler = GetComponentInChildren<InventoryDragHandler>();
             if (dragHandler != null)
             {
                 dragHandler.Initialize(inventorySystem);
@@ -101,10 +102,15 @@ namespace TimeGame.Systems.Inventory.UI
                 TestSpawnItem(new Vector2Int(0, 0));
             }
 
-            // Rotate current rotation
+            // Rotate current rotation (ONLY if not dragging!)
+            // When dragging, R key is handled by DragHandler
             if (Input.GetKeyDown(KeyCode.R))
             {
-                RotateCurrentDirection();
+                bool isDragging = dragHandler != null && dragHandler.IsDragging;
+                if (!isDragging)
+                {
+                    RotateCurrentDirection();
+                }
             }
 
             // Remove item at (2,2)
@@ -206,7 +212,7 @@ namespace TimeGame.Systems.Inventory.UI
         private void RotateCurrentDirection()
         {
             currentRotation = (GridDirection)(((int)currentRotation + 1) % 4);
-            Debug.Log($"[InventoryTestHarness] Current rotation: {currentRotation} ({(int)currentRotation * 90}°)");
+            Debug.Log($"[InventoryTestHarness] Current rotation for spawn: {currentRotation} ({(int)currentRotation * 90}°)");
         }
 
         private void CycleTestItem()
@@ -235,7 +241,7 @@ namespace TimeGame.Systems.Inventory.UI
             Debug.Log("  1 - Spawn item at (2,2)");
             Debug.Log("  2 - Spawn item at (5,5)");
             Debug.Log("  3 - Spawn item at (0,0)");
-            Debug.Log("  R - Rotate next spawn");
+            Debug.Log("  R - Rotate next spawn (only when NOT dragging)");
             Debug.Log("  N - Cycle test item");
             Debug.Log("  X - Remove item at (2,2)");
             Debug.Log("  Z - Remove item at (5,5)");
@@ -269,6 +275,12 @@ namespace TimeGame.Systems.Inventory.UI
             GUILayout.Label("Left Click + Drag - Move");
             GUILayout.Label("R while dragging - Rotate");
             GUILayout.Label("Right Click - Cancel");
+            
+            // Show drag state
+            if (dragHandler != null && dragHandler.IsDragging)
+            {
+                GUILayout.Label("STATUS: DRAGGING", new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
+            }
             
             GUILayout.Space(10);
             GUILayout.Label($"Items: {(inventorySystem != null ? inventorySystem.GetItemCount().ToString() : "0")}");
