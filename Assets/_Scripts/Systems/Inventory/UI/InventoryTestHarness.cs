@@ -10,10 +10,19 @@ namespace TimeGame.Systems.Inventory.UI
     /// Controls:
     /// - 1: Spawn test item at (2,2)
     /// - 2: Spawn test item at (5,5)
-    /// - R: Rotate last spawned item
+    /// - 3: Spawn test item at (0,0)
+    /// - R: Rotate next spawn
+    /// - N: Cycle test item
     /// - X: Remove item at (2,2)
+    /// - Z: Remove item at (5,5)
     /// - C: Clear all items
     /// - W: Print weight info
+    /// - H: Print help
+    /// 
+    /// DRAG-DROP (if DragHandler is set up):
+    /// - Left Click + Drag: Move items
+    /// - R while dragging: Rotate item
+    /// - Right Click: Cancel drag
     /// </summary>
     public class InventoryTestHarness : MonoBehaviour
     {
@@ -59,6 +68,14 @@ namespace TimeGame.Systems.Inventory.UI
             else
             {
                 Debug.LogError("[InventoryTestHarness] No InventoryGridVisual assigned!");
+            }
+
+            // Initialize drag handler if present
+            InventoryDragHandler dragHandler = GetComponentInChildren<InventoryDragHandler>();
+            if (dragHandler != null)
+            {
+                dragHandler.Initialize(inventorySystem);
+                Debug.Log("[InventoryTestHarness] Drag-drop handler initialized");
             }
 
             PrintInstructions();
@@ -214,31 +231,45 @@ namespace TimeGame.Systems.Inventory.UI
         private void PrintInstructions()
         {
             Debug.Log("=== INVENTORY TEST HARNESS ===");
-            Debug.Log("1 - Spawn item at (2,2)");
-            Debug.Log("2 - Spawn item at (5,5)");
-            Debug.Log("3 - Spawn item at (0,0)");
-            Debug.Log("R - Rotate next spawn");
-            Debug.Log("N - Cycle test item");
-            Debug.Log("X - Remove item at (2,2)");
-            Debug.Log("Z - Remove item at (5,5)");
-            Debug.Log("C - Clear all");
-            Debug.Log("W - Print weight info");
-            Debug.Log("H - Print this help");
+            Debug.Log("KEYBOARD SPAWNING:");
+            Debug.Log("  1 - Spawn item at (2,2)");
+            Debug.Log("  2 - Spawn item at (5,5)");
+            Debug.Log("  3 - Spawn item at (0,0)");
+            Debug.Log("  R - Rotate next spawn");
+            Debug.Log("  N - Cycle test item");
+            Debug.Log("  X - Remove item at (2,2)");
+            Debug.Log("  Z - Remove item at (5,5)");
+            Debug.Log("  C - Clear all");
+            Debug.Log("  W - Print weight info");
+            Debug.Log("  H - Print this help");
+            Debug.Log("DRAG-DROP (if enabled):");
+            Debug.Log("  Left Click + Drag - Move items");
+            Debug.Log("  R while dragging - Rotate item");
+            Debug.Log("  Right Click - Cancel drag");
         }
 
 #if UNITY_EDITOR
         private void OnGUI()
         {
             // On-screen instructions
-            GUILayout.BeginArea(new Rect(10, 10, 300, 400));
+            GUILayout.BeginArea(new Rect(10, 10, 350, 500));
             GUILayout.Label("=== INVENTORY TEST ===", new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold });
             GUILayout.Space(5);
+            
+            GUILayout.Label("KEYBOARD:", new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
             GUILayout.Label("1/2/3 - Spawn at position");
             GUILayout.Label("R - Rotate (" + currentRotation + ")");
             GUILayout.Label("N - Cycle item (" + (testItems != null && testItems.Length > 0 && testItems[currentTestItemIndex] != null ? testItems[currentTestItemIndex].ItemName : "NONE") + ")");
             GUILayout.Label("X/Z - Remove at position");
             GUILayout.Label("C - Clear all");
             GUILayout.Label("W - Weight info");
+            
+            GUILayout.Space(10);
+            GUILayout.Label("DRAG-DROP:", new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold });
+            GUILayout.Label("Left Click + Drag - Move");
+            GUILayout.Label("R while dragging - Rotate");
+            GUILayout.Label("Right Click - Cancel");
+            
             GUILayout.Space(10);
             GUILayout.Label($"Items: {(inventorySystem != null ? inventorySystem.GetItemCount().ToString() : "0")}");
             if (inventorySystem != null)
