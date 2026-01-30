@@ -44,8 +44,13 @@ namespace TimeGame.Systems.Inventory.UI
             rectTransform = GetComponent<RectTransform>();
             canvasGroup = GetComponent<CanvasGroup>();
 
+            // Configure CanvasGroup for dragging
+            canvasGroup.alpha = 0f;
+            canvasGroup.blocksRaycasts = false; // Ghost should not block mouse
+            canvasGroup.interactable = false;
+
             // Start hidden
-            Hide();
+            gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -84,15 +89,16 @@ namespace TimeGame.Systems.Inventory.UI
             if (item.ItemIcon != null)
             {
                 image.sprite = item.ItemIcon;
+                image.color = validColor; // Start with valid color
             }
             else
             {
                 // Fallback color
                 image.sprite = null;
-                image.color = Color.white;
+                image.color = validColor;
             }
 
-            Show();
+            Debug.Log($"[InventoryItemGhost] Initialized with {item.ItemName}, size {width}x{height}");
         }
 
         /// <summary>
@@ -111,6 +117,7 @@ namespace TimeGame.Systems.Inventory.UI
             visualTransform.pivot = new Vector2(0.5f, 0.5f); // Center rotation
 
             image = visualObj.AddComponent<Image>();
+            image.raycastTarget = false; // Ghost should not block raycasts
         }
 
         /// <summary>
@@ -130,6 +137,8 @@ namespace TimeGame.Systems.Inventory.UI
             // Update visual rotation
             float angle = CurrentItem.GetRotationAngle(CurrentRotation);
             visualTransform.localRotation = Quaternion.Euler(0, 0, -angle);
+
+            Debug.Log($"[InventoryItemGhost] Rotated to {CurrentRotation}, new size {width}x{height}");
         }
 
         /// <summary>
@@ -147,7 +156,17 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (image != null)
             {
-                image.color = isValid ? validColor : invalidColor;
+                Color targetColor = isValid ? validColor : invalidColor;
+                
+                // Preserve the sprite, just change color
+                if (CurrentItem != null && CurrentItem.ItemIcon != null)
+                {
+                    image.color = targetColor;
+                }
+                else
+                {
+                    image.color = targetColor;
+                }
             }
         }
 
@@ -156,8 +175,9 @@ namespace TimeGame.Systems.Inventory.UI
         /// </summary>
         public void Show()
         {
-            canvasGroup.alpha = 1f;
             gameObject.SetActive(true);
+            canvasGroup.alpha = 0.7f; // Semi-transparent
+            Debug.Log("[InventoryItemGhost] Ghost shown");
         }
 
         /// <summary>
@@ -165,8 +185,9 @@ namespace TimeGame.Systems.Inventory.UI
         /// </summary>
         public void Hide()
         {
-            canvasGroup.alpha = 0f;
             gameObject.SetActive(false);
+            canvasGroup.alpha = 0f;
+            Debug.Log("[InventoryItemGhost] Ghost hidden");
         }
 
         /// <summary>
@@ -174,7 +195,7 @@ namespace TimeGame.Systems.Inventory.UI
         /// </summary>
         public bool IsVisible()
         {
-            return gameObject.activeSelf;
+            return gameObject.activeSelf && canvasGroup.alpha > 0f;
         }
     }
 }
