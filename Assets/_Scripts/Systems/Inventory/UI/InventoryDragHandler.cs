@@ -16,7 +16,7 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private InventoryItemGhost ghost;
 
         [Header("Input Settings")]
-        [SerializeField] private Key rotateKey = Key.R;
+        [SerializeField] private UnityEngine.InputSystem.Key rotateKey = UnityEngine.InputSystem.Key.R;
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = true;
