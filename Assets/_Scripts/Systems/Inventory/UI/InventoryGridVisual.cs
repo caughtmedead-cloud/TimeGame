@@ -51,7 +51,11 @@ namespace TimeGame.Systems.Inventory.UI
         private int gridHeight;
         private float cellSize;
 
+        // Public accessors
         public InventorySystem InventorySystem => inventorySystem;
+        public int GridWidth => gridWidth;
+        public int GridHeight => gridHeight;
+        public float CellSize => cellSize;
 
         #region Initialization
 
@@ -356,7 +360,7 @@ namespace TimeGame.Systems.Inventory.UI
         /// Convert grid position to local UI position (bottom-left origin).
         /// Manual calculation - no layout components.
         /// </summary>
-        private Vector2 GridPositionToLocalPosition(Vector2Int gridPos)
+        public Vector2 GridPositionToLocalPosition(Vector2Int gridPos)
         {
             return new Vector2(gridPos.x * cellSize, gridPos.y * cellSize);
         }
