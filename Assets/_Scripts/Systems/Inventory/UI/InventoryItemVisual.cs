@@ -39,6 +39,12 @@ namespace TimeGame.Systems.Inventory.UI
             PlacedItem = placedItem;
             ItemDefinition = itemDef;
 
+            // CRITICAL: Set pivot to bottom-left to match grid cells
+            // This ensures items are positioned from their bottom-left corner, not center
+            rectTransform.pivot = new Vector2(0, 0);
+            rectTransform.anchorMin = new Vector2(0, 0);
+            rectTransform.anchorMax = new Vector2(0, 0);
+
             // Set sprite
             if (itemDef.ItemIcon != null)
             {
