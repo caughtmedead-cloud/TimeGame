@@ -102,11 +102,12 @@ namespace TimeGame.Systems.Inventory.UI
             EquipItem(item);
 
             // Create PlacedItem data (slots don't use grid positions)
+            // FIX: Use correct constructor signature (Guid, ItemDef, Position, Rotation)
             placedItem = new PlacedItem(
-                item,
-                Vector2Int.zero, // Slots don't have grid positions
-                GridDirection.Down, // Slots don't rotate
-                System.Guid.NewGuid()
+                System.Guid.NewGuid(),   // Guid instanceID
+                item,                    // PlacableItemSO itemDefinition
+                Vector2Int.zero,         // Vector2Int anchorPosition (slots don't have grid positions)
+                GridDirection.Down       // GridDirection rotation (slots don't rotate)
             );
 
             equippedItemID = placedItem.InstanceID;
