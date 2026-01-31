@@ -35,7 +35,7 @@ namespace TimeGame.Systems.Inventory.UI
         private InventorySystem sourceInventory; // Inventory we dragged from
 
         // Mouse offset tracking (like CodeMonkey)
-        private Vector2 mouseDragLocalOffset; // Offset in screen space
+        private Vector2 mouseDragLocalOffset; // Offset in local space
 
         /// <summary>
         /// Is a drag operation currently active?
@@ -304,30 +304,22 @@ namespace TimeGame.Systems.Inventory.UI
                 if (targetUnderMouse is InventoryGridVisual gridTarget)
                 {
                     Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(mouseLocalPos - mouseDragLocalOffset);
-                    Vector2 snappedPos = gridTarget.GridPositionToLocalPosition(gridPos);
+                    Vector2 snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
                     
-                    // Convert to screen space for ghost
-                    RectTransformUtility.LocalPointToScreenPoint(
-                        gridTarget.GetRectTransform(),
-                        snappedPos,
-                        null,
-                        out Vector2 screenPos
-                    );
-                    
-                    ghost.transform.position = screenPos;
+                    // Convert to world space for ghost positioning
+                    // FIX: Use TransformPoint instead of LocalPointToScreenPoint
+                    Vector3 worldPos = gridTarget.GetRectTransform().TransformPoint(snappedLocalPos);
+                    ghost.transform.position = worldPos;
                 }
                 else
                 {
                     // For slots, center on the slot
                     Vector2 slotCenter = targetUnderMouse.GetRectTransform().rect.center;
-                    RectTransformUtility.LocalPointToScreenPoint(
-                        targetUnderMouse.GetRectTransform(),
-                        slotCenter,
-                        null,
-                        out Vector2 screenPos
-                    );
                     
-                    ghost.transform.position = screenPos;
+                    // Convert to world space for ghost positioning
+                    // FIX: Use TransformPoint instead of LocalPointToScreenPoint
+                    Vector3 worldPos = targetUnderMouse.GetRectTransform().TransformPoint(slotCenter);
+                    ghost.transform.position = worldPos;
                 }
 
                 // Validate placement
