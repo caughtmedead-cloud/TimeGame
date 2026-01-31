@@ -71,12 +71,13 @@ namespace TimeGame.Systems.Inventory.UI
                 Debug.LogError("[InventoryTestHarness] No InventoryGridVisual assigned!");
             }
 
-            // Initialize drag handler if present
+            // Get drag handler reference if present
             dragHandler = GetComponentInChildren<InventoryDragHandler>();
             if (dragHandler != null)
             {
-                dragHandler.Initialize(inventorySystem);
-                Debug.Log("[InventoryTestHarness] Drag-drop handler initialized");
+                // Register the grid as a drop target
+                dragHandler.RegisterDropTarget(gridVisual);
+                Debug.Log("[InventoryTestHarness] Grid registered as drop target");
             }
 
             PrintInstructions();
