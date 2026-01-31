@@ -14,7 +14,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// Full control over grid layout and scaling.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class InventoryGridVisual : MonoBehaviour
+    public class InventoryGridVisual : MonoBehaviour, IInventoryDropTarget
     {
         [Header("References")]
         [Tooltip("Prefab for individual grid cells (background)")]
@@ -373,6 +373,66 @@ namespace TimeGame.Systems.Inventory.UI
             int x = Mathf.FloorToInt(localPos.x / cellSize);
             int y = Mathf.FloorToInt(localPos.y / cellSize);
             return new Vector2Int(x, y);
+        }
+
+        #endregion
+
+        #region IInventoryDropTarget Implementation
+
+        public bool CanAcceptItem(InventoryItemSO item, GridDirection rotation, Vector2 mouseLocalPosition)
+        {
+            if (inventorySystem == null)
+            {
+                Debug.LogWarning("[InventoryGridVisual] Cannot accept item - inventory system not initialized");
+                return false;
+            }
+
+            // Convert mouse position to grid position
+            Vector2Int gridPos = LocalPositionToGridPosition(mouseLocalPosition);
+
+            // Check if the inventory system can place the item here
+            return inventorySystem.CanPlaceItem(item, gridPos, rotation);
+        }
+
+        public bool TryPlaceItem(InventoryItemSO item, GridDirection rotation, Vector2 mouseLocalPosition, out PlacedItem placedItem)
+        {
+            placedItem = null;
+
+            if (inventorySystem == null)
+            {
+                Debug.LogWarning("[InventoryGridVisual] Cannot place item - inventory system not initialized");
+                return false;
+            }
+
+            // Convert mouse position to grid position
+            Vector2Int gridPos = LocalPositionToGridPosition(mouseLocalPosition);
+
+            // Try to add the item to the inventory system
+            bool success = inventorySystem.TryAddItem(item, gridPos, rotation, out placedItem);
+
+            if (enableDebugLogging)
+            {
+                if (success)
+                {
+                    Debug.Log($"[InventoryGridVisual] Placed {item.ItemName} at {gridPos}");
+                }
+                else
+                {
+                    Debug.Log($"[InventoryGridVisual] Failed to place {item.ItemName} at {gridPos}");
+                }
+            }
+
+            return success;
+        }
+
+        public RectTransform GetRectTransform()
+        {
+            return rectTransform;
+        }
+
+        public string GetDisplayName()
+        {
+            return gameObject.name;
         }
 
         #endregion
