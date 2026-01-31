@@ -390,8 +390,8 @@ namespace TimeGame.Systems.Inventory.UI
             // Convert mouse position to grid position
             Vector2Int gridPos = LocalPositionToGridPosition(mouseLocalPosition);
 
-            // Check if the inventory system can place the item here
-            return inventorySystem.CanPlaceItem(item, gridPos, rotation);
+            // Check if the inventory system can place the item here (FIX: CanAddItem not CanPlaceItem)
+            return inventorySystem.CanAddItem(item, gridPos, rotation);
         }
 
         public bool TryPlaceItem(InventoryItemSO item, GridDirection rotation, Vector2 mouseLocalPosition, out PlacedItem placedItem)
