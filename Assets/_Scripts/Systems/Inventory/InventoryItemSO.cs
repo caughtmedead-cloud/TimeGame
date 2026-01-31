@@ -25,6 +25,9 @@ namespace TimeGame.Systems.Inventory
         public int MaxStackSize = 1;
 
         [Header("Item Type")]
+        [Tooltip("Equipment slot type (for slot restrictions)")]
+        public ItemType EquipmentType = ItemType.None;
+
         [Tooltip("Category for filtering/sorting")]
         public ItemCategory Category = ItemCategory.General;
 
@@ -68,6 +71,29 @@ namespace TimeGame.Systems.Inventory
             }
             return desc;
         }
+    }
+
+    /// <summary>
+    /// Equipment slot types for slot restrictions.
+    /// Used by EquipmentSlot to determine which items can be equipped.
+    /// </summary>
+    public enum ItemType
+    {
+        None,           // Not equippable, storage only
+        Helmet,
+        Mask,
+        Glasses,
+        Headset,
+        Vest,
+        ArmorPlate,
+        Backpack,
+        Holster,
+        PrimaryWeapon,
+        SecondaryWeapon,
+        Sidearm,
+        Melee,
+        Grenade,
+        Consumable
     }
 
     /// <summary>
