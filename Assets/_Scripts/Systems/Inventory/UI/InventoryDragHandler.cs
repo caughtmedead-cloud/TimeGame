@@ -10,6 +10,9 @@ namespace TimeGame.Systems.Inventory.UI
     /// Handles drag-drop operations for inventory items using event-driven pattern.
     /// Works with ANY IInventoryDropTarget (grids, equipment slots, etc.).
     /// Based on CodeMonkey's drag-drop system architecture.
+    /// 
+    /// IMPORTANT: This implementation assumes Screen Space - Overlay canvas mode.
+    /// For other canvas modes, coordinate conversion logic needs to be updated.
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -76,6 +79,23 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         #endregion
+
+        private void Awake()
+        {
+            // Validate that we're using Screen Space - Overlay
+            if (ghost != null)
+            {
+                Canvas ghostCanvas = ghost.GetComponentInParent<Canvas>();
+                if (ghostCanvas != null && ghostCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                {
+                    Debug.LogWarning(
+                        $"[InventoryDragHandler] Ghost canvas is set to {ghostCanvas.renderMode}. " +
+                        "This implementation is optimized for Screen Space - Overlay mode. " +
+                        "Other modes may require coordinate conversion adjustments."
+                    );
+                }
+            }
+        }
 
         private void Update()
         {
@@ -148,7 +168,7 @@ namespace TimeGame.Systems.Inventory.UI
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     gridVisual.GetRectTransform(),
                     mouseScreenPos,
-                    null,
+                    null, // null camera for Screen Space - Overlay
                     out Vector2 mouseLocalPos
                 );
 
@@ -211,7 +231,7 @@ namespace TimeGame.Systems.Inventory.UI
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     targetUnderMouse.GetRectTransform(),
                     mouseScreenPos,
-                    null,
+                    null, // null camera for Screen Space - Overlay
                     out Vector2 mouseLocalPos
                 );
 
@@ -284,6 +304,11 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Update ghost position to follow mouse and validate placement.
+        /// 
+        /// SCREEN SPACE - OVERLAY COORDINATE CONVERSION:
+        /// In Overlay mode, UI elements' transform.position equals screen pixels.
+        /// TransformPoint converts local UI coords → screen space directly.
+        /// This is Unity's standard pattern for Overlay canvases.
         /// </summary>
         private void UpdateGhostPosition()
         {
@@ -296,31 +321,28 @@ namespace TimeGame.Systems.Inventory.UI
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     targetUnderMouse.GetRectTransform(),
                     mouseScreenPos,
-                    null,
+                    null, // null camera for Screen Space - Overlay
                     out Vector2 mouseLocalPos
                 );
+
+                Vector2 snappedLocalPos;
 
                 // For grids, snap to grid and apply offset
                 if (targetUnderMouse is InventoryGridVisual gridTarget)
                 {
                     Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(mouseLocalPos - mouseDragLocalOffset);
-                    Vector2 snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
-                    
-                    // Convert to world space for ghost positioning
-                    // FIX: Use TransformPoint instead of LocalPointToScreenPoint
-                    Vector3 worldPos = gridTarget.GetRectTransform().TransformPoint(snappedLocalPos);
-                    ghost.transform.position = worldPos;
+                    snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
                 }
                 else
                 {
                     // For slots, center on the slot
-                    Vector2 slotCenter = targetUnderMouse.GetRectTransform().rect.center;
-                    
-                    // Convert to world space for ghost positioning
-                    // FIX: Use TransformPoint instead of LocalPointToScreenPoint
-                    Vector3 worldPos = targetUnderMouse.GetRectTransform().TransformPoint(slotCenter);
-                    ghost.transform.position = worldPos;
+                    snappedLocalPos = targetUnderMouse.GetRectTransform().rect.center;
                 }
+                
+                // Convert local UI position to screen position
+                // For Screen Space - Overlay: TransformPoint returns screen space directly
+                Vector3 screenPos = targetUnderMouse.GetRectTransform().TransformPoint(snappedLocalPos);
+                ghost.transform.position = screenPos;
 
                 // Validate placement
                 bool canPlace = targetUnderMouse.CanAcceptItem(ghost.CurrentItem, currentRotation, mouseLocalPos);
