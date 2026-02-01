@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TimeGame.Systems.GridPlacement;
+using DG.Tweening;
 
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Visual ghost/preview of an item while dragging.
     /// Shows where the item will be placed with color feedback (green=valid, red=invalid).
+    /// Features smooth DOTween rotation animations for professional feel.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasGroup))]
@@ -19,10 +21,31 @@ namespace TimeGame.Systems.Inventory.UI
         [Tooltip("Color when placement is blocked")]
         [SerializeField] private Color invalidColor = new Color(1f, 0.3f, 0.3f, 0.6f);
 
+        [Header("Rotation Animation (DOTween)")]
+        [Tooltip("Duration of rotation animation in seconds")]
+        [SerializeField] private float rotationDuration = 0.15f;
+
+        [Tooltip("Easing function for rotation (try OutBack for bounce!)")]
+        [SerializeField] private Ease rotationEase = Ease.OutQuad;
+
+        [Tooltip("Add a slight scale punch when rotating for extra polish")]
+        [SerializeField] private bool useScalePunch = true;
+
+        [Tooltip("Scale punch strength (1.0 = no punch, 1.2 = 20% larger)")]
+        [SerializeField] private float scalePunchAmount = 1.15f;
+
+        [Tooltip("Duration of scale punch animation")]
+        [SerializeField] private float scalePunchDuration = 0.1f;
+
         private RectTransform rectTransform;
         private CanvasGroup canvasGroup;
         private Image image;
         private RectTransform visualTransform;
+
+        // DOTween tracking
+        private Tweener currentRotationTween;
+        private Tweener currentSizeTween;
+        private Tweener currentScaleTween;
 
         /// <summary>
         /// Currently displayed item definition.
@@ -81,9 +104,12 @@ namespace TimeGame.Systems.Inventory.UI
             // No rotation on outer
             rectTransform.localRotation = Quaternion.identity;
 
-            // Set rotation on visual child
+            // Set rotation on visual child (instant, no animation on init)
             float angle = item.GetRotationAngle(rotation);
             visualTransform.localRotation = Quaternion.Euler(0, 0, -angle);
+
+            // Reset scale
+            visualTransform.localScale = Vector3.one;
 
             // Set sprite
             if (item.ItemIcon != null)
@@ -121,7 +147,8 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Rotate the ghost to the next direction.
+        /// Rotate the ghost to the next direction with smooth DOTween animation.
+        /// Code Monkey style - looks professional!
         /// </summary>
         public void Rotate()
         {
@@ -129,16 +156,56 @@ namespace TimeGame.Systems.Inventory.UI
 
             CurrentRotation = CurrentItem.GetNextRotation(CurrentRotation);
 
-            // Update size
-            int width = CurrentItem.GetRotatedWidth(CurrentRotation);
-            int height = CurrentItem.GetRotatedHeight(CurrentRotation);
-            rectTransform.sizeDelta = new Vector2(width * cellSize, height * cellSize);
+            // Calculate new dimensions
+            int newWidth = CurrentItem.GetRotatedWidth(CurrentRotation);
+            int newHeight = CurrentItem.GetRotatedHeight(CurrentRotation);
+            Vector2 newSize = new Vector2(newWidth * cellSize, newHeight * cellSize);
 
-            // Update visual rotation
-            float angle = CurrentItem.GetRotationAngle(CurrentRotation);
-            visualTransform.localRotation = Quaternion.Euler(0, 0, -angle);
+            // Calculate new rotation angle
+            float newAngle = CurrentItem.GetRotationAngle(CurrentRotation);
 
-            Debug.Log($"[InventoryItemGhost] Rotated to {CurrentRotation}, new size {width}x{height}");
+            // Kill any existing tweens to prevent conflicts
+            KillActiveTweens();
+
+            // Animate size change smoothly
+            currentSizeTween = rectTransform
+                .DOSizeDelta(newSize, rotationDuration)
+                .SetEase(rotationEase);
+
+            // Animate rotation smoothly (smooth spin!)
+            currentRotationTween = visualTransform
+                .DOLocalRotate(new Vector3(0, 0, -newAngle), rotationDuration, RotateMode.FastBeyond360)
+                .SetEase(rotationEase);
+
+            // Optional: Scale punch for extra polish (makes it feel snappy!)
+            if (useScalePunch)
+            {
+                visualTransform.localScale = Vector3.one; // Reset scale
+                
+                // Quick scale up then back to normal
+                Sequence punchSequence = DOTween.Sequence();
+                punchSequence.Append(visualTransform.DOScale(scalePunchAmount, scalePunchDuration * 0.5f).SetEase(Ease.OutQuad));
+                punchSequence.Append(visualTransform.DOScale(1f, scalePunchDuration * 0.5f).SetEase(Ease.InQuad));
+                
+                currentScaleTween = punchSequence;
+            }
+
+            Debug.Log($"[InventoryItemGhost] Smoothly rotating to {CurrentRotation}, new size {newWidth}x{newHeight}");
+        }
+
+        /// <summary>
+        /// Kill all active DOTween animations on this ghost.
+        /// Prevents animation conflicts when rotating rapidly.
+        /// </summary>
+        private void KillActiveTweens()
+        {
+            currentRotationTween?.Kill();
+            currentSizeTween?.Kill();
+            currentScaleTween?.Kill();
+            
+            currentRotationTween = null;
+            currentSizeTween = null;
+            currentScaleTween = null;
         }
 
         /// <summary>
@@ -181,10 +248,13 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Hide the ghost.
+        /// Hide the ghost and cleanup animations.
         /// </summary>
         public void Hide()
         {
+            // Kill any active animations
+            KillActiveTweens();
+            
             gameObject.SetActive(false);
             canvasGroup.alpha = 0f;
             Debug.Log("[InventoryItemGhost] Ghost hidden");
@@ -196,6 +266,12 @@ namespace TimeGame.Systems.Inventory.UI
         public bool IsVisible()
         {
             return gameObject.activeSelf && canvasGroup.alpha > 0f;
+        }
+
+        private void OnDestroy()
+        {
+            // Cleanup: Kill all tweens when ghost is destroyed
+            KillActiveTweens();
         }
     }
 }
