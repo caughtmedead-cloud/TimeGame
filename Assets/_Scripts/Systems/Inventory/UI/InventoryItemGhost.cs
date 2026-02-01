@@ -46,6 +46,9 @@ namespace TimeGame.Systems.Inventory.UI
         private Tween currentRotationTween;
         private Tween currentSizeTween;
         private Tween currentScaleTween;
+        
+        // Track current angle for smooth rotation transitions
+        private float currentAngle = 0f;
 
         /// <summary>
         /// Currently displayed item definition.
@@ -105,8 +108,8 @@ namespace TimeGame.Systems.Inventory.UI
             rectTransform.localRotation = Quaternion.identity;
 
             // Set rotation on visual child (instant, no animation on init)
-            float angle = item.GetRotationAngle(rotation);
-            visualTransform.localRotation = Quaternion.Euler(0, 0, -angle);
+            currentAngle = item.GetRotationAngle(rotation);
+            visualTransform.localRotation = Quaternion.Euler(0, 0, -currentAngle);
 
             // Reset scale
             visualTransform.localScale = Vector3.one;
@@ -148,7 +151,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Rotate the ghost to the next direction with smooth DOTween animation.
-        /// Code Monkey style - looks professional!
+        /// FIX: Use relative rotation to prevent wrap-around spinning.
         /// </summary>
         public void Rotate()
         {
@@ -163,6 +166,14 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Calculate new rotation angle
             float newAngle = CurrentItem.GetRotationAngle(CurrentRotation);
+            
+            // FIX: Calculate rotation delta to rotate in shortest direction
+            // This prevents the 270° -> 0° wrap-around spin bug
+            float angleDelta = Mathf.DeltaAngle(currentAngle, newAngle);
+            float targetAngle = currentAngle + angleDelta;
+            
+            // Update tracked angle
+            currentAngle = newAngle;
 
             // Kill any existing tweens to prevent conflicts
             KillActiveTweens();
@@ -172,9 +183,9 @@ namespace TimeGame.Systems.Inventory.UI
                 .DOSizeDelta(newSize, rotationDuration)
                 .SetEase(rotationEase);
 
-            // Animate rotation smoothly (smooth spin!)
+            // FIX: Animate rotation smoothly using relative rotation (no more rapid spinning!)
             currentRotationTween = visualTransform
-                .DOLocalRotate(new Vector3(0, 0, -newAngle), rotationDuration, RotateMode.FastBeyond360)
+                .DOLocalRotate(new Vector3(0, 0, -targetAngle), rotationDuration, RotateMode.Fast)
                 .SetEase(rotationEase);
 
             // Optional: Scale punch for extra polish (makes it feel snappy!)

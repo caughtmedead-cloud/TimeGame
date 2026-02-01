@@ -389,8 +389,24 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Convert mouse position to grid position
             Vector2Int gridPos = LocalPositionToGridPosition(mouseLocalPosition);
+            
+            // FIX: Validate grid boundaries BEFORE checking inventory system
+            // This prevents the ghost from showing green outside grid bounds
+            if (gridPos.x < 0 || gridPos.x >= gridWidth || gridPos.y < 0 || gridPos.y >= gridHeight)
+            {
+                return false; // Out of bounds
+            }
+            
+            // FIX: Also check if the ENTIRE item footprint fits within bounds
+            int itemWidth = item.GetRotatedWidth(rotation);
+            int itemHeight = item.GetRotatedHeight(rotation);
+            
+            if (gridPos.x + itemWidth > gridWidth || gridPos.y + itemHeight > gridHeight)
+            {
+                return false; // Item extends beyond grid
+            }
 
-            // Check if the inventory system can place the item here (FIX: CanAddItem not CanPlaceItem)
+            // Now check if the inventory system can place the item here
             return inventorySystem.CanAddItem(item, gridPos, rotation);
         }
 

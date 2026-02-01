@@ -37,8 +37,8 @@ namespace TimeGame.Systems.Inventory.UI
         private GridDirection currentRotation;
         private InventorySystem sourceInventory; // Inventory we dragged from
 
-        // Mouse offset tracking (like CodeMonkey)
-        private Vector2 mouseDragLocalOffset; // Offset in local space
+        // FIX: Mouse offset tracking - offset from item CENTER to cursor position
+        private Vector2 mouseDragLocalOffset; // Offset in local space from item center
 
         /// <summary>
         /// Is a drag operation currently active?
@@ -163,7 +163,7 @@ namespace TimeGame.Systems.Inventory.UI
                 originalRotation = draggedItem.Rotation;
                 currentRotation = draggedItem.Rotation;
 
-                // Calculate mouse offset (where on the item did the user click?)
+                // FIX: Calculate mouse offset from item CENTER (not anchor)
                 Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     gridVisual.GetRectTransform(),
@@ -172,14 +172,22 @@ namespace TimeGame.Systems.Inventory.UI
                     out Vector2 mouseLocalPos
                 );
 
-                Vector2Int mouseGridPos = gridVisual.LocalPositionToGridPosition(mouseLocalPos);
-                Vector2Int itemGridPos = draggedItem.AnchorPosition;
-                mouseDragLocalOffset = mouseLocalPos - gridVisual.GridPositionToLocalPosition(itemGridPos);
+                // Get item center position in local space
+                InventoryItemSO itemDef = draggedItem.ItemDefinition as InventoryItemSO;
+                Vector2 itemAnchorLocalPos = gridVisual.GridPositionToLocalPosition(draggedItem.AnchorPosition);
+                
+                // Calculate item center (anchor is bottom-left)
+                int width = itemDef.GetRotatedWidth(draggedItem.Rotation);
+                int height = itemDef.GetRotatedHeight(draggedItem.Rotation);
+                Vector2 itemCenterOffset = new Vector2(width * gridVisual.CellSize * 0.5f, height * gridVisual.CellSize * 0.5f);
+                Vector2 itemCenterLocalPos = itemAnchorLocalPos + itemCenterOffset;
+                
+                // Calculate offset from item center to mouse
+                mouseDragLocalOffset = mouseLocalPos - itemCenterLocalPos;
 
                 Log($"Started dragging {draggedItem.ItemDefinition.name} from {sourceTarget.GetDisplayName()}");
 
                 // Show ghost
-                InventoryItemSO itemDef = draggedItem.ItemDefinition as InventoryItemSO;
                 ghost.Initialize(itemDef, currentRotation, gridVisual.CellSize);
                 ghost.Show();
 
@@ -195,6 +203,9 @@ namespace TimeGame.Systems.Inventory.UI
                     InventoryItemSO itemDef = slot.EquippedItem;
                     originalRotation = GridDirection.Down;
                     currentRotation = GridDirection.Down;
+                    
+                    // FIX: For equipment slots, center the offset (no offset)
+                    mouseDragLocalOffset = Vector2.zero;
 
                     Log($"Started dragging {itemDef.name} from slot {sourceTarget.GetDisplayName()}");
 
@@ -304,6 +315,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Update ghost position to follow mouse and validate placement.
+        /// FIX: Apply cursor offset correctly to center cursor on item.
         /// 
         /// SCREEN SPACE - OVERLAY COORDINATE CONVERSION:
         /// In Overlay mode, UI elements' transform.position equals screen pixels.
@@ -330,7 +342,18 @@ namespace TimeGame.Systems.Inventory.UI
                 // For grids, snap to grid and apply offset
                 if (targetUnderMouse is InventoryGridVisual gridTarget)
                 {
-                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(mouseLocalPos - mouseDragLocalOffset);
+                    // FIX: Account for cursor being at item center, not anchor
+                    // Calculate where item center should be (mouse - offset)
+                    Vector2 itemCenterLocalPos = mouseLocalPos - mouseDragLocalOffset;
+                    
+                    // Calculate item anchor position (bottom-left from center)
+                    int width = ghost.CurrentItem.GetRotatedWidth(currentRotation);
+                    int height = ghost.CurrentItem.GetRotatedHeight(currentRotation);
+                    Vector2 itemCenterOffset = new Vector2(width * gridTarget.CellSize * 0.5f, height * gridTarget.CellSize * 0.5f);
+                    Vector2 itemAnchorLocalPos = itemCenterLocalPos - itemCenterOffset;
+                    
+                    // Snap anchor to grid
+                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(itemAnchorLocalPos);
                     snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
                 }
                 else
