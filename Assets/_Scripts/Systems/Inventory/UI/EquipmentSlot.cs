@@ -55,13 +55,6 @@ namespace TimeGame.Systems.Inventory.UI
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
-            
-            // Cache CanvasGroup if it exists on itemIconImage
-            if (itemIconImage != null)
-            {
-                itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
-            }
-            
             UpdateVisuals();
         }
 
@@ -215,13 +208,13 @@ namespace TimeGame.Systems.Inventory.UI
         {
             equippedItem = item;
             
-            // Setup drag functionality BEFORE updating visuals
+            // CRITICAL: Setup components BEFORE calling UpdateVisuals!
             if (itemIconImage != null)
             {
                 // CRITICAL: Enable raycast target so drag events are received
                 itemIconImage.raycastTarget = true;
                 
-                // Get or add CanvasGroup (cache it)
+                // Get or add CanvasGroup (cache it) - MUST happen before UpdateVisuals!
                 if (itemIconCanvasGroup == null)
                 {
                     itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
@@ -241,7 +234,9 @@ namespace TimeGame.Systems.Inventory.UI
                 }
             }
             
+            // Now update visuals (CanvasGroup is guaranteed to exist)
             UpdateVisuals();
+            
             OnItemEquipped?.Invoke(item);
         }
 
@@ -256,29 +251,22 @@ namespace TimeGame.Systems.Inventory.UI
                 // Always keep GameObject active (needed for drag events)
                 itemIconImage.gameObject.SetActive(true);
                 
-                // Get CanvasGroup if we don't have it cached yet
-                if (itemIconCanvasGroup == null)
-                {
-                    itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
-                }
-                
                 // Use CanvasGroup to control visibility
                 if (itemIconCanvasGroup != null)
                 {
-                    // When empty: alpha = 0 (invisible but still receives events)
-                    // When occupied: alpha = 1 (visible)
                     itemIconCanvasGroup.alpha = hasItem ? 1f : 0f;
-                    Log($"Set itemIcon alpha to {itemIconCanvasGroup.alpha} (hasItem: {hasItem})");
+                    Log($"Set itemIcon alpha to {(hasItem ? 1f : 0f)} (hasItem: {hasItem})");
                 }
                 else
                 {
-                    // Fallback if no CanvasGroup (shouldn't happen after first equip)
-                    itemIconImage.enabled = hasItem;
+                    // Fallback if CanvasGroup doesn't exist yet (shouldn't happen after fix)
+                    Log($"WARNING: itemIconCanvasGroup is null! hasItem: {hasItem}");
                 }
                 
                 if (hasItem && equippedItem.ItemIcon != null)
                 {
                     itemIconImage.sprite = equippedItem.ItemIcon;
+                    Log($"Set sprite to {equippedItem.ItemIcon.name}");
                 }
                 else if (!hasItem)
                 {
