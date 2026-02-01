@@ -41,6 +41,16 @@ namespace TimeGame.Systems.Inventory
         [Tooltip("Item value (for trading/selling)")]
         public int Value = 1;
 
+        [Header("Storage Properties")]
+        [Tooltip("Does this item provide storage when equipped?")]
+        public bool ProvidesStorage = false;
+
+        [Tooltip("Size of storage grid this item provides (width x height)")]
+        public Vector2Int StorageGridSize = new Vector2Int(6, 4);
+
+        [Tooltip("Maximum weight capacity of this item's storage")]
+        public float StorageMaxWeight = 20f;
+
         /// <summary>
         /// Optional: Prefab for 3D world representation (dropped items, etc.)
         /// </summary>
@@ -68,6 +78,10 @@ namespace TimeGame.Systems.Inventory
             if (IsStackable)
             {
                 desc += $"\nMax Stack: {MaxStackSize}";
+            }
+            if (ProvidesStorage)
+            {
+                desc += $"\n\nProvides Storage: {StorageGridSize.x}×{StorageGridSize.y} ({StorageMaxWeight}kg capacity)";
             }
             return desc;
         }
