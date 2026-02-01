@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 612e636300a15fe4998fed0ad3bfb446, type: 3}
+  m_Name: Bandage_Test
+  m_EditorClassIdentifier: 
+  ItemName: Bandage
+  Width: 1
+  Height: 1
+  CanRotate: 1
+  ItemIcon: {fileID: 21300000, guid: 8c34b9eb41a466c43bc99414cf84d7e1, type: 3}
+  Description: 
+  IsStackable: 0
+  MaxStackSize: 1
+  EquipmentType: 1
+  Category: 0
+  Rarity: 0
+  Weight: 1
+  Value: 1
+  WorldPrefab: {fileID: 6098753544466807593, guid: f712070419a6f394a9171ef061135324, type: 3}

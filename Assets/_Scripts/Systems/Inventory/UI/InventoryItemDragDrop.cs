@@ -47,7 +47,7 @@ namespace TimeGame.Systems.Inventory.UI
             canvasGroup.blocksRaycasts = false; // Don't block raycasts
 
             // Notify the drag handler system
-            InventoryDragHandler dragHandler = gridVisual.GetComponentInChildren<InventoryDragHandler>();
+            InventoryDragHandler dragHandler = gridVisual.GetComponentInParent<InventoryDragHandler>();
             if (dragHandler != null)
             {
                 dragHandler.OnItemBeginDrag(itemInstanceID);
@@ -66,7 +66,7 @@ namespace TimeGame.Systems.Inventory.UI
             canvasGroup.blocksRaycasts = true;
 
             // Notify the drag handler system
-            InventoryDragHandler dragHandler = gridVisual.GetComponentInChildren<InventoryDragHandler>();
+            InventoryDragHandler dragHandler = gridVisual.GetComponentInParent<InventoryDragHandler>();
             if (dragHandler != null)
             {
                 dragHandler.OnItemEndDrag(itemInstanceID);
