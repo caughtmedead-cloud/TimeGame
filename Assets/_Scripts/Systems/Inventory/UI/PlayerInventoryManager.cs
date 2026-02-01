@@ -7,6 +7,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// Manages the player's inventory grids in the right panel.
     /// Handles spawning/removing grids based on equipped storage items.
     /// Uses flexible array-based approach for any equipment that provides storage.
+    /// Grid sizes are determined by the equipped item's properties.
     /// </summary>
     public class PlayerInventoryManager : MonoBehaviour
     {
@@ -110,30 +111,51 @@ namespace TimeGame.Systems.Inventory.UI
         private void OnEquipmentEquipped(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
             Log($"Equipment equipped: {item.ItemName} in {mapping.slot.name}");
-            SpawnEquipmentGrid(mapping, item);
+            
+            // Only spawn storage grid if item provides storage
+            if (item.ProvidesStorage)
+            {
+                SpawnEquipmentGrid(mapping, item);
+            }
+            else
+            {
+                Log($"{item.ItemName} does not provide storage - skipping grid spawn");
+            }
         }
 
         private void OnEquipmentUnequipped(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
             Log($"Equipment unequipped: {item.ItemName} from {mapping.slot.name}");
-            RemoveEquipmentGrid(mapping);
+            
+            // Only remove grid if item had storage
+            if (item.ProvidesStorage)
+            {
+                RemoveEquipmentGrid(mapping);
+            }
         }
 
         private void SpawnEquipmentGrid(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
             if (storagePanel == null) return;
 
-            // Get grid configuration
-            Vector2Int gridSize = mapping.defaultGridSize;
-            float maxWeight = mapping.defaultMaxWeight;
+            // Get grid configuration from ITEM (not defaults!)
+            Vector2Int gridSize = item.StorageGridSize;
+            float maxWeight = item.StorageMaxWeight;
             string gridName = mapping.gridName;
 
-            // TODO: Future enhancement - read from item.StorageGridSize if property exists
-            // if (item.ProvidesStorage && item.StorageGridSize != Vector2Int.zero)
-            // {
-            //     gridSize = item.StorageGridSize;
-            //     maxWeight = item.StorageMaxWeight;
-            // }
+            // Validate item storage size
+            if (gridSize.x <= 0 || gridSize.y <= 0)
+            {
+                Debug.LogWarning($"[PlayerInventoryManager] {item.ItemName} has invalid StorageGridSize ({gridSize.x}x{gridSize.y}), using defaults");
+                gridSize = mapping.defaultGridSize;
+            }
+
+            // Validate weight
+            if (maxWeight <= 0)
+            {
+                Debug.LogWarning($"[PlayerInventoryManager] {item.ItemName} has invalid StorageMaxWeight ({maxWeight}), using default");
+                maxWeight = mapping.defaultMaxWeight;
+            }
 
             // Spawn the grid
             InventoryGridVisual grid = storagePanel.SpawnGrid(
@@ -149,7 +171,7 @@ namespace TimeGame.Systems.Inventory.UI
             if (grid != null)
             {
                 equipmentGrids[gridName] = grid;
-                Log($"Spawned equipment storage grid: {gridName} ({gridSize.x}x{gridSize.y})");
+                Log($"Spawned equipment storage grid: {gridName} ({gridSize.x}x{gridSize.y}, {maxWeight}kg capacity) from {item.ItemName}");
             }
         }
 
@@ -236,7 +258,11 @@ namespace TimeGame.Systems.Inventory.UI
                 {
                     if (mapping.slot != null && mapping.slot.IsOccupied)
                     {
-                        SpawnEquipmentGrid(mapping, mapping.slot.EquippedItem);
+                        InventoryItemSO item = mapping.slot.EquippedItem;
+                        if (item != null && item.ProvidesStorage)
+                        {
+                            SpawnEquipmentGrid(mapping, item);
+                        }
                     }
                 }
             }
@@ -258,6 +284,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// <summary>
     /// Defines mapping between an equipment slot and its storage grid properties.
     /// Add entries in Inspector for any equipment that provides storage.
+    /// Default values used as fallback if item doesn't specify valid storage properties.
     /// </summary>
     [System.Serializable]
     public class EquipmentStorageMapping
@@ -271,11 +298,11 @@ namespace TimeGame.Systems.Inventory.UI
         [Tooltip("Display label for this storage (e.g., 'Vest Storage', 'Backpack')")]
         public string displayLabel = "Storage";
 
-        [Header("Default Grid Properties")]
-        [Tooltip("Default grid size if item doesn't specify")]
+        [Header("Fallback Grid Properties")]
+        [Tooltip("Fallback grid size if item doesn't specify valid size")]
         public Vector2Int defaultGridSize = new Vector2Int(6, 4);
 
-        [Tooltip("Default max weight if item doesn't specify")]
+        [Tooltip("Fallback max weight if item doesn't specify valid weight")]
         public float defaultMaxWeight = 20f;
     }
 }
