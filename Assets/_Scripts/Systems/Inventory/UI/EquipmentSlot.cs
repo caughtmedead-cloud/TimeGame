@@ -211,11 +211,15 @@ namespace TimeGame.Systems.Inventory.UI
             // Add drag functionality to item icon
             if (itemIconImage != null)
             {
+                // CRITICAL: Enable raycast target so drag events are received
+                itemIconImage.raycastTarget = true;
+                
                 // Add drag source component if not present
                 EquipmentSlotDragSource dragSource = itemIconImage.GetComponent<EquipmentSlotDragSource>();
                 if (dragSource == null)
                 {
                     dragSource = itemIconImage.gameObject.AddComponent<EquipmentSlotDragSource>();
+                    Log($"Added EquipmentSlotDragSource to {itemIconImage.gameObject.name}");
                 }
                 
                 // Add CanvasGroup if not present (needed for drag-drop)
@@ -223,6 +227,7 @@ namespace TimeGame.Systems.Inventory.UI
                 if (canvasGroup == null)
                 {
                     itemIconImage.gameObject.AddComponent<CanvasGroup>();
+                    Log($"Added CanvasGroup to {itemIconImage.gameObject.name}");
                 }
             }
             
