@@ -214,13 +214,19 @@ namespace TimeGame.Systems.Inventory.UI
         {
             bool hasItem = IsOccupied;
 
-            // Update item icon
+            // Update item icon - disable GameObject when empty to prevent showing empty sprite
             if (itemIconImage != null)
             {
-                itemIconImage.enabled = hasItem;
+                itemIconImage.gameObject.SetActive(hasItem);  // ✅ Disable entire GameObject
+                
                 if (hasItem && equippedItem.ItemIcon != null)
                 {
                     itemIconImage.sprite = equippedItem.ItemIcon;
+                }
+                else if (!hasItem)
+                {
+                    // Clear sprite when empty (safety measure)
+                    itemIconImage.sprite = null;
                 }
             }
 
