@@ -25,7 +25,10 @@ namespace TimeGame.Systems.Inventory.UI
 
         [Header("Layout Settings")]
         [SerializeField] private float spacing = 20f;
-        [SerializeField] private RectOffset padding = new RectOffset(10, 10, 10, 10);
+        [SerializeField] private int paddingLeft = 10;
+        [SerializeField] private int paddingRight = 10;
+        [SerializeField] private int paddingTop = 10;
+        [SerializeField] private int paddingBottom = 10;
 
         [Header("Auto-Setup")]
         [SerializeField] private bool autoSetupOnAwake = true;
@@ -38,6 +41,7 @@ namespace TimeGame.Systems.Inventory.UI
         private RectTransform viewport;
         private RectTransform content;
         private VerticalLayoutGroup layoutGroup;
+        private RectOffset padding; // Created in Awake
 
         // Spawned grids tracking
         private Dictionary<string, InventoryGridVisual> spawnedGrids = new Dictionary<string, InventoryGridVisual>();
@@ -54,6 +58,9 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void Awake()
         {
+            // Initialize RectOffset (can't do this in field initializer)
+            padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom);
+            
             if (autoSetupOnAwake)
             {
                 SetupScrollRect();
@@ -369,6 +376,9 @@ namespace TimeGame.Systems.Inventory.UI
         #if UNITY_EDITOR
         private void OnValidate()
         {
+            // Recreate padding with updated values
+            padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom);
+            
             // Update layout settings if already set up
             if (layoutGroup != null)
             {
