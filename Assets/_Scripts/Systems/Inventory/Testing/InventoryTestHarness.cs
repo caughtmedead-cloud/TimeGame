@@ -1,6 +1,7 @@
 using UnityEngine;
 using TimeGame.Systems.Inventory.UI;
 using TimeGame.Systems.GridPlacement;
+using System.Linq;
 
 namespace TimeGame.Systems.Inventory.Testing
 {
@@ -37,8 +38,8 @@ namespace TimeGame.Systems.Inventory.Testing
         [Tooltip("Player inventory manager (for finding storage grids)")]
         [SerializeField] private PlayerInventoryManager playerInventoryManager;
 
-        [Tooltip("Main inventory panel manager (for finding all grids)")]
-        [SerializeField] private InventoryPanelManager panelManager;
+        [Tooltip("Root transform containing all inventory grids (optional - for finding additional grids)")]
+        [SerializeField] private Transform inventoryRootTransform;
 
         [Header("Settings")]
         [Tooltip("Show debug logs")]
@@ -233,28 +234,37 @@ namespace TimeGame.Systems.Inventory.Testing
                 }
             }
 
-            // Step 3: Try any other registered grids
-            if (panelManager != null)
+            // Step 3: Try any other grids found in the scene
+            if (inventoryRootTransform != null)
             {
-                var allTargets = panelManager.GetAllDropTargets();
-                foreach (var target in allTargets)
+                // Find all grids under the root transform
+                InventoryGridVisual[] allGrids = inventoryRootTransform.GetComponentsInChildren<InventoryGridVisual>();
+                
+                foreach (InventoryGridVisual grid in allGrids)
                 {
-                    // Only try grids (skip equipment slots)
-                    if (target is InventoryGridVisual grid)
+                    // Skip if we already tried this grid
+                    if (playerInventoryManager != null)
                     {
-                        // Skip if we already tried this grid
-                        if (playerInventoryManager != null)
+                        if (grid == playerInventoryManager.GetPocketGrid())
+                            continue;
+                        
+                        // Check if this grid is in equipment grids (FIX: iterate through values instead of ContainsValue)
+                        bool isEquipmentGrid = false;
+                        foreach (var equipGrid in playerInventoryManager.GetAllEquipmentGrids().Values)
                         {
-                            if (grid == playerInventoryManager.GetPocketGrid())
-                                continue;
-                            if (playerInventoryManager.GetAllEquipmentGrids().ContainsValue(grid))
-                                continue;
+                            if (grid == equipGrid)
+                            {
+                                isEquipmentGrid = true;
+                                break;
+                            }
                         }
+                        if (isEquipmentGrid)
+                            continue;
+                    }
 
-                        if (TryPlaceInGrid(item, grid, grid.name))
-                        {
-                            return true;
-                        }
+                    if (TryPlaceInGrid(item, grid, grid.name))
+                    {
+                        return true;
                     }
                 }
             }
@@ -297,7 +307,7 @@ namespace TimeGame.Systems.Inventory.Testing
                     if (success)
                     {
                         Log($"    ✓ Placed in {gridName} at {position.Value} (rotation: {rotation})");
-                        grid.RefreshVisuals();
+                        grid.RefreshAllItemVisuals(); // FIX: RefreshAllItemVisuals not RefreshVisuals
                         return true;
                     }
                 }
@@ -327,8 +337,8 @@ namespace TimeGame.Systems.Inventory.Testing
                 {
                     Vector2Int pos = new Vector2Int(x, y);
                     
-                    // Check if this position is valid
-                    if (grid.InventorySystem.CanPlaceItem(item, pos, rotation))
+                    // Check if this position is valid (FIX: CanAddItem not CanPlaceItem)
+                    if (grid.InventorySystem.CanAddItem(item, pos, rotation))
                     {
                         return pos;
                     }
