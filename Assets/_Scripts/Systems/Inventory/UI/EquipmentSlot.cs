@@ -55,6 +55,13 @@ namespace TimeGame.Systems.Inventory.UI
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
+            
+            // Cache CanvasGroup if it exists on itemIconImage
+            if (itemIconImage != null)
+            {
+                itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
+            }
+            
             UpdateVisuals();
         }
 
@@ -207,9 +214,8 @@ namespace TimeGame.Systems.Inventory.UI
         private void EquipItem(InventoryItemSO item)
         {
             equippedItem = item;
-            UpdateVisuals();
             
-            // Add drag functionality to item icon
+            // Setup drag functionality BEFORE updating visuals
             if (itemIconImage != null)
             {
                 // CRITICAL: Enable raycast target so drag events are received
@@ -235,6 +241,7 @@ namespace TimeGame.Systems.Inventory.UI
                 }
             }
             
+            UpdateVisuals();
             OnItemEquipped?.Invoke(item);
         }
 
@@ -249,10 +256,24 @@ namespace TimeGame.Systems.Inventory.UI
                 // Always keep GameObject active (needed for drag events)
                 itemIconImage.gameObject.SetActive(true);
                 
+                // Get CanvasGroup if we don't have it cached yet
+                if (itemIconCanvasGroup == null)
+                {
+                    itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
+                }
+                
                 // Use CanvasGroup to control visibility
                 if (itemIconCanvasGroup != null)
                 {
+                    // When empty: alpha = 0 (invisible but still receives events)
+                    // When occupied: alpha = 1 (visible)
                     itemIconCanvasGroup.alpha = hasItem ? 1f : 0f;
+                    Log($"Set itemIcon alpha to {itemIconCanvasGroup.alpha} (hasItem: {hasItem})");
+                }
+                else
+                {
+                    // Fallback if no CanvasGroup (shouldn't happen after first equip)
+                    itemIconImage.enabled = hasItem;
                 }
                 
                 if (hasItem && equippedItem.ItemIcon != null)
