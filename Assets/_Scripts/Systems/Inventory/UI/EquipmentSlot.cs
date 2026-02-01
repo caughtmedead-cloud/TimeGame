@@ -207,6 +207,25 @@ namespace TimeGame.Systems.Inventory.UI
         {
             equippedItem = item;
             UpdateVisuals();
+            
+            // Add drag functionality to item icon
+            if (itemIconImage != null)
+            {
+                // Add drag source component if not present
+                EquipmentSlotDragSource dragSource = itemIconImage.GetComponent<EquipmentSlotDragSource>();
+                if (dragSource == null)
+                {
+                    dragSource = itemIconImage.gameObject.AddComponent<EquipmentSlotDragSource>();
+                }
+                
+                // Add CanvasGroup if not present (needed for drag-drop)
+                CanvasGroup canvasGroup = itemIconImage.GetComponent<CanvasGroup>();
+                if (canvasGroup == null)
+                {
+                    itemIconImage.gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+            
             OnItemEquipped?.Invoke(item);
         }
 
