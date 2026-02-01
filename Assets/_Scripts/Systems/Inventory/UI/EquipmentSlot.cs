@@ -55,6 +55,19 @@ namespace TimeGame.Systems.Inventory.UI
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
+            
+            // Initialize CanvasGroup on itemIconImage if it exists
+            // This ensures empty slots are properly invisible from the start
+            if (itemIconImage != null)
+            {
+                itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
+                if (itemIconCanvasGroup == null)
+                {
+                    itemIconCanvasGroup = itemIconImage.gameObject.AddComponent<CanvasGroup>();
+                    Log($"Added CanvasGroup to {itemIconImage.gameObject.name} in Awake");
+                }
+            }
+            
             UpdateVisuals();
         }
 
@@ -208,13 +221,13 @@ namespace TimeGame.Systems.Inventory.UI
         {
             equippedItem = item;
             
-            // CRITICAL: Setup components BEFORE calling UpdateVisuals!
+            // Setup components BEFORE calling UpdateVisuals!
             if (itemIconImage != null)
             {
                 // CRITICAL: Enable raycast target so drag events are received
                 itemIconImage.raycastTarget = true;
                 
-                // Get or add CanvasGroup (cache it) - MUST happen before UpdateVisuals!
+                // Get or add CanvasGroup (should already exist from Awake, but double-check)
                 if (itemIconCanvasGroup == null)
                 {
                     itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
@@ -259,7 +272,7 @@ namespace TimeGame.Systems.Inventory.UI
                 }
                 else
                 {
-                    // Fallback if CanvasGroup doesn't exist yet (shouldn't happen after fix)
+                    // This should never happen now that we initialize in Awake
                     Log($"WARNING: itemIconCanvasGroup is null! hasItem: {hasItem}");
                 }
                 
