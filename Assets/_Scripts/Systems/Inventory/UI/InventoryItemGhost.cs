@@ -42,10 +42,10 @@ namespace TimeGame.Systems.Inventory.UI
         private Image image;
         private RectTransform visualTransform;
 
-        // DOTween tracking
-        private Tweener currentRotationTween;
-        private Tweener currentSizeTween;
-        private Tweener currentScaleTween;
+        // DOTween tracking (use Tween base class to support both Tweener and Sequence)
+        private Tween currentRotationTween;
+        private Tween currentSizeTween;
+        private Tween currentScaleTween;
 
         /// <summary>
         /// Currently displayed item definition.
