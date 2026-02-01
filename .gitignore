@@ -96,6 +96,8 @@ packages-lock.json
 
 # Large asset folders
 [Aa]ssets/_Animation/
+[Aa]ssets/_Art/
+[Aa]ssets/_Prefabs/
 [Aa]ssets/Polygonmaker/
 [Aa]ssets/Polygonmaker.meta
 [Aa]ssets/_Art/Mesh/UnityRobot/Skeleton/Textures/
