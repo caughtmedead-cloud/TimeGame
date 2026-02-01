@@ -5,14 +5,13 @@ namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Manages the player's inventory grids in the right panel.
-    /// Handles spawning/removing grids based on equipped storage items (vest, backpack, etc.)
+    /// Handles spawning/removing grids based on equipped storage items.
+    /// Uses flexible array-based approach for any equipment that provides storage.
     /// </summary>
     public class PlayerInventoryManager : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private ScrollableInventoryPanel storagePanel;
-        [SerializeField] private EquipmentSlot vestSlot;
-        [SerializeField] private EquipmentSlot backpackSlot;
 
         [Header("Permanent Storage")]
         [Tooltip("Pockets always present, never removed")]
@@ -20,25 +19,19 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private Vector2Int pocketGridSize = new Vector2Int(4, 2);
         [SerializeField] private float pocketMaxWeight = 5f;
 
-        [Header("Equipment Storage Defaults")]
-        [Tooltip("Default grid sizes if item doesn't specify")]
-        [SerializeField] private Vector2Int defaultVestGridSize = new Vector2Int(6, 4);
-        [SerializeField] private float defaultVestMaxWeight = 20f;
-        [SerializeField] private Vector2Int defaultBackpackGridSize = new Vector2Int(8, 6);
-        [SerializeField] private float defaultBackpackMaxWeight = 50f;
+        [Header("Equipment Storage Mappings")]
+        [Tooltip("Array of equipment slots that provide storage when equipped")]
+        [SerializeField] private EquipmentStorageMapping[] equipmentStorageMappings;
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = true;
 
         // Grid tracking
         private InventoryGridVisual pocketGrid;
-        private InventoryGridVisual vestGrid;
-        private InventoryGridVisual backpackGrid;
+        private Dictionary<string, InventoryGridVisual> equipmentGrids = new Dictionary<string, InventoryGridVisual>();
 
-        // Grid names for tracking
+        // Grid names
         private const string POCKET_GRID_NAME = "PocketGrid";
-        private const string VEST_GRID_NAME = "VestStorageGrid";
-        private const string BACKPACK_GRID_NAME = "BackpackStorageGrid";
 
         private void Start()
         {
@@ -48,17 +41,24 @@ namespace TimeGame.Systems.Inventory.UI
                 SpawnPocketGrid();
             }
 
-            // Subscribe to equipment slot events
-            if (vestSlot != null)
+            // Subscribe to all equipment slot events
+            if (equipmentStorageMappings != null)
             {
-                vestSlot.OnItemEquipped += OnVestEquipped;
-                vestSlot.OnItemUnequipped += OnVestUnequipped;
-            }
-
-            if (backpackSlot != null)
-            {
-                backpackSlot.OnItemEquipped += OnBackpackEquipped;
-                backpackSlot.OnItemUnequipped += OnBackpackUnequipped;
+                foreach (var mapping in equipmentStorageMappings)
+                {
+                    if (mapping.slot != null)
+                    {
+                        // Store mapping reference on the event subscription
+                        mapping.slot.OnItemEquipped += (item) => OnEquipmentEquipped(mapping, item);
+                        mapping.slot.OnItemUnequipped += (item) => OnEquipmentUnequipped(mapping, item);
+                        
+                        Log($"Subscribed to {mapping.slot.name} events");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PlayerInventoryManager] Equipment storage mapping has null slot!");
+                    }
+                }
             }
 
             Log("PlayerInventoryManager initialized");
@@ -67,16 +67,16 @@ namespace TimeGame.Systems.Inventory.UI
         private void OnDestroy()
         {
             // Unsubscribe from events
-            if (vestSlot != null)
+            if (equipmentStorageMappings != null)
             {
-                vestSlot.OnItemEquipped -= OnVestEquipped;
-                vestSlot.OnItemUnequipped -= OnVestUnequipped;
-            }
-
-            if (backpackSlot != null)
-            {
-                backpackSlot.OnItemEquipped -= OnBackpackEquipped;
-                backpackSlot.OnItemUnequipped -= OnBackpackUnequipped;
+                foreach (var mapping in equipmentStorageMappings)
+                {
+                    if (mapping.slot != null)
+                    {
+                        mapping.slot.OnItemEquipped -= (item) => OnEquipmentEquipped(mapping, item);
+                        mapping.slot.OnItemUnequipped -= (item) => OnEquipmentUnequipped(mapping, item);
+                    }
+                }
             }
         }
 
@@ -105,110 +105,82 @@ namespace TimeGame.Systems.Inventory.UI
 
         #endregion
 
-        #region Vest Storage
+        #region Equipment Storage (Dynamic)
 
-        private void OnVestEquipped(InventoryItemSO vest)
+        private void OnEquipmentEquipped(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
-            Log($"Vest equipped: {vest.ItemName}");
-            SpawnVestGrid(vest);
+            Log($"Equipment equipped: {item.ItemName} in {mapping.slot.name}");
+            SpawnEquipmentGrid(mapping, item);
         }
 
-        private void OnVestUnequipped(InventoryItemSO vest)
+        private void OnEquipmentUnequipped(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
-            Log($"Vest unequipped: {vest.ItemName}");
-            RemoveVestGrid();
+            Log($"Equipment unequipped: {item.ItemName} from {mapping.slot.name}");
+            RemoveEquipmentGrid(mapping);
         }
 
-        private void SpawnVestGrid(InventoryItemSO vest)
+        private void SpawnEquipmentGrid(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
             if (storagePanel == null) return;
 
-            // Check if vest has custom storage properties
-            // For now, use defaults - in future, InventoryItemSO could have StorageWidth/StorageHeight
-            Vector2Int gridSize = defaultVestGridSize;
-            float maxWeight = defaultVestMaxWeight;
+            // Get grid configuration
+            Vector2Int gridSize = mapping.defaultGridSize;
+            float maxWeight = mapping.defaultMaxWeight;
+            string gridName = mapping.gridName;
 
-            // TODO: Get from vest.StorageGridSize if property exists
-            // gridSize = vest.StorageGridSize != Vector2Int.zero ? vest.StorageGridSize : defaultVestGridSize;
+            // TODO: Future enhancement - read from item.StorageGridSize if property exists
+            // if (item.ProvidesStorage && item.StorageGridSize != Vector2Int.zero)
+            // {
+            //     gridSize = item.StorageGridSize;
+            //     maxWeight = item.StorageMaxWeight;
+            // }
 
-            vestGrid = storagePanel.SpawnGrid(
-                VEST_GRID_NAME,
+            // Spawn the grid
+            InventoryGridVisual grid = storagePanel.SpawnGrid(
+                gridName,
                 gridSize.x,
                 gridSize.y,
                 maxWeight,
                 null,
                 withLabel: true,
-                labelText: $"{vest.ItemName} Storage"
+                labelText: mapping.displayLabel ?? $"{item.ItemName} Storage"
             );
 
-            Log($"Spawned vest storage grid: {gridSize.x}x{gridSize.y}");
-        }
-
-        private void RemoveVestGrid()
-        {
-            if (storagePanel == null) return;
-
-            // First, need to move items out of vest storage
-            // TODO: Drop items on ground or try to move to other storage
-            
-            bool removed = storagePanel.RemoveGrid(VEST_GRID_NAME);
-            if (removed)
+            if (grid != null)
             {
-                vestGrid = null;
-                Log("Removed vest storage grid");
+                equipmentGrids[gridName] = grid;
+                Log($"Spawned equipment storage grid: {gridName} ({gridSize.x}x{gridSize.y})");
             }
         }
 
-        #endregion
-
-        #region Backpack Storage
-
-        private void OnBackpackEquipped(InventoryItemSO backpack)
-        {
-            Log($"Backpack equipped: {backpack.ItemName}");
-            SpawnBackpackGrid(backpack);
-        }
-
-        private void OnBackpackUnequipped(InventoryItemSO backpack)
-        {
-            Log($"Backpack unequipped: {backpack.ItemName}");
-            RemoveBackpackGrid();
-        }
-
-        private void SpawnBackpackGrid(InventoryItemSO backpack)
+        private void RemoveEquipmentGrid(EquipmentStorageMapping mapping)
         {
             if (storagePanel == null) return;
 
-            // Check if backpack has custom storage properties
-            Vector2Int gridSize = defaultBackpackGridSize;
-            float maxWeight = defaultBackpackMaxWeight;
+            string gridName = mapping.gridName;
 
-            // TODO: Get from backpack.StorageGridSize if property exists
+            // TODO: Handle items in storage before removing
+            // Option A: Drop items on ground
+            // Option B: Try to move to pockets
+            // For now, items will be lost (warn in logs)
+            if (equipmentGrids.ContainsKey(gridName))
+            {
+                InventoryGridVisual grid = equipmentGrids[gridName];
+                if (grid != null && grid.InventorySystem != null)
+                {
+                    int itemCount = grid.InventorySystem.GetAllItems().Count;
+                    if (itemCount > 0)
+                    {
+                        Debug.LogWarning($"[PlayerInventoryManager] Removing {gridName} with {itemCount} items! Items will be lost. TODO: Implement item handling.");
+                    }
+                }
+            }
 
-            backpackGrid = storagePanel.SpawnGrid(
-                BACKPACK_GRID_NAME,
-                gridSize.x,
-                gridSize.y,
-                maxWeight,
-                null,
-                withLabel: true,
-                labelText: $"{backpack.ItemName} Storage"
-            );
-
-            Log($"Spawned backpack storage grid: {gridSize.x}x{gridSize.y}");
-        }
-
-        private void RemoveBackpackGrid()
-        {
-            if (storagePanel == null) return;
-
-            // TODO: Handle items in backpack when unequipping
-            
-            bool removed = storagePanel.RemoveGrid(BACKPACK_GRID_NAME);
+            bool removed = storagePanel.RemoveGrid(gridName);
             if (removed)
             {
-                backpackGrid = null;
-                Log("Removed backpack storage grid");
+                equipmentGrids.Remove(gridName);
+                Log($"Removed equipment storage grid: {gridName}");
             }
         }
 
@@ -222,14 +194,21 @@ namespace TimeGame.Systems.Inventory.UI
         public InventoryGridVisual GetPocketGrid() => pocketGrid;
 
         /// <summary>
-        /// Get the vest storage grid (null if no vest equipped)
+        /// Get an equipment storage grid by name
         /// </summary>
-        public InventoryGridVisual GetVestGrid() => vestGrid;
+        public InventoryGridVisual GetEquipmentGrid(string gridName)
+        {
+            equipmentGrids.TryGetValue(gridName, out InventoryGridVisual grid);
+            return grid;
+        }
 
         /// <summary>
-        /// Get the backpack storage grid (null if no backpack equipped)
+        /// Get all currently active equipment grids
         /// </summary>
-        public InventoryGridVisual GetBackpackGrid() => backpackGrid;
+        public IReadOnlyDictionary<string, InventoryGridVisual> GetAllEquipmentGrids()
+        {
+            return equipmentGrids;
+        }
 
         /// <summary>
         /// Manually refresh all grids (useful after loading save data)
@@ -242,6 +221,8 @@ namespace TimeGame.Systems.Inventory.UI
                 storagePanel.ClearAllGrids();
             }
 
+            equipmentGrids.Clear();
+
             // Respawn pocket grid
             if (spawnPocketGrid)
             {
@@ -249,14 +230,15 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             // Respawn equipment grids based on current equipment
-            if (vestSlot != null && vestSlot.IsOccupied)
+            if (equipmentStorageMappings != null)
             {
-                SpawnVestGrid(vestSlot.EquippedItem);
-            }
-
-            if (backpackSlot != null && backpackSlot.IsOccupied)
-            {
-                SpawnBackpackGrid(backpackSlot.EquippedItem);
+                foreach (var mapping in equipmentStorageMappings)
+                {
+                    if (mapping.slot != null && mapping.slot.IsOccupied)
+                    {
+                        SpawnEquipmentGrid(mapping, mapping.slot.EquippedItem);
+                    }
+                }
             }
 
             Log("Refreshed all player inventory grids");
@@ -271,5 +253,29 @@ namespace TimeGame.Systems.Inventory.UI
                 Debug.Log($"[PlayerInventoryManager] {message}");
             }
         }
+    }
+
+    /// <summary>
+    /// Defines mapping between an equipment slot and its storage grid properties.
+    /// Add entries in Inspector for any equipment that provides storage.
+    /// </summary>
+    [System.Serializable]
+    public class EquipmentStorageMapping
+    {
+        [Tooltip("The equipment slot to monitor")]
+        public EquipmentSlot slot;
+
+        [Tooltip("Unique name for this grid (e.g., 'VestStorageGrid', 'BackpackStorageGrid')")]
+        public string gridName = "EquipmentStorageGrid";
+
+        [Tooltip("Display label for this storage (e.g., 'Vest Storage', 'Backpack')")]
+        public string displayLabel = "Storage";
+
+        [Header("Default Grid Properties")]
+        [Tooltip("Default grid size if item doesn't specify")]
+        public Vector2Int defaultGridSize = new Vector2Int(6, 4);
+
+        [Tooltip("Default max weight if item doesn't specify")]
+        public float defaultMaxWeight = 20f;
     }
 }
