@@ -32,7 +32,7 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private UnityEngine.InputSystem.Key rotateKey = UnityEngine.InputSystem.Key.R;
 
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = false;
+        [SerializeField] private bool verboseLogging = true; // Enable by default for debugging
 
         private void Awake()
         {
@@ -45,12 +45,21 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 Debug.LogError("[EquipmentSlotDragSource] No EquipmentSlot found in parent!", this);
             }
+            else
+            {
+                Log($"Found parent equipment slot: {equipmentSlot.GetDisplayName()}");
+            }
             
             // Find ghost (should be in the scene on InventoryDragHandler)
             InventoryDragHandler dragHandler = GetComponentInParent<InventoryDragHandler>();
             if (dragHandler != null)
             {
                 ghost = dragHandler.GetComponentInChildren<InventoryItemGhost>(true);
+                Log($"Found InventoryDragHandler and ghost");
+            }
+            else
+            {
+                Debug.LogError("[EquipmentSlotDragSource] No InventoryDragHandler found in parent hierarchy!", this);
             }
             
             if (ghost == null)
@@ -61,8 +70,11 @@ namespace TimeGame.Systems.Inventory.UI
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            Log($"OnBeginDrag triggered! Mouse button: {eventData.button}");
+            
             if (equipmentSlot == null || ghost == null || !equipmentSlot.IsOccupied)
             {
+                Log($"Cannot begin drag - equipmentSlot null: {equipmentSlot == null}, ghost null: {ghost == null}, occupied: {equipmentSlot?.IsOccupied}");
                 return;
             }
 
@@ -117,6 +129,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (!isDragging || ghost == null)
             {
+                Log("OnEndDrag called but not dragging!");
                 return;
             }
 
@@ -129,6 +142,8 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (targetUnderMouse != null)
             {
+                Log($"Target under mouse: {targetUnderMouse.GetDisplayName()}");
+                
                 // Get mouse position in target's local space
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     targetUnderMouse.GetRectTransform(),
@@ -149,6 +164,14 @@ namespace TimeGame.Systems.Inventory.UI
                 {
                     Log($"Successfully dropped {draggedItem.ItemName} to {targetUnderMouse.GetDisplayName()}");
                 }
+                else
+                {
+                    Log($"Failed to drop {draggedItem.ItemName} to {targetUnderMouse.GetDisplayName()}");
+                }
+            }
+            else
+            {
+                Log("No target under mouse");
             }
 
             if (!dropped)
