@@ -36,6 +36,7 @@ namespace TimeGame.Systems.Inventory.UI
         private InventoryItemSO equippedItem;
         private System.Guid equippedItemID;
         private RectTransform rectTransform;
+        private CanvasGroup itemIconCanvasGroup; // Cache the CanvasGroup
 
         // Events
         public event Action<InventoryItemSO> OnItemEquipped;
@@ -214,20 +215,23 @@ namespace TimeGame.Systems.Inventory.UI
                 // CRITICAL: Enable raycast target so drag events are received
                 itemIconImage.raycastTarget = true;
                 
+                // Get or add CanvasGroup (cache it)
+                if (itemIconCanvasGroup == null)
+                {
+                    itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
+                    if (itemIconCanvasGroup == null)
+                    {
+                        itemIconCanvasGroup = itemIconImage.gameObject.AddComponent<CanvasGroup>();
+                        Log($"Added CanvasGroup to {itemIconImage.gameObject.name}");
+                    }
+                }
+                
                 // Add drag source component if not present
                 EquipmentSlotDragSource dragSource = itemIconImage.GetComponent<EquipmentSlotDragSource>();
                 if (dragSource == null)
                 {
                     dragSource = itemIconImage.gameObject.AddComponent<EquipmentSlotDragSource>();
                     Log($"Added EquipmentSlotDragSource to {itemIconImage.gameObject.name}");
-                }
-                
-                // Add CanvasGroup if not present (needed for drag-drop)
-                CanvasGroup canvasGroup = itemIconImage.GetComponent<CanvasGroup>();
-                if (canvasGroup == null)
-                {
-                    itemIconImage.gameObject.AddComponent<CanvasGroup>();
-                    Log($"Added CanvasGroup to {itemIconImage.gameObject.name}");
                 }
             }
             
@@ -238,10 +242,18 @@ namespace TimeGame.Systems.Inventory.UI
         {
             bool hasItem = IsOccupied;
 
-            // Update item icon - disable GameObject when empty to prevent showing empty sprite
+            // Update item icon - use CanvasGroup alpha instead of SetActive
+            // This keeps the GameObject active so drag events continue to work
             if (itemIconImage != null)
             {
-                itemIconImage.gameObject.SetActive(hasItem);  // ✅ Disable entire GameObject
+                // Always keep GameObject active (needed for drag events)
+                itemIconImage.gameObject.SetActive(true);
+                
+                // Use CanvasGroup to control visibility
+                if (itemIconCanvasGroup != null)
+                {
+                    itemIconCanvasGroup.alpha = hasItem ? 1f : 0f;
+                }
                 
                 if (hasItem && equippedItem.ItemIcon != null)
                 {
