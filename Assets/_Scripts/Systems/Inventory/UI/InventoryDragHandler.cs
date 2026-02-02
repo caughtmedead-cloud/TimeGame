@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq; // For FirstOrDefault
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -80,7 +81,7 @@ namespace TimeGame.Systems.Inventory.UI
             if (registeredTargets.Contains(target))
             {
                 registeredTargets.Remove(target);
-                Log($"Unregister drop target: {target.GetDisplayName()}");
+                Log($"Unregistered drop target: {target.GetDisplayName()}");
             }
         }
 
