@@ -74,6 +74,21 @@ namespace TimeGame.Inventory
             }
         }
         
+        private void Update()
+        {
+            // Allow ESC key to close inventory (in addition to Tab toggle)
+            // Using old Input system here since ESC is a universal close key
+            if (IsOwner && isInventoryOpen && Input.GetKeyDown(KeyCode.Escape))
+            {
+                CloseInventory();
+                
+                if (debugMode)
+                {
+                    Debug.Log("[InventoryUIController] Inventory closed via ESC key");
+                }
+            }
+        }
+        
         #endregion
         
         #region FishNet Lifecycle
@@ -95,7 +110,7 @@ namespace TimeGame.Inventory
                 
                 if (debugMode)
                 {
-                    Debug.Log("[InventoryUIController] Initialized for local player. Press Tab to open inventory.");
+                    Debug.Log("[InventoryUIController] Initialized for local player. Press Tab to open inventory, ESC to close.");
                 }
             }
             else
