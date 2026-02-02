@@ -7,12 +7,17 @@ namespace TimeGame.Inventory
     /// <summary>
     /// Manages inventory UI visibility and input for the local player.
     /// Attached to the player prefab to control their inventory UI.
+    /// Also disables player movement/look input while inventory is open.
     /// </summary>
     public class InventoryUIController : NetworkBehaviour
     {
         [Header("Inventory UI References")]
         [Tooltip("The Canvas GameObject containing the entire inventory UI")]
         [SerializeField] private GameObject inventoryCanvas;
+        
+        [Header("Player Input References")]
+        [Tooltip("PlayerController component - auto-found if not assigned")]
+        [SerializeField] private PlayerController playerController;
         
         [Header("Input Settings")]
         [Tooltip("Enable debug logging for inventory UI actions")]
@@ -29,6 +34,16 @@ namespace TimeGame.Inventory
         {
             // Create input actions
             inputActions = new PlayerInputActions();
+            
+            // Auto-find PlayerController if not assigned
+            if (playerController == null)
+            {
+                playerController = GetComponent<PlayerController>();
+                if (playerController == null)
+                {
+                    Debug.LogError("[InventoryUIController] PlayerController not found! Please assign it in inspector.");
+                }
+            }
             
             // Validate references
             if (inventoryCanvas == null)
@@ -138,9 +153,12 @@ namespace TimeGame.Inventory
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             
+            // Disable player input (movement, look, jump, etc.)
+            DisablePlayerInput();
+            
             if (debugMode)
             {
-                Debug.Log("[InventoryUIController] Inventory opened");
+                Debug.Log("[InventoryUIController] Inventory opened - player input disabled");
             }
         }
         
@@ -167,9 +185,51 @@ namespace TimeGame.Inventory
                 Cursor.visible = false;
             }
             
+            // Re-enable player input
+            EnablePlayerInput();
+            
             if (debugMode)
             {
-                Debug.Log("[InventoryUIController] Inventory closed");
+                Debug.Log("[InventoryUIController] Inventory closed - player input enabled");
+            }
+        }
+        
+        #endregion
+        
+        #region Player Input Control
+        
+        /// <summary>
+        /// Disables player movement/look input while inventory is open
+        /// </summary>
+        private void DisablePlayerInput()
+        {
+            if (playerController != null && playerController.enabled)
+            {
+                // Disable the PlayerController's Update loop
+                // This prevents all movement, look, jump, sprint, crouch input
+                playerController.enabled = false;
+                
+                if (debugMode)
+                {
+                    Debug.Log("[InventoryUIController] PlayerController disabled");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Re-enables player movement/look input when inventory closes
+        /// </summary>
+        private void EnablePlayerInput()
+        {
+            if (playerController != null && !playerController.enabled)
+            {
+                // Re-enable the PlayerController's Update loop
+                playerController.enabled = true;
+                
+                if (debugMode)
+                {
+                    Debug.Log("[InventoryUIController] PlayerController enabled");
+                }
             }
         }
         
