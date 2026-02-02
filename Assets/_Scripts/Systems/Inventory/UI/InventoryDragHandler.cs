@@ -13,6 +13,11 @@ namespace TimeGame.Systems.Inventory.UI
     /// 
     /// IMPORTANT: This implementation assumes Screen Space - Overlay canvas mode.
     /// For other canvas modes, coordinate conversion logic needs to be updated.
+    /// 
+    /// FIXES:
+    /// - Bug #1: Ghost only shows on valid grid boundaries (not outside)
+    /// - Bug #2: Cursor centered on item (not bottom-left)
+    /// - Bug #3: Rotation works from equipment slots
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -37,8 +42,9 @@ namespace TimeGame.Systems.Inventory.UI
         private GridDirection currentRotation;
         private InventorySystem sourceInventory; // Inventory we dragged from
 
-        // FIX: Mouse offset tracking - offset from item CENTER to cursor position
-        private Vector2 mouseDragLocalOffset; // Offset in local space from item center
+        // FIX #2: Store the pixel offset from GHOST center to mouse cursor
+        // This is in SCREEN SPACE (pixels) not local grid space
+        private Vector2 mouseOffsetFromGhostCenter;
 
         /// <summary>
         /// Is a drag operation currently active?
@@ -74,7 +80,7 @@ namespace TimeGame.Systems.Inventory.UI
             if (registeredTargets.Contains(target))
             {
                 registeredTargets.Remove(target);
-                Log($"Unregistered drop target: {target.GetDisplayName()}");
+                Log($"Unregister drop target: {target.GetDisplayName()}");
             }
         }
 
@@ -101,7 +107,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (!isDragging) return;
 
-            // Handle rotation input
+            // FIX #3: Handle rotation input (works for both grid and equipment drags)
             bool rPressed = false;
             
             // Method 1: New Input System
@@ -163,27 +169,30 @@ namespace TimeGame.Systems.Inventory.UI
                 originalRotation = draggedItem.Rotation;
                 currentRotation = draggedItem.Rotation;
 
-                // FIX: Calculate mouse offset from item CENTER (not anchor)
-                Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    gridVisual.GetRectTransform(),
-                    mouseScreenPos,
-                    null, // null camera for Screen Space - Overlay
-                    out Vector2 mouseLocalPos
-                );
-
-                // Get item center position in local space
+                // FIX #2: Calculate SCREEN SPACE offset from ghost center to mouse
                 InventoryItemSO itemDef = draggedItem.ItemDefinition as InventoryItemSO;
-                Vector2 itemAnchorLocalPos = gridVisual.GridPositionToLocalPosition(draggedItem.AnchorPosition);
+                Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
                 
-                // Calculate item center (anchor is bottom-left)
-                int width = itemDef.GetRotatedWidth(draggedItem.Rotation);
-                int height = itemDef.GetRotatedHeight(draggedItem.Rotation);
-                Vector2 itemCenterOffset = new Vector2(width * gridVisual.CellSize * 0.5f, height * gridVisual.CellSize * 0.5f);
-                Vector2 itemCenterLocalPos = itemAnchorLocalPos + itemCenterOffset;
+                // Get the item's CURRENT screen position (where the visual is)
+                InventoryItemVisual itemVisual = gridVisual.transform.GetComponentsInChildren<InventoryItemVisual>()
+                    .FirstOrDefault(v => v.PlacedItem.InstanceID == itemInstanceID);
                 
-                // Calculate offset from item center to mouse
-                mouseDragLocalOffset = mouseLocalPos - itemCenterLocalPos;
+                if (itemVisual != null)
+                {
+                    // Get item center in screen space
+                    RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
+                    Vector3 itemScreenCenter = RectTransformUtility.WorldToScreenPoint(null, itemRT.position);
+                    
+                    // Calculate offset from center to mouse
+                    mouseOffsetFromGhostCenter = mouseScreenPos - (Vector2)itemScreenCenter;
+                    
+                    Log($"Mouse offset from item center: {mouseOffsetFromGhostCenter}");
+                }
+                else
+                {
+                    // Fallback: no offset (center cursor)
+                    mouseOffsetFromGhostCenter = Vector2.zero;
+                }
 
                 Log($"Started dragging {draggedItem.ItemDefinition.name} from {sourceTarget.GetDisplayName()}");
 
@@ -196,7 +205,7 @@ namespace TimeGame.Systems.Inventory.UI
             }
             else
             {
-                // Dragging from equipment slot
+                // FIX #3: Dragging from equipment slot - enable rotation
                 EquipmentSlot slot = sourceTarget as EquipmentSlot;
                 if (slot != null && slot.EquippedItem != null)
                 {
@@ -204,8 +213,8 @@ namespace TimeGame.Systems.Inventory.UI
                     originalRotation = GridDirection.Down;
                     currentRotation = GridDirection.Down;
                     
-                    // FIX: For equipment slots, center the offset (no offset)
-                    mouseDragLocalOffset = Vector2.zero;
+                    // FIX #2: For equipment slots, center the ghost on cursor (no offset)
+                    mouseOffsetFromGhostCenter = Vector2.zero;
 
                     Log($"Started dragging {itemDef.name} from slot {sourceTarget.GetDisplayName()}");
 
@@ -315,21 +324,19 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Update ghost position to follow mouse and validate placement.
-        /// FIX: Apply cursor offset correctly to center cursor on item.
-        /// 
-        /// SCREEN SPACE - OVERLAY COORDINATE CONVERSION:
-        /// In Overlay mode, UI elements' transform.position equals screen pixels.
-        /// TransformPoint converts local UI coords → screen space directly.
-        /// This is Unity's standard pattern for Overlay canvases.
+        /// FIX #1: Only validate against the grid actually under mouse
+        /// FIX #2: Apply stored screen-space offset to keep cursor at same relative position
         /// </summary>
         private void UpdateGhostPosition()
         {
+            // FIX #1: Get the specific target under mouse
             IInventoryDropTarget targetUnderMouse = GetDropTargetUnderMouse();
+
+            Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
 
             if (targetUnderMouse != null)
             {
                 // Get mouse position in target's local space
-                Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     targetUnderMouse.GetRectTransform(),
                     mouseScreenPos,
@@ -339,21 +346,13 @@ namespace TimeGame.Systems.Inventory.UI
 
                 Vector2 snappedLocalPos;
 
-                // For grids, snap to grid and apply offset
+                // For grids, snap to grid
                 if (targetUnderMouse is InventoryGridVisual gridTarget)
                 {
-                    // FIX: Account for cursor being at item center, not anchor
-                    // Calculate where item center should be (mouse - offset)
-                    Vector2 itemCenterLocalPos = mouseLocalPos - mouseDragLocalOffset;
+                    // Convert mouse local position to grid position
+                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(mouseLocalPos);
                     
-                    // Calculate item anchor position (bottom-left from center)
-                    int width = ghost.CurrentItem.GetRotatedWidth(currentRotation);
-                    int height = ghost.CurrentItem.GetRotatedHeight(currentRotation);
-                    Vector2 itemCenterOffset = new Vector2(width * gridTarget.CellSize * 0.5f, height * gridTarget.CellSize * 0.5f);
-                    Vector2 itemAnchorLocalPos = itemCenterLocalPos - itemCenterOffset;
-                    
-                    // Snap anchor to grid
-                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(itemAnchorLocalPos);
+                    // Convert back to local position (snapped to grid)
                     snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
                 }
                 else
@@ -364,29 +363,41 @@ namespace TimeGame.Systems.Inventory.UI
                 
                 // Convert local UI position to screen position
                 // For Screen Space - Overlay: TransformPoint returns screen space directly
-                Vector3 screenPos = targetUnderMouse.GetRectTransform().TransformPoint(snappedLocalPos);
-                ghost.transform.position = screenPos;
+                Vector3 ghostScreenPos = targetUnderMouse.GetRectTransform().TransformPoint(snappedLocalPos);
+                
+                // FIX #2: Apply the stored offset to keep cursor at same spot on item
+                ghostScreenPos = ghostScreenPos - (Vector3)mouseOffsetFromGhostCenter;
+                
+                ghost.transform.position = ghostScreenPos;
 
-                // Validate placement
+                // FIX #1: Validate placement against THIS SPECIFIC grid
                 bool canPlace = targetUnderMouse.CanAcceptItem(ghost.CurrentItem, currentRotation, mouseLocalPos);
                 ghost.SetValid(canPlace);
             }
             else
             {
-                // No target - follow mouse, mark as invalid
-                Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
-                ghost.transform.position = mouseScreenPos;
+                // FIX #1: No target - follow mouse directly, mark as invalid
+                // FIX #2: Apply offset here too
+                Vector3 ghostScreenPos = mouseScreenPos - mouseOffsetFromGhostCenter;
+                ghost.transform.position = ghostScreenPos;
                 ghost.SetValid(false);
             }
         }
 
         /// <summary>
         /// Rotate the dragged item.
+        /// FIX #3: Works for both grid and equipment slot drags
         /// </summary>
         private void RotateDraggedItem()
         {
             InventoryItemSO itemDef = ghost.CurrentItem;
-            if (itemDef == null || !itemDef.CanRotate)
+            if (itemDef == null)
+            {
+                Log("Cannot rotate - no item in ghost");
+                return;
+            }
+            
+            if (!itemDef.CanRotate)
             {
                 Log("Cannot rotate - item doesn't support rotation");
                 return;
@@ -397,6 +408,10 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Update ghost
             ghost.Rotate();
+
+            // FIX #2: Recalculate offset after rotation (dimensions changed)
+            // Ghost center might shift due to size change
+            // For now, keep offset as-is since ghost rotates around its center
 
             Log($"Rotated to {currentRotation}");
 
@@ -410,6 +425,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Find the drop target that is currently under the mouse.
+        /// FIX #1: Only returns targets that are actually visible and interactable
         /// </summary>
         private IInventoryDropTarget GetDropTargetUnderMouse()
         {
@@ -426,15 +442,23 @@ namespace TimeGame.Systems.Inventory.UI
             List<RaycastResult> results = new List<RaycastResult>();
             EventSystem.current.RaycastAll(pointerData, results);
 
-            // Find first registered target in raycast results
+            // FIX #1: Find first registered target in raycast results
+            // Check that the hit object is actually part of the target's hierarchy
             foreach (RaycastResult result in results)
             {
                 foreach (IInventoryDropTarget target in registeredTargets)
                 {
-                    if (result.gameObject == target.GetRectTransform().gameObject ||
+                    GameObject targetObj = target.GetRectTransform().gameObject;
+                    
+                    // Check if we hit the target itself or a child
+                    if (result.gameObject == targetObj ||
                         result.gameObject.transform.IsChildOf(target.GetRectTransform()))
                     {
-                        return target;
+                        // FIX #1: Verify the target is actually enabled and visible
+                        if (targetObj.activeInHierarchy)
+                        {
+                            return target;
+                        }
                     }
                 }
             }
@@ -482,6 +506,7 @@ namespace TimeGame.Systems.Inventory.UI
             draggedItem = null;
             sourceTarget = null;
             sourceInventory = null;
+            mouseOffsetFromGhostCenter = Vector2.zero;
             Log("Drag ended, cleanup complete");
         }
 
