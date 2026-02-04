@@ -9,9 +9,9 @@ namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Handles drag-drop operations for inventory items.
-    /// Uses Code Monkey's EXACT pattern: TWO offsets (grid + anchored position).
+    /// Uses Code Monkey's EXACT pattern: TWO offsets + division-based snapping.
     /// 
-    /// CRITICAL FIX: Show ghost at PLACEMENT position (accounting for offset), not cursor position!
+    /// CRITICAL: Use division snapping (not grid coordinate conversion) to preserve cursor offset!
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -337,8 +337,7 @@ namespace TimeGame.Systems.Inventory.UI
         #region Drag Update Logic
 
         /// <summary>
-        /// CODE MONKEY PATTERN: Apply anchored offset, then snap to grid.
-        /// CRITICAL FIX: Show ghost at PLACEMENT position, not cursor position!
+        /// CODE MONKEY EXACT PATTERN: Division-based snapping preserves cursor offset!
         /// </summary>
         private void UpdateGhostPosition()
         {
@@ -363,19 +362,22 @@ namespace TimeGame.Systems.Inventory.UI
 
                 if (targetUnderMouse is InventoryGridVisual gridTarget)
                 {
-                    // Convert to grid position (this snaps to cursor)
-                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(targetPosition);
+                    float cellSize = gridTarget.CellSize;
                     
-                    // CRITICAL FIX: Subtract grid offset to get PLACEMENT position
-                    Vector2Int placementGridPos = gridPos - mouseDragGridPositionOffset;
+                    // CODE MONKEY'S DIVISION-BASED SNAPPING (preserves sub-pixel offset!)
+                    // This keeps the cursor at the clicked position on the item!
+                    Vector2 snappedPosition = targetPosition / cellSize;
+                    snappedPosition = new Vector2(Mathf.Floor(snappedPosition.x), Mathf.Floor(snappedPosition.y));
+                    snappedLocalPos = snappedPosition * cellSize;
                     
-                    // Show ghost at PLACEMENT position (where item will land), not cursor position!
-                    snappedLocalPos = gridTarget.GridPositionToLocalPosition(placementGridPos);
+                    // For validation and placement, we still need grid coordinates
+                    Vector2Int cursorGridPos = gridTarget.LocalPositionToGridPosition(targetPosition);
+                    Vector2Int placementGridPos = cursorGridPos - mouseDragGridPositionOffset;
                     
                     // Validate at placement position
                     canPlace = gridTarget.InventorySystem.CanAddItem(ghost.CurrentItem, placementGridPos, currentRotation);
                     
-                    Log($"Ghost: cursor grid {gridPos}, placement grid {placementGridPos}, offset {mouseDragGridPositionOffset}");
+                    Log($"Cursor grid: {cursorGridPos}, Placement grid: {placementGridPos}, Offset: {mouseDragGridPositionOffset}");
                 }
                 else
                 {
