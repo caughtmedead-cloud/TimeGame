@@ -9,10 +9,10 @@ namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Handles drag-drop operations for inventory items.
-    /// REFACTORED to use Code Monkey's proven LOCAL SPACE approach.
+    /// Uses Code Monkey's EXACT pattern: TWO offsets (grid + anchored position).
     /// 
-    /// Key principle: Calculate offset in LOCAL SPACE (relative to grid container),
-    /// then apply before grid snapping for accurate cursor positioning.
+    /// CRITICAL: Must get item's ACTUAL RectTransform.anchoredPosition,
+    /// NOT calculate from grid position! Visual position != grid position * cellSize.
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -31,17 +31,15 @@ namespace TimeGame.Systems.Inventory.UI
         // Drag state
         private bool isDragging = false;
         private IInventoryDropTarget sourceTarget;
-        private IInventoryDropTarget currentHoverTarget; // Track which grid we're hovering over
         private PlacedItem draggedItem;
         private Vector2Int originalPosition;
         private GridDirection originalRotation;
         private GridDirection currentRotation;
         private InventorySystem sourceInventory;
 
-        // CODE MONKEY PATTERN: Offset in LOCAL SPACE (relative to container)
-        // This is the key to fixing both grid snapping AND cursor positioning
-        private Vector2 mouseDragLocalOffset; // Offset in the CURRENT target's local space
-        private float ghostCellSize; // Track ghost size for positioning
+        // CODE MONKEY'S TWO-OFFSET SYSTEM:
+        private Vector2Int mouseDragGridPositionOffset; // Offset in grid cells
+        private Vector2 mouseDragAnchoredPositionOffset; // Offset in local pixels
 
         public bool IsDragging => isDragging;
 
@@ -146,30 +144,47 @@ namespace TimeGame.Systems.Inventory.UI
 
                 InventoryItemSO itemDef = draggedItem.ItemDefinition as InventoryItemSO;
                 
-                // CODE MONKEY PATTERN: Calculate offset in LOCAL SPACE
+                // CODE MONKEY PATTERN: Get mouse in local space
                 Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     gridVisual.GetRectTransform(),
                     mouseScreenPos,
                     null,
-                    out Vector2 mouseLocalPos
+                    out Vector2 anchoredPosition
                 );
 
-                // Get item's anchored position in local space
-                Vector2 itemAnchorLocalPos = gridVisual.GridPositionToLocalPosition(originalPosition);
+                // Convert mouse to grid position
+                Vector2Int mouseGridPosition = gridVisual.LocalPositionToGridPosition(anchoredPosition);
+
+                // OFFSET #1: Grid position offset (in cells)
+                mouseDragGridPositionOffset = mouseGridPosition - originalPosition;
+
+                // OFFSET #2: Get ACTUAL RectTransform.anchoredPosition from visual
+                InventoryItemVisual itemVisual = gridVisual.transform.GetComponentsInChildren<InventoryItemVisual>()
+                    .FirstOrDefault(v => v.PlacedItem.InstanceID == itemInstanceID);
                 
-                // Calculate offset: where on the item did the user click?
-                mouseDragLocalOffset = mouseLocalPos - itemAnchorLocalPos;
-                
-                Log($"Grid drag start - offset: {mouseDragLocalOffset}");
+                if (itemVisual != null)
+                {
+                    // KEY: Use the ACTUAL anchored position, not calculated!
+                    RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
+                    mouseDragAnchoredPositionOffset = anchoredPosition - itemRT.anchoredPosition;
+                    
+                    Log($"Grid drag - Grid offset: {mouseDragGridPositionOffset}, Anchor offset: {mouseDragAnchoredPositionOffset}");
+                }
+                else
+                {
+                    // Fallback: Calculate from grid position
+                    Vector2 itemAnchorLocalPos = gridVisual.GridPositionToLocalPosition(originalPosition);
+                    mouseDragAnchoredPositionOffset = anchoredPosition - itemAnchorLocalPos;
+                    
+                    Log($"Grid drag (fallback) - offset: {mouseDragAnchoredPositionOffset}");
+                }
 
                 // Initialize ghost
-                ghostCellSize = gridVisual.CellSize;
-                ghost.Initialize(itemDef, currentRotation, ghostCellSize);
+                ghost.Initialize(itemDef, currentRotation, gridVisual.CellSize);
                 ghost.Show();
 
                 isDragging = true;
-                currentHoverTarget = gridVisual;
                 UpdateGhostPosition();
             }
             // Handle EQUIPMENT SLOT sources
@@ -182,28 +197,29 @@ namespace TimeGame.Systems.Inventory.UI
                     originalRotation = GridDirection.Down;
                     currentRotation = GridDirection.Down;
                     
-                    // For equipment slots: Calculate offset relative to slot center
+                    // For equipment slots: no grid offset
+                    mouseDragGridPositionOffset = Vector2Int.zero;
+                    
+                    // Calculate anchored position offset from slot center
                     Vector2 mouseScreenPos = Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
                     RectTransformUtility.ScreenPointToLocalPointInRectangle(
                         slot.GetRectTransform(),
                         mouseScreenPos,
                         null,
-                        out Vector2 mouseLocalPos
+                        out Vector2 anchoredPosition
                     );
                     
-                    // Slot center is at rect.center
+                    // Slot center (equipment slots don't have grid, so use center)
                     Vector2 slotCenter = slot.GetRectTransform().rect.center;
-                    mouseDragLocalOffset = mouseLocalPos - slotCenter;
+                    mouseDragAnchoredPositionOffset = anchoredPosition - slotCenter;
                     
-                    Log($"Equipment slot drag start - offset: {mouseDragLocalOffset}");
+                    Log($"Equipment slot drag - offset: {mouseDragAnchoredPositionOffset}");
 
                     // Use default cell size for equipment slots
-                    ghostCellSize = 64f;
-                    ghost.Initialize(itemDef, currentRotation, ghostCellSize);
+                    ghost.Initialize(itemDef, currentRotation, 64f);
                     ghost.Show();
 
                     isDragging = true;
-                    currentHoverTarget = null;
                     UpdateGhostPosition();
                 }
             }
@@ -228,8 +244,18 @@ namespace TimeGame.Systems.Inventory.UI
                     targetUnderMouse.GetRectTransform(),
                     mouseScreenPos,
                     null,
-                    out Vector2 mouseLocalPos
+                    out Vector2 anchoredPosition
                 );
+
+                // CODE MONKEY PATTERN: Calculate placement position accounting for offset
+                Vector2Int mouseGridPosition = Vector2Int.zero;
+                
+                if (targetUnderMouse is InventoryGridVisual gridTarget)
+                {
+                    mouseGridPosition = gridTarget.LocalPositionToGridPosition(anchoredPosition);
+                    // Subtract grid offset to get actual placement position
+                    mouseGridPosition = mouseGridPosition - mouseDragGridPositionOffset;
+                }
 
                 // Remove from source
                 if (sourceTarget is InventoryGridVisual sourceGrid && sourceInventory != null)
@@ -244,12 +270,28 @@ namespace TimeGame.Systems.Inventory.UI
                 }
 
                 // Try to place in target
-                bool success = targetUnderMouse.TryPlaceItem(
-                    ghost.CurrentItem,
-                    currentRotation,
-                    mouseLocalPos,
-                    out PlacedItem placed
-                );
+                bool success = false;
+                
+                if (targetUnderMouse is InventoryGridVisual gridDest)
+                {
+                    // For grids, use the calculated grid position
+                    success = gridDest.InventorySystem.TryAddItem(
+                        ghost.CurrentItem,
+                        mouseGridPosition,
+                        currentRotation,
+                        out PlacedItem placed
+                    );
+                }
+                else
+                {
+                    // For equipment slots, use TryPlaceItem interface
+                    success = targetUnderMouse.TryPlaceItem(
+                        ghost.CurrentItem,
+                        currentRotation,
+                        anchoredPosition,
+                        out PlacedItem placed
+                    );
+                }
 
                 if (success)
                 {
@@ -296,8 +338,7 @@ namespace TimeGame.Systems.Inventory.UI
         #region Drag Update Logic
 
         /// <summary>
-        /// Update ghost position using CODE MONKEY'S LOCAL SPACE approach.
-        /// This fixes BOTH grid snapping AND cursor positioning issues.
+        /// CODE MONKEY PATTERN: Apply anchored offset, then snap to grid.
         /// </summary>
         private void UpdateGhostPosition()
         {
@@ -311,47 +352,46 @@ namespace TimeGame.Systems.Inventory.UI
                     targetUnderMouse.GetRectTransform(),
                     mouseScreenPos,
                     null,
-                    out Vector2 mouseLocalPos
+                    out Vector2 targetPosition
                 );
 
-                // CODE MONKEY KEY INSIGHT: Apply offset BEFORE snapping
-                // This maintains cursor position relative to item
-                Vector2 itemAnchorLocalPos = mouseLocalPos - mouseDragLocalOffset;
+                // CODE MONKEY: Apply anchored position offset (NOTE THE NEGATION!)
+                targetPosition += new Vector2(-mouseDragAnchoredPositionOffset.x, -mouseDragAnchoredPositionOffset.y);
 
                 Vector2 snappedLocalPos;
                 bool canPlace = false;
 
                 if (targetUnderMouse is InventoryGridVisual gridTarget)
                 {
-                    // Convert to grid position (this does the snapping)
-                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(itemAnchorLocalPos);
+                    // Convert to grid position (this snaps)
+                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(targetPosition);
                     
-                    // Convert back to snapped local position
+                    // Subtract grid offset for validation
+                    Vector2Int placementGridPos = gridPos - mouseDragGridPositionOffset;
+                    
+                    // Convert back to local position
                     snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
                     
-                    // Validate at grid position
-                    canPlace = targetUnderMouse.CanAcceptItem(ghost.CurrentItem, currentRotation, mouseLocalPos);
+                    // Validate at placement position
+                    canPlace = gridTarget.InventorySystem.CanAddItem(ghost.CurrentItem, placementGridPos, currentRotation);
                 }
                 else
                 {
                     // For equipment slots, center on slot
                     snappedLocalPos = targetUnderMouse.GetRectTransform().rect.center;
-                    canPlace = targetUnderMouse.CanAcceptItem(ghost.CurrentItem, currentRotation, mouseLocalPos);
+                    canPlace = targetUnderMouse.CanAcceptItem(ghost.CurrentItem, currentRotation, targetPosition);
                 }
 
                 // Convert snapped local position to screen space for ghost
                 Vector3 ghostScreenPos = targetUnderMouse.GetRectTransform().TransformPoint(snappedLocalPos);
                 ghost.transform.position = ghostScreenPos;
                 ghost.SetValid(canPlace);
-                
-                currentHoverTarget = targetUnderMouse;
             }
             else
             {
                 // No target - ghost follows mouse directly
                 ghost.transform.position = mouseScreenPos;
                 ghost.SetValid(false);
-                currentHoverTarget = null;
             }
         }
 
@@ -440,8 +480,8 @@ namespace TimeGame.Systems.Inventory.UI
             draggedItem = null;
             sourceTarget = null;
             sourceInventory = null;
-            currentHoverTarget = null;
-            mouseDragLocalOffset = Vector2.zero;
+            mouseDragGridPositionOffset = Vector2Int.zero;
+            mouseDragAnchoredPositionOffset = Vector2.zero;
             Log("Drag ended, cleanup complete");
         }
 
