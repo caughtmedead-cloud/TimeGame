@@ -11,8 +11,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// Handles drag-drop operations for inventory items.
     /// Uses Code Monkey's EXACT pattern: TWO offsets (grid + anchored position).
     /// 
-    /// CRITICAL: Must get item's ACTUAL RectTransform.anchoredPosition,
-    /// NOT calculate from grid position! Visual position != grid position * cellSize.
+    /// CRITICAL FIX: Show ghost at PLACEMENT position (accounting for offset), not cursor position!
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -339,6 +338,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// CODE MONKEY PATTERN: Apply anchored offset, then snap to grid.
+        /// CRITICAL FIX: Show ghost at PLACEMENT position, not cursor position!
         /// </summary>
         private void UpdateGhostPosition()
         {
@@ -363,17 +363,19 @@ namespace TimeGame.Systems.Inventory.UI
 
                 if (targetUnderMouse is InventoryGridVisual gridTarget)
                 {
-                    // Convert to grid position (this snaps)
+                    // Convert to grid position (this snaps to cursor)
                     Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(targetPosition);
                     
-                    // Subtract grid offset for validation
+                    // CRITICAL FIX: Subtract grid offset to get PLACEMENT position
                     Vector2Int placementGridPos = gridPos - mouseDragGridPositionOffset;
                     
-                    // Convert back to local position
-                    snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
+                    // Show ghost at PLACEMENT position (where item will land), not cursor position!
+                    snappedLocalPos = gridTarget.GridPositionToLocalPosition(placementGridPos);
                     
                     // Validate at placement position
                     canPlace = gridTarget.InventorySystem.CanAddItem(ghost.CurrentItem, placementGridPos, currentRotation);
+                    
+                    Log($"Ghost: cursor grid {gridPos}, placement grid {placementGridPos}, offset {mouseDragGridPositionOffset}");
                 }
                 else
                 {
