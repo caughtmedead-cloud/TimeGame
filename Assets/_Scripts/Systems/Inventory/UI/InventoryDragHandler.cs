@@ -9,15 +9,12 @@ namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Drag-drop handler adapting Code Monkey's lerp approach for our multi-grid system.
-    /// Key differences from Code Monkey:
-    /// - Supports cross-grid dragging (his doesn't)
-    /// - Keeps cursor visible (his hides it)
-    /// - Reparents item when crossing grids
+    /// Key fix: Show item at PLACEMENT position (mouseGridPos - offset), not cursor position!
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = true;
+        [SerializeField] private bool verboseLogging = false;
 
         // Drop target tracking
         private List<IInventoryDropTarget> registeredTargets = new List<IInventoryDropTarget>();
@@ -103,17 +100,16 @@ namespace TimeGame.Systems.Inventory.UI
                         currentGrid.GetRectTransform(),
                         mouseScreenPos,
                         null,
-                        out Vector2 targetPosition
+                        out Vector2 mouseLocalPos
                     );
                     
-                    // Apply anchored position offset
-                    targetPosition += new Vector2(-mouseDragAnchoredPositionOffset.x, -mouseDragAnchoredPositionOffset.y);
-
-                    // Snap position using division
-                    float cellSize = currentGrid.CellSize;
-                    targetPosition /= cellSize;
-                    targetPosition = new Vector2(Mathf.Floor(targetPosition.x), Mathf.Floor(targetPosition.y));
-                    targetPosition *= cellSize;
+                    // CRITICAL FIX: Calculate where the item will ACTUALLY BE PLACED
+                    // This matches the drop calculation exactly!
+                    Vector2Int mouseGridPos = currentGrid.LocalPositionToGridPosition(mouseLocalPos);
+                    Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
+                    
+                    // Convert placement grid position to local position
+                    Vector2 targetPosition = currentGrid.GridPositionToLocalPosition(placementGridPos);
 
                     // LERP to target position (smooth movement!)
                     RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
@@ -172,8 +168,6 @@ namespace TimeGame.Systems.Inventory.UI
             originalDir = placedItem.Rotation;
             originalPlacedItem = placedItem;
 
-            // KEEP CURSOR VISIBLE (unlike Code Monkey - we need to see where we're dragging!)
-
             // Calculate mouse position in local space
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 sourceGrid.GetRectTransform(),
@@ -222,8 +216,9 @@ namespace TimeGame.Systems.Inventory.UI
                     out Vector2 anchoredPosition
                 );
                 
-                Vector2Int placedObjectOrigin = targetGrid.LocalPositionToGridPosition(anchoredPosition);
-                placedObjectOrigin = placedObjectOrigin - mouseDragGridPositionOffset;
+                // EXACT SAME CALCULATION AS UPDATE() - This is the key!
+                Vector2Int mouseGridPos = targetGrid.LocalPositionToGridPosition(anchoredPosition);
+                Vector2Int placedObjectOrigin = mouseGridPos - mouseDragGridPositionOffset;
 
                 InventoryItemSO itemDef = originalPlacedItem.ItemDefinition as InventoryItemSO;
                 dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placedObjectOrigin, dir, out PlacedItem placed);
