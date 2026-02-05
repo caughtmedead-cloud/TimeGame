@@ -9,9 +9,7 @@ namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Drag-drop handler adapting Code Monkey's lerp approach for our multi-grid system.
-    /// Fixes:
-    /// 1. Clamp item to grid boundaries (can't escape visually)
-    /// 2. Account for rotation pivot offset
+    /// Key: Keep item within grid boundaries for clean visual.
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -109,7 +107,7 @@ namespace TimeGame.Systems.Inventory.UI
                     Vector2Int mouseGridPos = currentGrid.LocalPositionToGridPosition(mouseLocalPos);
                     Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
                     
-                    // FIX #1: CLAMP to grid boundaries so item can't escape visually
+                    // Clamp to grid boundaries so item can't escape visually
                     InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
                     Vector2Int itemSize = itemDef.GetSizeForRotation(dir);
                     
@@ -119,11 +117,6 @@ namespace TimeGame.Systems.Inventory.UI
                     
                     // Convert placement grid position to local position
                     Vector2 targetPosition = currentGrid.GridPositionToLocalPosition(placementGridPos);
-                    
-                    // FIX #2: Add rotation pivot offset to keep visual position stable during rotation
-                    // When an item rotates, its pivot shifts - we need to compensate
-                    Vector2 rotationPivotOffset = CalculateRotationPivotOffset(itemDef, dir, currentGrid.CellSize);
-                    targetPosition += rotationPivotOffset;
 
                     // LERP to target position (smooth movement!)
                     RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
@@ -260,51 +253,6 @@ namespace TimeGame.Systems.Inventory.UI
         #endregion
 
         #region Helper Methods
-
-        /// <summary>
-        /// Calculate the visual pivot offset needed to keep item visually stable during rotation.
-        /// This compensates for the item's pivot point shifting when it rotates.
-        /// </summary>
-        private Vector2 CalculateRotationPivotOffset(InventoryItemSO itemDef, GridDirection rotation, float cellSize)
-        {
-            if (itemDef == null) return Vector2.zero;
-            
-            // Get the item's size in both rotations
-            Vector2Int originalSize = itemDef.GetSizeForRotation(GridDirection.Down);
-            Vector2Int rotatedSize = itemDef.GetSizeForRotation(rotation);
-            
-            // Calculate offset based on rotation
-            // The pivot stays at bottom-left, but visual dimensions change
-            Vector2 offset = Vector2.zero;
-            
-            switch (rotation)
-            {
-                case GridDirection.Down:
-                    // No offset for default rotation
-                    break;
-                    
-                case GridDirection.Right:
-                    // When rotating right (90°), width becomes height
-                    // Pivot shifts to compensate
-                    offset.x = (rotatedSize.x - originalSize.x) * cellSize * 0.5f;
-                    offset.y = (rotatedSize.y - originalSize.y) * cellSize * 0.5f;
-                    break;
-                    
-                case GridDirection.Up:
-                    // 180° rotation
-                    offset.x = (rotatedSize.x - originalSize.x) * cellSize * 0.5f;
-                    offset.y = (rotatedSize.y - originalSize.y) * cellSize * 0.5f;
-                    break;
-                    
-                case GridDirection.Left:
-                    // 270° rotation
-                    offset.x = (rotatedSize.x - originalSize.x) * cellSize * 0.5f;
-                    offset.y = (rotatedSize.y - originalSize.y) * cellSize * 0.5f;
-                    break;
-            }
-            
-            return offset;
-        }
 
         private void ReturnToOriginalPosition()
         {
