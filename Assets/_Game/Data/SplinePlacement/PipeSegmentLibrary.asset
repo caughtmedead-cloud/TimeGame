@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45051e2559dc64443998a136ab849e7c, type: 3}
+  m_Name: PipeSegmentLibrary
+  m_EditorClassIdentifier: 
+  libraryName: Pipe Segment Library
+  segments:
+  - segmentType: 0
+    prefab: {fileID: 1583893872088828935, guid: 351241d1124cc244faa47268ac533d7a, type: 3}
+    length: 1.82
+    connectionPointOffset: {x: 0, y: 0, z: 0}
+    canRepeat: 1
+    angleMin: 0
+    angleMax: 10
+  - segmentType: 1
+    prefab: {fileID: 3001760622315129396, guid: e8d2c98922f77fb4d9540e6025d15bfd, type: 3}
+    length: 1.24
+    connectionPointOffset: {x: 0, y: 0, z: 0}
+    canRepeat: 0
+    angleMin: 80
+    angleMax: 100
+  - segmentType: 3
+    prefab: {fileID: 5204446252717015296, guid: 45524f5da668f1d45b0facd70cc6d92e, type: 3}
+    length: 1.82
+    connectionPointOffset: {x: 0, y: 0, z: 0}
+    canRepeat: 0
+    angleMin: 0
+    angleMax: 0
+  - segmentType: 6
+    prefab: {fileID: 8984191300887246867, guid: f74b4f04d71148544bf6255e1ef6fea6, type: 3}
+    length: 0.5
+    connectionPointOffset: {x: 0, y: 0, z: 0}
+    canRepeat: 0
+    angleMin: 0
+    angleMax: 0
+  - segmentType: 5
+    prefab: {fileID: 5840441938706198561, guid: 3160a2a84dc097445ade5f5a5acd2759, type: 3}
+    length: 0.5
+    connectionPointOffset: {x: 0, y: 0, z: 0}
+    canRepeat: 0
+    angleMin: 0
+    angleMax: 0
+  defaultSegmentSpacing: 1.82
+  autoDetectAngles: 1
