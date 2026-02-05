@@ -60,6 +60,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Initialize this visual with item data and grid reference.
+        /// Note: gridVisual can be null for items dragged from equipment slots.
         /// </summary>
         public void Initialize(PlacedItem placedItem, InventoryItemSO itemDef, float cellSize, InventoryGridVisual gridVisual)
         {
@@ -105,24 +106,28 @@ namespace TimeGame.Systems.Inventory.UI
                 image.enabled = true;
             }
 
-            // Add drag-drop component if not present
-            InventoryItemDragDrop dragDrop = gameObject.GetComponent<InventoryItemDragDrop>();
-            if (dragDrop == null)
+            // Add drag-drop component ONLY if we have a grid (grid items only)
+            // Equipment slot items don't need drag-drop since they use EquipmentSlotDragSource
+            if (gridVisual != null)
             {
-                dragDrop = gameObject.AddComponent<InventoryItemDragDrop>();
+                InventoryItemDragDrop dragDrop = gameObject.GetComponent<InventoryItemDragDrop>();
+                if (dragDrop == null)
+                {
+                    dragDrop = gameObject.AddComponent<InventoryItemDragDrop>();
+                }
+
+                // Also need CanvasGroup for drag-drop
+                CanvasGroup canvasGroup = gameObject.GetComponent<CanvasGroup>();
+                if (canvasGroup == null)
+                {
+                    canvasGroup = gameObject.AddComponent<CanvasGroup>();
+                }
+
+                // Setup drag-drop component
+                dragDrop.Setup(gridVisual, placedItem.InstanceID);
             }
 
-            // Also need CanvasGroup for drag-drop
-            CanvasGroup canvasGroup = gameObject.GetComponent<CanvasGroup>();
-            if (canvasGroup == null)
-            {
-                canvasGroup = gameObject.AddComponent<CanvasGroup>();
-            }
-
-            // Setup drag-drop component
-            dragDrop.Setup(gridVisual, placedItem.InstanceID);
-
-            // Position is set by InventoryGridVisual
+            // Position is set by InventoryGridVisual or by the drag source
         }
 
         /// <summary>
