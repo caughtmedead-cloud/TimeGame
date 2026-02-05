@@ -8,8 +8,10 @@ using TimeGame.Systems.GridPlacement;
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
-    /// Drag-drop handler adapting Code Monkey's lerp approach for our multi-grid system.
-    /// Key: Keep item within grid boundaries for clean visual.
+    /// CODE MONKEY'S EXACT PATTERN with rotation offset support.
+    /// Uses GetRotationOffset() in TWO places like Code Monkey does:
+    /// 1. OnItemBeginDrag - apply to mouseDragAnchoredPositionOffset
+    /// 2. Update - apply to targetPosition before snapping
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -100,29 +102,31 @@ namespace TimeGame.Systems.Inventory.UI
                         currentGrid.GetRectTransform(),
                         mouseScreenPos,
                         null,
-                        out Vector2 mouseLocalPos
+                        out Vector2 targetPosition
                     );
                     
-                    // Calculate where the item will ACTUALLY BE PLACED
-                    Vector2Int mouseGridPos = currentGrid.LocalPositionToGridPosition(mouseLocalPos);
-                    Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
-                    
-                    // Clamp to grid boundaries so item can't escape visually
-                    InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
-                    Vector2Int itemSize = itemDef.GetSizeForRotation(dir);
-                    
-                    // Clamp placement position to keep item within grid
-                    placementGridPos.x = Mathf.Clamp(placementGridPos.x, 0, currentGrid.InventorySystem.Width - itemSize.x);
-                    placementGridPos.y = Mathf.Clamp(placementGridPos.y, 0, currentGrid.InventorySystem.Height - itemSize.y);
-                    
-                    // Convert placement grid position to local position
-                    Vector2 targetPosition = currentGrid.GridPositionToLocalPosition(placementGridPos);
+                    // CODE MONKEY: Apply anchored position offset
+                    targetPosition += new Vector2(-mouseDragAnchoredPositionOffset.x, -mouseDragAnchoredPositionOffset.y);
 
-                    // LERP to target position (smooth movement!)
+                    // CODE MONKEY: Apply rotation offset to target position
+                    InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
+                    if (itemDef != null)
+                    {
+                        Vector2Int rotationOffset = itemDef.GetRotationOffset(dir);
+                        targetPosition += new Vector2(rotationOffset.x, rotationOffset.y) * currentGrid.CellSize;
+                    }
+
+                    // CODE MONKEY: Snap position using division
+                    float cellSize = currentGrid.CellSize;
+                    targetPosition /= cellSize;
+                    targetPosition = new Vector2(Mathf.Floor(targetPosition.x), Mathf.Floor(targetPosition.y));
+                    targetPosition *= cellSize;
+
+                    // CODE MONKEY: LERP to target position (smooth movement!)
                     RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
                     itemRT.anchoredPosition = Vector2.Lerp(itemRT.anchoredPosition, targetPosition, Time.deltaTime * 20f);
                     
-                    // LERP rotation (smooth rotation!)
+                    // CODE MONKEY: LERP rotation (smooth rotation!)
                     float rotationAngle = itemDef != null ? itemDef.GetRotationAngle(dir) : 0f;
                     draggingPlacedObject.transform.rotation = Quaternion.Lerp(
                         draggingPlacedObject.transform.rotation,
@@ -183,14 +187,22 @@ namespace TimeGame.Systems.Inventory.UI
             );
             Vector2Int mouseGridPosition = sourceGrid.LocalPositionToGridPosition(anchoredPosition);
 
-            // Calculate grid position offset
+            // CODE MONKEY: Calculate grid position offset
             mouseDragGridPositionOffset = mouseGridPosition - placedItem.AnchorPosition;
 
-            // Calculate anchored position offset (where exactly player clicked)
+            // CODE MONKEY: Calculate anchored position offset (where exactly player clicked)
             mouseDragAnchoredPositionOffset = anchoredPosition - itemVisual.GetComponent<RectTransform>().anchoredPosition;
 
-            // Save initial direction
+            // CODE MONKEY: Save initial direction
             dir = placedItem.Rotation;
+
+            // CODE MONKEY: Apply rotation offset to drag anchored position offset
+            InventoryItemSO itemDef = placedItem.ItemDefinition as InventoryItemSO;
+            if (itemDef != null)
+            {
+                Vector2Int rotationOffset = itemDef.GetRotationOffset(dir);
+                mouseDragAnchoredPositionOffset += new Vector2(rotationOffset.x, rotationOffset.y) * sourceGrid.CellSize;
+            }
 
             Log($"Started dragging - Grid offset: {mouseDragGridPositionOffset}, Anchor offset: {mouseDragAnchoredPositionOffset}");
         }
@@ -222,7 +234,7 @@ namespace TimeGame.Systems.Inventory.UI
                     out Vector2 anchoredPosition
                 );
                 
-                // EXACT SAME CALCULATION AS UPDATE()
+                // CODE MONKEY PATTERN: Calculate placement position accounting for grid offset
                 Vector2Int mouseGridPos = targetGrid.LocalPositionToGridPosition(anchoredPosition);
                 Vector2Int placedObjectOrigin = mouseGridPos - mouseDragGridPositionOffset;
 
