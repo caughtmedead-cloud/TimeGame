@@ -85,6 +85,33 @@ namespace TimeGame.Systems.Inventory
             }
             return desc;
         }
+
+        /// <summary>
+        /// CODE MONKEY'S EXACT IMPLEMENTATION:
+        /// Get the rotation offset for positioning the visual during drag.
+        /// This keeps the item's visual stable when rotating.
+        /// 
+        /// The offset compensates for how the item's pivot shifts during rotation.
+        /// Based on PlacedObjectTypeSO.GetRotationOffset() from Code Monkey's system.
+        /// </summary>
+        public Vector2Int GetRotationOffset(GridPlacement.GridDirection dir)
+        {
+            switch (dir)
+            {
+                default:
+                case GridPlacement.GridDirection.Down:
+                    return new Vector2Int(0, 0);
+                    
+                case GridPlacement.GridDirection.Left:
+                    return new Vector2Int(0, Width);
+                    
+                case GridPlacement.GridDirection.Up:
+                    return new Vector2Int(Width, Height);
+                    
+                case GridPlacement.GridDirection.Right:
+                    return new Vector2Int(Height, 0);
+            }
+        }
     }
 
     /// <summary>
