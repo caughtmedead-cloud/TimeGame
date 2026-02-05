@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 94b0584f0c819524c96de7d992458d32
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Scripts/Core/SECTR_FloatingPointFixMember.cs
+  uploadId: 726995

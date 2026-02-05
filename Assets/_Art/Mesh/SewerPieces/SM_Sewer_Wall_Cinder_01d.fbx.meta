@@ -3,7 +3,12 @@ guid: 08d22b8c1206da84c9aec846a1b02223
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_Cinder_Kit
+    second: {fileID: 2100000, guid: 93908ffd52ce88a43a5e439751891183, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

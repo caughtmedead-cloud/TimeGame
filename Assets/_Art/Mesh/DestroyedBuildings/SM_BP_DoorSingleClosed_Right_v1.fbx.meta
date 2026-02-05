@@ -3,7 +3,22 @@ guid: 4679ddde871969343b14517cab46b01d
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_DoorGreen_Frame
+    second: {fileID: 2100000, guid: 4ddbc9960bfe8c3479867f22cb58b1ef, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_DoorGreen_Left
+    second: {fileID: 2100000, guid: fd4bcd63d810a50498670ddafface5ff, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_DoorGreen_Right
+    second: {fileID: 2100000, guid: fd4bcd63d810a50498670ddafface5ff, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

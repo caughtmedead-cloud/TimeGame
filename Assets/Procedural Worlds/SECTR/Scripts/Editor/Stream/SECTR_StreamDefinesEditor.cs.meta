@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: db96e3cbe6879a84f9c8a1e6ec77250d
+timeCreated: 1534780443
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Scripts/Editor/Stream/SECTR_StreamDefinesEditor.cs
+  uploadId: 726995

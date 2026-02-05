@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: e4b4c93d79619244bb65b2a7d6970e0c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Scripts/Core/SECTR_FloatingPointFixParticleSystem.cs
+  uploadId: 726995

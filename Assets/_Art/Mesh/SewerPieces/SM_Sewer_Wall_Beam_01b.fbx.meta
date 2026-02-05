@@ -3,7 +3,12 @@ guid: 8da8e5263f815974ea38cca0fbaad37b
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_SMI_Sewer_Wall_BeaMI_01b
+    second: {fileID: 2100000, guid: 0c45afa1f0060f944bb623183bf3fee8, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

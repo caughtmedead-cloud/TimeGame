@@ -515,7 +515,7 @@ MonoBehaviour:
   _componentIndexCache: 255
   _addedNetworkObject: {fileID: 2047187396}
   _networkObjectCache: {fileID: 0}
-  playerPrefab: {fileID: -8147693711007459752, guid: 70dd4aa551993914fbf967a2cc37b9f5, type: 3}
+  playerPrefab: {fileID: -8147693711007459752, guid: 11aa41d632f824b4cbba06e4a8a0b5fc, type: 3}
   spawnPosition: {x: 0, y: 5, z: 0}
   defaultTimeline: 1
 --- !u!114 &2047187396

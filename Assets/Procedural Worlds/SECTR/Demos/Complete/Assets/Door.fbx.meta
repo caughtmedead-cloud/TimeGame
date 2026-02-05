@@ -1,0 +1,892 @@
+fileFormatVersion: 2
+guid: 8adbc06e9944d24429d69962e4c88786
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Demos/Complete/Assets/Door.fbx
+  uploadId: 726995
+ModelImporter:
+  serializedVersion: 22200
+  internalIDToNameTable:
+  - first:
+      1: 100000
+    second: b_vertslide
+  - first:
+      1: 100002
+    second: b_vertslide 1
+  - first:
+      1: 100004
+    second: b_vertslide_base
+  - first:
+      1: 100006
+    second: center_doordisc
+  - first:
+      1: 100008
+    second: center_doordisc 1
+  - first:
+      1: 100010
+    second: centerdisc_base
+  - first:
+      1: 100012
+    second: //RootNode
+  - first:
+      1: 100014
+    second: doorRoot
+  - first:
+      1: 100016
+    second: doorRoot1
+  - first:
+      1: 100018
+    second: lb_doordisc
+  - first:
+      1: 100020
+    second: lb_doordisc 1
+  - first:
+      1: 100022
+    second: lb_doordisc_base
+  - first:
+      1: 100024
+    second: lt_doordisc
+  - first:
+      1: 100026
+    second: lt_doordisc 1
+  - first:
+      1: 100028
+    second: lt_doordisc_base
+  - first:
+      1: 100030
+    second: rb_doordisc
+  - first:
+      1: 100032
+    second: rb_doordisc 1
+  - first:
+      1: 100034
+    second: rb_doordisc_base
+  - first:
+      1: 100036
+    second: rt_doordisc
+  - first:
+      1: 100038
+    second: rt_doordisc 1
+  - first:
+      1: 100040
+    second: rt_doordisc_base
+  - first:
+      1: 100042
+    second: slideleft
+  - first:
+      1: 100044
+    second: slideleft1_base
+  - first:
+      1: 100046
+    second: slideleft2
+  - first:
+      1: 100048
+    second: slideleft2 1
+  - first:
+      1: 100050
+    second: slideleft2 2
+  - first:
+      1: 100052
+    second: slideleft2_base
+  - first:
+      1: 100054
+    second: slideright1
+  - first:
+      1: 100056
+    second: slideright1 1
+  - first:
+      1: 100058
+    second: slideright1_base
+  - first:
+      1: 100060
+    second: SlideRight2
+  - first:
+      1: 100062
+    second: SlideRight2 1
+  - first:
+      1: 100064
+    second: slideright2_base
+  - first:
+      1: 100066
+    second: t_vertslide
+  - first:
+      1: 100068
+    second: t_vertslide 1
+  - first:
+      1: 100070
+    second: t_vertslide_base
+  - first:
+      1: 100072
+    second: door_top
+  - first:
+      1: 100074
+    second: sectr_a
+  - first:
+      1: 100076
+    second: sectr_b
+  - first:
+      1: 100078
+    second: BottomCollision
+  - first:
+      1: 100080
+    second: TopCollision
+  - first:
+      1: 100082
+    second: CenterDisk
+  - first:
+      1: 100084
+    second: DoorBottom
+  - first:
+      1: 100086
+    second: DoorTop
+  - first:
+      1: 100088
+    second: LowerLeftBar
+  - first:
+      1: 100090
+    second: LowerLeftDisc
+  - first:
+      1: 100092
+    second: LowerRightBar
+  - first:
+      1: 100094
+    second: LowerRightDisc
+  - first:
+      1: 100096
+    second: UpperLeftBar
+  - first:
+      1: 100098
+    second: UpperLeftDisc
+  - first:
+      1: 100100
+    second: UpperRightBar
+  - first:
+      1: 100102
+    second: UpperRightDisc
+  - first:
+      4: 400000
+    second: b_vertslide
+  - first:
+      4: 400002
+    second: b_vertslide 1
+  - first:
+      4: 400004
+    second: b_vertslide_base
+  - first:
+      4: 400006
+    second: center_doordisc
+  - first:
+      4: 400008
+    second: center_doordisc 1
+  - first:
+      4: 400010
+    second: centerdisc_base
+  - first:
+      4: 400012
+    second: //RootNode
+  - first:
+      4: 400014
+    second: doorRoot
+  - first:
+      4: 400016
+    second: doorRoot1
+  - first:
+      4: 400018
+    second: lb_doordisc
+  - first:
+      4: 400020
+    second: lb_doordisc 1
+  - first:
+      4: 400022
+    second: lb_doordisc_base
+  - first:
+      4: 400024
+    second: lt_doordisc
+  - first:
+      4: 400026
+    second: lt_doordisc 1
+  - first:
+      4: 400028
+    second: lt_doordisc_base
+  - first:
+      4: 400030
+    second: rb_doordisc
+  - first:
+      4: 400032
+    second: rb_doordisc 1
+  - first:
+      4: 400034
+    second: rb_doordisc_base
+  - first:
+      4: 400036
+    second: rt_doordisc
+  - first:
+      4: 400038
+    second: rt_doordisc 1
+  - first:
+      4: 400040
+    second: rt_doordisc_base
+  - first:
+      4: 400042
+    second: slideleft
+  - first:
+      4: 400044
+    second: slideleft1_base
+  - first:
+      4: 400046
+    second: slideleft2
+  - first:
+      4: 400048
+    second: slideleft2 1
+  - first:
+      4: 400050
+    second: slideleft2 2
+  - first:
+      4: 400052
+    second: slideleft2_base
+  - first:
+      4: 400054
+    second: slideright1
+  - first:
+      4: 400056
+    second: slideright1 1
+  - first:
+      4: 400058
+    second: slideright1_base
+  - first:
+      4: 400060
+    second: SlideRight2
+  - first:
+      4: 400062
+    second: SlideRight2 1
+  - first:
+      4: 400064
+    second: slideright2_base
+  - first:
+      4: 400066
+    second: t_vertslide
+  - first:
+      4: 400068
+    second: t_vertslide 1
+  - first:
+      4: 400070
+    second: t_vertslide_base
+  - first:
+      4: 400072
+    second: door_top
+  - first:
+      4: 400074
+    second: sectr_a
+  - first:
+      4: 400076
+    second: sectr_b
+  - first:
+      4: 400078
+    second: BottomCollision
+  - first:
+      4: 400080
+    second: TopCollision
+  - first:
+      4: 400082
+    second: CenterDisk
+  - first:
+      4: 400084
+    second: DoorBottom
+  - first:
+      4: 400086
+    second: DoorTop
+  - first:
+      4: 400088
+    second: LowerLeftBar
+  - first:
+      4: 400090
+    second: LowerLeftDisc
+  - first:
+      4: 400092
+    second: LowerRightBar
+  - first:
+      4: 400094
+    second: LowerRightDisc
+  - first:
+      4: 400096
+    second: UpperLeftBar
+  - first:
+      4: 400098
+    second: UpperLeftDisc
+  - first:
+      4: 400100
+    second: UpperRightBar
+  - first:
+      4: 400102
+    second: UpperRightDisc
+  - first:
+      23: 2300000
+    second: b_vertslide 1
+  - first:
+      23: 2300002
+    second: center_doordisc 1
+  - first:
+      23: 2300004
+    second: doorRoot1
+  - first:
+      23: 2300006
+    second: lb_doordisc 1
+  - first:
+      23: 2300008
+    second: lt_doordisc 1
+  - first:
+      23: 2300010
+    second: rb_doordisc 1
+  - first:
+      23: 2300012
+    second: rt_doordisc 1
+  - first:
+      23: 2300014
+    second: slideleft
+  - first:
+      23: 2300016
+    second: slideleft2 2
+  - first:
+      23: 2300018
+    second: slideright1 1
+  - first:
+      23: 2300020
+    second: SlideRight2 1
+  - first:
+      23: 2300022
+    second: t_vertslide 1
+  - first:
+      23: 2300024
+    second: door_top
+  - first:
+      23: 2300026
+    second: sectr_a
+  - first:
+      23: 2300028
+    second: sectr_b
+  - first:
+      23: 2300030
+    second: BottomCollision
+  - first:
+      23: 2300032
+    second: TopCollision
+  - first:
+      23: 2300034
+    second: CenterDisk
+  - first:
+      23: 2300036
+    second: //RootNode
+  - first:
+      23: 2300038
+    second: DoorBottom
+  - first:
+      23: 2300040
+    second: DoorTop
+  - first:
+      23: 2300042
+    second: LowerLeftBar
+  - first:
+      23: 2300044
+    second: LowerLeftDisc
+  - first:
+      23: 2300046
+    second: LowerRightBar
+  - first:
+      23: 2300048
+    second: LowerRightDisc
+  - first:
+      23: 2300050
+    second: UpperLeftBar
+  - first:
+      23: 2300052
+    second: UpperLeftDisc
+  - first:
+      23: 2300054
+    second: UpperRightBar
+  - first:
+      23: 2300056
+    second: UpperRightDisc
+  - first:
+      33: 3300000
+    second: b_vertslide 1
+  - first:
+      33: 3300002
+    second: center_doordisc 1
+  - first:
+      33: 3300004
+    second: doorRoot1
+  - first:
+      33: 3300006
+    second: lb_doordisc 1
+  - first:
+      33: 3300008
+    second: lt_doordisc 1
+  - first:
+      33: 3300010
+    second: rb_doordisc 1
+  - first:
+      33: 3300012
+    second: rt_doordisc 1
+  - first:
+      33: 3300014
+    second: slideleft
+  - first:
+      33: 3300016
+    second: slideleft2 2
+  - first:
+      33: 3300018
+    second: slideright1 1
+  - first:
+      33: 3300020
+    second: SlideRight2 1
+  - first:
+      33: 3300022
+    second: t_vertslide 1
+  - first:
+      33: 3300024
+    second: door_top
+  - first:
+      33: 3300026
+    second: sectr_a
+  - first:
+      33: 3300028
+    second: sectr_b
+  - first:
+      33: 3300030
+    second: BottomCollision
+  - first:
+      33: 3300032
+    second: TopCollision
+  - first:
+      33: 3300034
+    second: CenterDisk
+  - first:
+      33: 3300036
+    second: //RootNode
+  - first:
+      33: 3300038
+    second: DoorBottom
+  - first:
+      33: 3300040
+    second: DoorTop
+  - first:
+      33: 3300042
+    second: LowerLeftBar
+  - first:
+      33: 3300044
+    second: LowerLeftDisc
+  - first:
+      33: 3300046
+    second: LowerRightBar
+  - first:
+      33: 3300048
+    second: LowerRightDisc
+  - first:
+      33: 3300050
+    second: UpperLeftBar
+  - first:
+      33: 3300052
+    second: UpperLeftDisc
+  - first:
+      33: 3300054
+    second: UpperRightBar
+  - first:
+      33: 3300056
+    second: UpperRightDisc
+  - first:
+      43: 4300000
+    second: rb_doordisc
+  - first:
+      43: 4300002
+    second: lb_doordisc
+  - first:
+      43: 4300004
+    second: lt_doordisc
+  - first:
+      43: 4300006
+    second: rt_doordisc
+  - first:
+      43: 4300008
+    second: slideleft
+  - first:
+      43: 4300010
+    second: SlideRight2
+  - first:
+      43: 4300012
+    second: slideleft2
+  - first:
+      43: 4300014
+    second: slideright1
+  - first:
+      43: 4300016
+    second: center_doordisc
+  - first:
+      43: 4300018
+    second: b_vertslide
+  - first:
+      43: 4300020
+    second: t_vertslide
+  - first:
+      43: 4300022
+    second: doorRoot1
+  - first:
+      43: 4300024
+    second: sectr_b
+  - first:
+      43: 4300026
+    second: sectr_a
+  - first:
+      43: 4300028
+    second: door_top
+  - first:
+      43: 4300030
+    second: BottomCollision
+  - first:
+      43: 4300032
+    second: TopCollision
+  - first:
+      43: 4300034
+    second: DoorFrame
+  - first:
+      43: 4300036
+    second: DoorTop
+  - first:
+      43: 4300038
+    second: DoorBottom
+  - first:
+      43: 4300040
+    second: CenterDisk
+  - first:
+      43: 4300042
+    second: UpperRightBar
+  - first:
+      43: 4300044
+    second: LowerRightBar
+  - first:
+      43: 4300046
+    second: UpperLeftBar
+  - first:
+      43: 4300048
+    second: LowerLeftBar
+  - first:
+      43: 4300050
+    second: UpperRightDisc
+  - first:
+      43: 4300052
+    second: LowerRightDisc
+  - first:
+      43: 4300054
+    second: UpperLeftDisc
+  - first:
+      43: 4300056
+    second: LowerLeftDisc
+  - first:
+      64: 6400000
+    second: b_vertslide 1
+  - first:
+      64: 6400002
+    second: center_doordisc 1
+  - first:
+      64: 6400004
+    second: door_top
+  - first:
+      64: 6400006
+    second: doorRoot1
+  - first:
+      64: 6400008
+    second: lb_doordisc 1
+  - first:
+      64: 6400010
+    second: lt_doordisc 1
+  - first:
+      64: 6400012
+    second: rb_doordisc 1
+  - first:
+      64: 6400014
+    second: rt_doordisc 1
+  - first:
+      64: 6400016
+    second: sectr_a
+  - first:
+      64: 6400018
+    second: sectr_b
+  - first:
+      64: 6400020
+    second: slideleft
+  - first:
+      64: 6400022
+    second: slideleft2 2
+  - first:
+      64: 6400024
+    second: slideright1 1
+  - first:
+      64: 6400026
+    second: SlideRight2 1
+  - first:
+      74: 7400000
+    second: Closed
+  - first:
+      74: 7400002
+    second: Opening
+  - first:
+      74: 7400004
+    second: Open
+  - first:
+      74: 7400006
+    second: Closing
+  - first:
+      74: 7400008
+    second: Loading
+  - first:
+      95: 9500000
+    second: //RootNode
+  externalObjects: {}
+  materials:
+    materialImportMode: 1
+    materialName: 1
+    materialSearch: 1
+    materialLocation: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 1
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: Closed
+      takeName: Take 001
+      internalID: 0
+      firstFrame: 0
+      lastFrame: 30
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 1
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Opening
+      takeName: Take 001
+      internalID: 0
+      firstFrame: 40
+      lastFrame: 160
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Open
+      takeName: Take 001
+      internalID: 0
+      firstFrame: 170
+      lastFrame: 200
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 1
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Closing
+      takeName: Take 001
+      internalID: 0
+      firstFrame: 220
+      lastFrame: 340
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Loading
+      takeName: Take 001
+      internalID: 0
+      firstFrame: 350
+      lastFrame: 410
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 1
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 0.01
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 0
+    importVisibility: 0
+    importBlendShapes: 1
+    importCameras: 0
+    importLights: 0
+    nodeNameCollisionStrategy: 0
+    fileIdsGeneration: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 1
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    meshOptimizationFlags: -1
+    indexFormat: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 0
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 0
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 4
+    normalCalculationMode: 0
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 1
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 0.01
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 0
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 1
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 0
+  importBlendShapeDeformPercent: 0
+  remapMaterialsIfMaterialImportModeIsNone: 1
+  additionalBone: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

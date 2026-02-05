@@ -14,49 +14,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.02
   subtype: freeProjectFiles
-  lastShownTimestamp: 1769930021
+  lastShownTimestamp: 1770255715
   lastUpdateResponse:
     version: 1.02
     versionUrl: https://unitycodemonkey.com
     enabled: 0
-  checkedLastUpdateTimestamp: 1769930024
+  checkedLastUpdateTimestamp: 1770255715
   lastQOTDResponse:
-    questionId: 267
-    questionText: 'What is the position of the transform after running this code?
-
-      <p>Vector3
-      targetPosition = new Vector3(10, 0, 0);</p>
-
-      <p>transform.position =
-      targetPosition;</p>
-
-      <p>targetPosition.x = 20;</p>'
-    answerA: (10, 0, 0)
-    answerB: (20, 0, 0)
-    answerC: Unknown
-    answerD: 
+    questionId: 269
+    questionText: What is the correct way to show a variable in the Editor?
+    answerA: public int health;
+    answerB: public static int health;
+    answerC: '[SerializeField] private int health;'
+    answerD: private int health;
     answerE: 
-  lastQotdTimestamp: 1769930025
+  lastQotdTimestamp: 1770255716
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/gameDevReport_2.png
     topText: Stay up to date with the latest in Game Dev straight to your inbox!
     topLink: gamedevreport
     bottomText: My 10+ Years of C# Knowledge in 1 Course!
     bottomLink: csharpcourse
-  lastDynamicHeaderTimestamp: 1769930025
+  lastDynamicHeaderTimestamp: 1770255716
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freeprojectfiles">Browse all the FREE Project
       Files! Click Here!</a><br><a href="https://cmonkey.co/freecourses">Check out
       all my FREE courses! Click Here!</a>
-  websiteLatestMessageTimestamp: 1769930025
+  websiteLatestMessageTimestamp: 1770255716
   websiteLatestVideos:
     videos:
+    - youTubeId: Vc_38R17zNs
+      title: 'Productivity Tip: DON''T Finish Your Tasks!'
     - youTubeId: B2G1ZTKzJSM
       title: BEST NEW Visual Assets to INSPIRE YOU! (JANUARY 2026)
     - youTubeId: dYImrPahrME
       title: STUCK for HOURS trying to write Code? Watch this!
     - youTubeId: ZxPFiJgEQT0
       title: TOP 10 NEW Systems and Tools JANUARY 2026! | Unity Asset Store
-    - youTubeId: 4ZcETvXRfl0
-      title: Roadmaps for Game Dev SUCCESS in 2026! (Beginner, Intermediate and Marketing)
-  websiteLatestVideosTimestamp: 1769930025
+  websiteLatestVideosTimestamp: 1770255716

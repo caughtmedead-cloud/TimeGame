@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 26bf71c44e7684f48a09897855e81956
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Scripts/Editor/Stream/SECTR_StartLoaderEditor.cs
+  uploadId: 726995

@@ -1,15 +1,15 @@
 ﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Kybernetik.InspectorGadgets.Editor.csproj" />
   <Project Path="ProPixelizer.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
   <Project Path="FishNet.Codegen.Cecil.csproj" />
   <Project Path="CAS.Runtime.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="DrawXXL.csproj" />
   <Project Path="Kybernetik.InspectorGadgets.csproj" />
   <Project Path="FishNet.Runtime.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="DTT.EditorUtilities.Editor.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="DTT.ProceduralUI.Editor.csproj" />
   <Project Path="KAnimationCore.Editor.csproj" />
   <Project Path="GameKit.Dependencies.csproj" />

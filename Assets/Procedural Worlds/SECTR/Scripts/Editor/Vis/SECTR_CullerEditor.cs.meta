@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c9f2bab50edc7f2429a50146fadbc016
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Scripts/Editor/Vis/SECTR_CullerEditor.cs
+  uploadId: 726995

@@ -3,7 +3,12 @@ guid: 2a99a0e7a3f17634db3e051c3e10e2ca
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_Wall_Tile_v1_Yellow
+    second: {fileID: 2100000, guid: 442d7491d68045641ad7313de74c362a, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

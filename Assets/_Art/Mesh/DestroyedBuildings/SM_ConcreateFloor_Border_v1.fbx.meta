@@ -3,7 +3,12 @@ guid: d2eee97f3455b394f9fbd563d4c9a6b5
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MI_ConcreateFloor_BaseBody
+    second: {fileID: 2100000, guid: d42664e4a7421f14bb3bcbff519231a3, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

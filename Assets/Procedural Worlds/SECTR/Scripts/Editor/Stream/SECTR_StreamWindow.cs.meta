@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d553333a57a2621448dd4e45a7ee673b
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Scripts/Editor/Stream/SECTR_StreamWindow.cs
+  uploadId: 726995

@@ -1,27 +1,27 @@
 using UnityEditor;
 using UnityEngine;
 using System.IO;
+using System.Linq;
 
 public class ExportPrefabDependencies : EditorWindow
 {
-    private GameObject prefab;
+    private GameObject[] prefabs;
     private string targetFolder = "Assets";
 
     [MenuItem("Tools/Export Prefab Dependencies")]
     static void Init()
     {
-        GetWindow<ExportPrefabDependencies>("Export Prefab");
+        GetWindow<ExportPrefabDependencies>("Export Prefabs");
     }
 
     void OnGUI()
     {
-        GUILayout.Label("Select Prefab & Target Folder", EditorStyles.boldLabel);
+        GUILayout.Label("Batch Export Prefab Dependencies", EditorStyles.boldLabel);
 
-        prefab = (GameObject)EditorGUILayout.ObjectField(
-            "Prefab",
-            prefab,
-            typeof(GameObject),
-            false
+        EditorGUILayout.HelpBox(
+            "Select one or more prefabs in the Project window, then export.\n" +
+            "Each prefab will be placed into its own folder.",
+            MessageType.Info
         );
 
         EditorGUILayout.BeginHorizontal();
@@ -50,20 +50,43 @@ public class ExportPrefabDependencies : EditorWindow
 
         GUILayout.Space(10);
 
-        if (GUILayout.Button("Export Dependencies"))
+        if (GUILayout.Button("Export Selected Prefabs"))
         {
-            if (prefab == null)
+            prefabs = Selection.objects
+                .OfType<GameObject>()
+                .Where(p => PrefabUtility.IsPartOfPrefabAsset(p))
+                .ToArray();
+
+            if (prefabs.Length == 0)
             {
-                EditorUtility.DisplayDialog("Error", "Please select a prefab.", "OK");
+                EditorUtility.DisplayDialog(
+                    "No Prefabs Selected",
+                    "Please select one or more prefab assets in the Project window.",
+                    "OK"
+                );
                 return;
             }
 
-            Export();
+            ExportPrefabs(prefabs);
             AssetDatabase.Refresh();
         }
     }
 
-    void Export()
+    void ExportPrefabs(GameObject[] prefabs)
+    {
+        foreach (GameObject prefab in prefabs)
+        {
+            ExportSinglePrefab(prefab);
+        }
+
+        EditorUtility.DisplayDialog(
+            "Export Complete",
+            $"Exported {prefabs.Length} prefab(s) successfully.",
+            "OK"
+        );
+    }
+
+    void ExportSinglePrefab(GameObject prefab)
     {
         string exportFolderName = prefab.name + "_Export";
         string exportPath = AssetDatabase.GenerateUniqueAssetPath(
@@ -94,11 +117,5 @@ public class ExportPrefabDependencies : EditorWindow
                 }
             }
         }
-
-        EditorUtility.DisplayDialog(
-            "Export Complete",
-            $"Prefab dependencies exported to:\n{exportPath}",
-            "OK"
-        );
     }
 }

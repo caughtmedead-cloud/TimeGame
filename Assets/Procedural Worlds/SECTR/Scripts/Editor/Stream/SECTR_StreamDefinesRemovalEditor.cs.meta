@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 7bd20f825fa31a943b389a655112b8d7
+timeCreated: 1534780443
+licenseType: Store
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Scripts/Editor/Stream/SECTR_StreamDefinesRemovalEditor.cs
+  uploadId: 726995

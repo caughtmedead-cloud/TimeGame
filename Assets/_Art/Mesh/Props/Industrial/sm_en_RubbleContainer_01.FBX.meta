@@ -3,7 +3,12 @@ guid: 52e51897d52480a4685cebb134be8817
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: mi_en_RubbleC_01
+    second: {fileID: 2100000, guid: b287bf5c334de7440b22cd62e52b4875, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
