@@ -121,7 +121,7 @@ namespace TimeGame.Systems.Inventory.UI
                     InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
                     if (itemDef != null)
                     {
-                        Vector2Int itemSize = itemDef.GetSizeForRotation(dir);
+                        Vector2Int itemSize = new Vector2Int(itemDef.GetRotatedWidth(dir), itemDef.GetRotatedHeight(dir));
                         placementGridPos.x = Mathf.Clamp(placementGridPos.x, 0, currentGrid.InventorySystem.Width - itemSize.x);
                         placementGridPos.y = Mathf.Clamp(placementGridPos.y, 0, currentGrid.InventorySystem.Height - itemSize.y);
                     }
