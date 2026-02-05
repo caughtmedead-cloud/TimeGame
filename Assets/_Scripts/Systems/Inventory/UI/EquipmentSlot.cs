@@ -30,7 +30,7 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private Image slotBackgroundImage;
 
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = false;
+        [SerializeField] private bool verboseLogging = true; // Enable by default for debugging
 
         // State
         private InventoryItemSO equippedItem;
@@ -54,18 +54,25 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void Awake()
         {
+            Debug.Log($"[EquipmentSlot:{slotName}] Awake called!");
+            
             rectTransform = GetComponent<RectTransform>();
             
             // Initialize CanvasGroup on itemIconImage if it exists
-            // This ensures empty slots are properly invisible from the start
             if (itemIconImage != null)
             {
+                Debug.Log($"[EquipmentSlot:{slotName}] itemIconImage is assigned: {itemIconImage.gameObject.name}");
+                
                 itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
                 if (itemIconCanvasGroup == null)
                 {
                     itemIconCanvasGroup = itemIconImage.gameObject.AddComponent<CanvasGroup>();
-                    Log($"Added CanvasGroup to {itemIconImage.gameObject.name} in Awake");
+                    Debug.Log($"[EquipmentSlot:{slotName}] Added CanvasGroup to {itemIconImage.gameObject.name}");
                 }
+            }
+            else
+            {
+                Debug.LogError($"[EquipmentSlot:{slotName}] itemIconImage is NULL in inspector!", this);
             }
             
             UpdateVisuals();
@@ -116,12 +123,11 @@ namespace TimeGame.Systems.Inventory.UI
             EquipItem(item);
 
             // Create PlacedItem data (slots don't use grid positions)
-            // FIX: Use correct constructor signature (Guid, ItemDef, Position, Rotation)
             placedItem = new PlacedItem(
-                System.Guid.NewGuid(),   // Guid instanceID
-                item,                    // PlacableItemSO itemDefinition
-                Vector2Int.zero,         // Vector2Int anchorPosition (slots don't have grid positions)
-                GridDirection.Down       // GridDirection rotation (slots don't rotate)
+                System.Guid.NewGuid(),
+                item,
+                Vector2Int.zero,
+                GridDirection.Down
             );
 
             equippedItemID = placedItem.InstanceID;
@@ -144,14 +150,13 @@ namespace TimeGame.Systems.Inventory.UI
 
         #region Public Methods
 
-        /// <summary>
-        /// Manually equip an item (bypassing drag-drop)
-        /// </summary>
         public bool TryEquipItem(InventoryItemSO item)
         {
+            Debug.Log($"[EquipmentSlot:{slotName}] TryEquipItem called with {(item != null ? item.ItemName : "NULL")}");
+            
             if (item == null)
             {
-                Debug.LogWarning($"[EquipmentSlot] Tried to equip null item in {slotName}");
+                Debug.LogWarning($"[EquipmentSlot:{slotName}] Tried to equip null item");
                 return false;
             }
 
@@ -168,24 +173,22 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (!typeMatch)
             {
-                Debug.LogWarning($"[EquipmentSlot] {item.ItemName} ({item.EquipmentType}) not accepted by {slotName}");
+                Debug.LogWarning($"[EquipmentSlot:{slotName}] {item.ItemName} ({item.EquipmentType}) not accepted - only accepts: {string.Join(", ", acceptedTypes)}");
                 return false;
             }
 
             if (IsOccupied)
             {
-                Debug.LogWarning($"[EquipmentSlot] {slotName} already occupied by {equippedItem.ItemName}");
+                Debug.LogWarning($"[EquipmentSlot:{slotName}] Already occupied by {equippedItem.ItemName}");
                 return false;
             }
 
             EquipItem(item);
             equippedItemID = System.Guid.NewGuid();
+            Debug.Log($"[EquipmentSlot:{slotName}] Successfully equipped {item.ItemName}");
             return true;
         }
 
-        /// <summary>
-        /// Unequip current item
-        /// </summary>
         public InventoryItemSO UnequipItem()
         {
             if (!IsOccupied)
@@ -201,13 +204,10 @@ namespace TimeGame.Systems.Inventory.UI
             UpdateVisuals();
             OnItemUnequipped?.Invoke(unequippedItem);
 
-            Log($"Unequipped {unequippedItem.ItemName} from {slotName}");
+            Debug.Log($"[EquipmentSlot:{slotName}] Unequipped {unequippedItem.ItemName}");
             return unequippedItem;
         }
 
-        /// <summary>
-        /// Get the unique ID of the equipped item
-        /// </summary>
         public System.Guid GetEquippedItemID()
         {
             return equippedItemID;
@@ -219,22 +219,26 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void EquipItem(InventoryItemSO item)
         {
+            Debug.Log($"[EquipmentSlot:{slotName}] EquipItem called for {item.ItemName}");
+            
             equippedItem = item;
             
-            // Setup components BEFORE calling UpdateVisuals!
             if (itemIconImage != null)
             {
+                Debug.Log($"[EquipmentSlot:{slotName}] Setting up itemIconImage for dragging");
+                
                 // CRITICAL: Enable raycast target so drag events are received
                 itemIconImage.raycastTarget = true;
+                Debug.Log($"[EquipmentSlot:{slotName}] Set raycastTarget = true");
                 
-                // Get or add CanvasGroup (should already exist from Awake, but double-check)
+                // Get or add CanvasGroup
                 if (itemIconCanvasGroup == null)
                 {
                     itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
                     if (itemIconCanvasGroup == null)
                     {
                         itemIconCanvasGroup = itemIconImage.gameObject.AddComponent<CanvasGroup>();
-                        Log($"Added CanvasGroup to {itemIconImage.gameObject.name}");
+                        Debug.Log($"[EquipmentSlot:{slotName}] Added CanvasGroup");
                     }
                 }
                 
@@ -242,14 +246,28 @@ namespace TimeGame.Systems.Inventory.UI
                 EquipmentSlotDragSource dragSource = itemIconImage.GetComponent<EquipmentSlotDragSource>();
                 if (dragSource == null)
                 {
+                    Debug.Log($"[EquipmentSlot:{slotName}] EquipmentSlotDragSource not found, adding it now...");
                     dragSource = itemIconImage.gameObject.AddComponent<EquipmentSlotDragSource>();
-                    Log($"Added EquipmentSlotDragSource to {itemIconImage.gameObject.name}");
+                    if (dragSource != null)
+                    {
+                        Debug.Log($"[EquipmentSlot:{slotName}] ✓ Successfully added EquipmentSlotDragSource to {itemIconImage.gameObject.name}");
+                    }
+                    else
+                    {
+                        Debug.LogError($"[EquipmentSlot:{slotName}] ✗ Failed to add EquipmentSlotDragSource!", this);
+                    }
+                }
+                else
+                {
+                    Debug.Log($"[EquipmentSlot:{slotName}] EquipmentSlotDragSource already exists");
                 }
             }
+            else
+            {
+                Debug.LogError($"[EquipmentSlot:{slotName}] itemIconImage is NULL! Cannot setup dragging.", this);
+            }
             
-            // Now update visuals (CanvasGroup is guaranteed to exist)
             UpdateVisuals();
-            
             OnItemEquipped?.Invoke(item);
         }
 
@@ -257,23 +275,14 @@ namespace TimeGame.Systems.Inventory.UI
         {
             bool hasItem = IsOccupied;
 
-            // Update item icon - use CanvasGroup alpha instead of SetActive
-            // This keeps the GameObject active so drag events continue to work
             if (itemIconImage != null)
             {
-                // Always keep GameObject active (needed for drag events)
                 itemIconImage.gameObject.SetActive(true);
                 
-                // Use CanvasGroup to control visibility
                 if (itemIconCanvasGroup != null)
                 {
                     itemIconCanvasGroup.alpha = hasItem ? 1f : 0f;
-                    Log($"Set itemIcon alpha to {(hasItem ? 1f : 0f)} (hasItem: {hasItem})");
-                }
-                else
-                {
-                    // This should never happen now that we initialize in Awake
-                    Log($"WARNING: itemIconCanvasGroup is null! hasItem: {hasItem}");
+                    Log($"Set itemIcon alpha to {(hasItem ? 1f : 0f)}");
                 }
                 
                 if (hasItem && equippedItem.ItemIcon != null)
@@ -283,12 +292,10 @@ namespace TimeGame.Systems.Inventory.UI
                 }
                 else if (!hasItem)
                 {
-                    // Clear sprite when empty (safety measure)
                     itemIconImage.sprite = null;
                 }
             }
 
-            // Update empty indicator
             if (emptySlotIndicator != null)
             {
                 emptySlotIndicator.SetActive(!hasItem);
@@ -308,7 +315,6 @@ namespace TimeGame.Systems.Inventory.UI
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            // Auto-name the GameObject based on accepted types
             if (acceptedTypes != null && acceptedTypes.Length > 0 && acceptedTypes[0] != ItemType.None)
             {
                 slotName = $"{acceptedTypes[0]} Slot";
