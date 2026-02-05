@@ -8,10 +8,12 @@ using TimeGame.Systems.GridPlacement;
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
-    /// CODE MONKEY'S EXACT PATTERN with rotation offset support.
+    /// CODE MONKEY'S EXACT PATTERN with rotation offset support + multi-grid boundary clamping.
     /// Uses GetRotationOffset() in TWO places like Code Monkey does:
     /// 1. OnItemBeginDrag - apply to mouseDragAnchoredPositionOffset
     /// 2. Update - apply to targetPosition before snapping
+    /// 
+    /// EXTENSION: Clamps item to current grid boundaries for clean cross-grid transitions.
     /// </summary>
     public class InventoryDragHandler : MonoBehaviour
     {
@@ -121,6 +123,18 @@ namespace TimeGame.Systems.Inventory.UI
                     targetPosition /= cellSize;
                     targetPosition = new Vector2(Mathf.Floor(targetPosition.x), Mathf.Floor(targetPosition.y));
                     targetPosition *= cellSize;
+
+                    // EXTENSION: Clamp to grid boundaries (not in Code Monkey's single-grid system)
+                    // This prevents visual from escaping grid during cross-grid transitions
+                    if (itemDef != null)
+                    {
+                        Vector2Int itemSize = itemDef.GetSizeForRotation(dir);
+                        float maxX = (currentGrid.InventorySystem.Width - itemSize.x) * cellSize;
+                        float maxY = (currentGrid.InventorySystem.Height - itemSize.y) * cellSize;
+                        
+                        targetPosition.x = Mathf.Clamp(targetPosition.x, 0, maxX);
+                        targetPosition.y = Mathf.Clamp(targetPosition.y, 0, maxY);
+                    }
 
                     // CODE MONKEY: LERP to target position (smooth movement!)
                     RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
