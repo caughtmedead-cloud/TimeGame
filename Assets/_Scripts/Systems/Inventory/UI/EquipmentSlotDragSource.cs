@@ -1,38 +1,34 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using TimeGame.Systems.GridPlacement;
-using System.Collections.Generic;
 
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
-    /// Makes equipment slot items draggable.
+    /// Makes equipment slot items draggable using Code Monkey's pattern.
     /// Attach this to the itemIconImage GameObject of an EquipmentSlot.
-    /// Handles unequipping on drag start and re-equipping on drag cancel.
     /// 
-    /// Note: This manually manages the ghost and drop logic because equipment slots
-    /// don't have persistent instance IDs like grid items do.
+    /// Equipment slots work differently from grids:
+    /// - Items spawn as temporary visuals when dragging starts
+    /// - Items are created fresh at the drop target
+    /// - No persistent instance IDs needed
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasGroup))]
-    public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IEndDragHandler
     {
         private EquipmentSlot equipmentSlot;
         private RectTransform rectTransform;
         private CanvasGroup canvasGroup;
-        private InventoryItemGhost ghost;
+        private InventoryDragHandler dragHandler;
         
-        // Drag state
-        private InventoryItemSO draggedItem;
-        private GridDirection currentRotation;
+        // Temporary drag state - for creating a temporary item visual
+        private InventoryItemSO draggedItemDef;
+        private System.Guid tempInstanceID;
         private bool isDragging = false;
 
-        [Header("Input Settings")]
-        [SerializeField] private UnityEngine.InputSystem.Key rotateKey = UnityEngine.InputSystem.Key.R;
-
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = true; // Enable by default for debugging
+        [SerializeField] private bool verboseLogging = false;
 
         private void Awake()
         {
@@ -45,228 +41,84 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 Debug.LogError("[EquipmentSlotDragSource] No EquipmentSlot found in parent!", this);
             }
-            else
-            {
-                Log($"Found parent equipment slot: {equipmentSlot.GetDisplayName()}");
-            }
             
-            // Find ghost (should be in the scene on InventoryDragHandler)
-            InventoryDragHandler dragHandler = GetComponentInParent<InventoryDragHandler>();
-            if (dragHandler != null)
+            // Find drag handler (should be global singleton)
+            dragHandler = FindObjectOfType<InventoryDragHandler>();
+            if (dragHandler == null)
             {
-                ghost = dragHandler.GetComponentInChildren<InventoryItemGhost>(true);
-                Log($"Found InventoryDragHandler and ghost");
-            }
-            else
-            {
-                Debug.LogError("[EquipmentSlotDragSource] No InventoryDragHandler found in parent hierarchy!", this);
-            }
-            
-            if (ghost == null)
-            {
-                Debug.LogError("[EquipmentSlotDragSource] No InventoryItemGhost found!", this);
+                Debug.LogError("[EquipmentSlotDragSource] No InventoryDragHandler found in scene!", this);
             }
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            Log($"OnBeginDrag triggered! Mouse button: {eventData.button}");
-            
-            if (equipmentSlot == null || ghost == null || !equipmentSlot.IsOccupied)
+            if (equipmentSlot == null || dragHandler == null || !equipmentSlot.IsOccupied)
             {
-                Log($"Cannot begin drag - equipmentSlot null: {equipmentSlot == null}, ghost null: {ghost == null}, occupied: {equipmentSlot?.IsOccupied}");
                 return;
             }
 
             // Get the equipped item
-            draggedItem = equipmentSlot.EquippedItem;
-            currentRotation = GridDirection.Down; // Equipment items don't rotate in slots
+            draggedItemDef = equipmentSlot.EquippedItem;
             
-            Log($"Begin drag: {draggedItem.ItemName} from {equipmentSlot.GetDisplayName()}");
+            Log($"Begin drag: {draggedItemDef.ItemName} from {equipmentSlot.GetDisplayName()}");
+
+            // Create a temporary item in the equipment slot's "virtual grid"
+            // This allows InventoryDragHandler to treat it like a grid item
+            tempInstanceID = System.Guid.NewGuid();
+            
+            // Create a temporary PlacedItem for the drag handler
+            PlacedItem tempItem = new PlacedItem(
+                draggedItemDef,
+                Vector2Int.zero, // Position doesn't matter for equipment slots
+                GridDirection.Down, // Equipment items don't rotate in slots
+                tempInstanceID
+            );
 
             // Unequip from slot (removes visual)
             equipmentSlot.UnequipItem();
 
-            // Initialize and show ghost
-            ghost.Initialize(draggedItem, currentRotation, 64f); // Use default cell size
-            ghost.Show();
+            // Create a temporary visual for dragging
+            // We'll spawn it in the equipment slot's transform temporarily
+            GameObject tempVisualGO = new GameObject("TempDragVisual");
+            tempVisualGO.transform.SetParent(equipmentSlot.transform, false);
+            
+            InventoryItemVisual tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
+            tempVisual.Initialize(tempItem);
+            
+            // Now trigger the drag handler with this temp item
+            dragHandler.OnItemBeginDrag(tempInstanceID);
             
             isDragging = true;
-            UpdateGhostPosition(eventData.position);
-        }
-
-        public void OnDrag(PointerEventData eventData)
-        {
-            if (!isDragging || ghost == null)
-            {
-                return;
-            }
-
-            // Handle rotation
-            bool rPressed = false;
-            
-            if (Keyboard.current != null && Keyboard.current[rotateKey].wasPressedThisFrame)
-            {
-                rPressed = true;
-            }
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                rPressed = true;
-            }
-
-            if (rPressed && draggedItem.CanRotate)
-            {
-                currentRotation = draggedItem.GetNextRotation(currentRotation);
-                ghost.Rotate();
-                Log($"Rotated to {currentRotation}");
-            }
-
-            // Update ghost position
-            UpdateGhostPosition(eventData.position);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (!isDragging || ghost == null)
+            if (!isDragging || dragHandler == null)
             {
-                Log("OnEndDrag called but not dragging!");
                 return;
             }
 
-            Log($"End drag: {draggedItem.ItemName}");
+            Log($"End drag: {draggedItemDef?.ItemName}");
 
-            // Find target under mouse
-            IInventoryDropTarget targetUnderMouse = GetDropTargetUnderMouse(eventData.position);
+            // The drag handler will handle the drop logic
+            // We just need to clean up if the drop failed
+            dragHandler.OnItemEndDrag(tempInstanceID);
 
-            bool dropped = false;
+            // Check if the item was successfully placed somewhere
+            // If not, re-equip it to the original slot
+            bool wasPlaced = !equipmentSlot.IsOccupied; // If slot is still empty, item was placed elsewhere
 
-            if (targetUnderMouse != null)
-            {
-                Log($"Target under mouse: {targetUnderMouse.GetDisplayName()}");
-                
-                // Get mouse position in target's local space
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    targetUnderMouse.GetRectTransform(),
-                    eventData.position,
-                    null, // null camera for Screen Space - Overlay
-                    out Vector2 mouseLocalPos
-                );
-
-                // Try to place in target
-                dropped = targetUnderMouse.TryPlaceItem(
-                    draggedItem,
-                    currentRotation,
-                    mouseLocalPos,
-                    out PlacedItem placedItem
-                );
-
-                if (dropped)
-                {
-                    Log($"Successfully dropped {draggedItem.ItemName} to {targetUnderMouse.GetDisplayName()}");
-                }
-                else
-                {
-                    Log($"Failed to drop {draggedItem.ItemName} to {targetUnderMouse.GetDisplayName()}");
-                }
-            }
-            else
-            {
-                Log("No target under mouse");
-            }
-
-            if (!dropped)
+            if (!wasPlaced)
             {
                 // Drop failed - re-equip to original slot
-                Log($"Drop failed - re-equipping {draggedItem.ItemName} to {equipmentSlot.GetDisplayName()}");
-                equipmentSlot.TryEquipItem(draggedItem);
+                Log($"Drop failed - re-equipping {draggedItemDef.ItemName}");
+                equipmentSlot.TryEquipItem(draggedItemDef);
             }
 
-            // Hide ghost and cleanup
-            ghost.Hide();
+            // Cleanup
             isDragging = false;
-            draggedItem = null;
-        }
-
-        /// <summary>
-        /// Update ghost position and validate placement.
-        /// </summary>
-        private void UpdateGhostPosition(Vector2 screenPosition)
-        {
-            IInventoryDropTarget targetUnderMouse = GetDropTargetUnderMouse(screenPosition);
-
-            if (targetUnderMouse != null)
-            {
-                // Get mouse position in target's local space
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    targetUnderMouse.GetRectTransform(),
-                    screenPosition,
-                    null,
-                    out Vector2 mouseLocalPos
-                );
-
-                Vector2 snappedLocalPos;
-
-                // For grids, snap to grid
-                if (targetUnderMouse is InventoryGridVisual gridTarget)
-                {
-                    Vector2Int gridPos = gridTarget.LocalPositionToGridPosition(mouseLocalPos);
-                    snappedLocalPos = gridTarget.GridPositionToLocalPosition(gridPos);
-                }
-                else
-                {
-                    // For slots, center on the slot
-                    snappedLocalPos = targetUnderMouse.GetRectTransform().rect.center;
-                }
-
-                // Convert to screen position
-                Vector3 worldPos = targetUnderMouse.GetRectTransform().TransformPoint(snappedLocalPos);
-                ghost.transform.position = worldPos;
-
-                // Validate placement
-                bool canPlace = targetUnderMouse.CanAcceptItem(draggedItem, currentRotation, mouseLocalPos);
-                ghost.SetValid(canPlace);
-            }
-            else
-            {
-                // No target - follow mouse, mark as invalid
-                ghost.transform.position = screenPosition;
-                ghost.SetValid(false);
-            }
-        }
-
-        /// <summary>
-        /// Find the drop target currently under the mouse.
-        /// </summary>
-        private IInventoryDropTarget GetDropTargetUnderMouse(Vector2 screenPosition)
-        {
-            // Use EventSystem to raycast UI
-            PointerEventData pointerData = new PointerEventData(EventSystem.current)
-            {
-                position = screenPosition
-            };
-
-            List<RaycastResult> results = new List<RaycastResult>();
-            EventSystem.current.RaycastAll(pointerData, results);
-
-            // Find first InventoryGridVisual or EquipmentSlot
-            foreach (RaycastResult result in results)
-            {
-                // Check for grid
-                InventoryGridVisual gridVisual = result.gameObject.GetComponentInParent<InventoryGridVisual>();
-                if (gridVisual != null)
-                {
-                    return gridVisual;
-                }
-
-                // Check for equipment slot
-                EquipmentSlot slot = result.gameObject.GetComponentInParent<EquipmentSlot>();
-                if (slot != null)
-                {
-                    return slot;
-                }
-            }
-
-            return null;
+            draggedItemDef = null;
+            tempInstanceID = System.Guid.Empty;
         }
 
         private void Log(string message)
