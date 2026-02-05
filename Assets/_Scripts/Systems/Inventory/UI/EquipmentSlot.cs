@@ -242,6 +242,11 @@ namespace TimeGame.Systems.Inventory.UI
                     }
                 }
                 
+                // CRITICAL: CanvasGroup must allow raycasts for drag events to work!
+                itemIconCanvasGroup.blocksRaycasts = true;
+                itemIconCanvasGroup.interactable = true;
+                Debug.Log($"[EquipmentSlot:{slotName}] Set CanvasGroup blocksRaycasts=true, interactable=true");
+                
                 // Add drag source component if not present
                 EquipmentSlotDragSource dragSource = itemIconImage.GetComponent<EquipmentSlotDragSource>();
                 if (dragSource == null)
@@ -282,7 +287,12 @@ namespace TimeGame.Systems.Inventory.UI
                 if (itemIconCanvasGroup != null)
                 {
                     itemIconCanvasGroup.alpha = hasItem ? 1f : 0f;
-                    Log($"Set itemIcon alpha to {(hasItem ? 1f : 0f)}");
+                    
+                    // CRITICAL: When hiding, disable raycasts. When showing, enable them.
+                    itemIconCanvasGroup.blocksRaycasts = hasItem;
+                    itemIconCanvasGroup.interactable = hasItem;
+                    
+                    Log($"Set itemIcon alpha to {(hasItem ? 1f : 0f)}, blocksRaycasts={hasItem}");
                 }
                 
                 if (hasItem && equippedItem.ItemIcon != null)
