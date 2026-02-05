@@ -8,10 +8,8 @@ namespace TimeGame.Systems.Inventory.UI
     /// Makes equipment slot items draggable using Code Monkey's pattern.
     /// Attach this to the itemIconImage GameObject of an EquipmentSlot.
     /// 
-    /// Equipment slots don't have grids, so we:
-    /// 1. Create a temporary visual when dragging starts
-    /// 2. Use InventoryDragHandler to manage the drag (same lerp movement!)
-    /// 3. Clean up when drop succeeds/fails
+    /// Creates a temporary visual when drag starts, similar to how grids spawn visuals.
+    /// This preserves item instance data (durability, etc.) during drag operations.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasGroup))]
@@ -21,9 +19,9 @@ namespace TimeGame.Systems.Inventory.UI
         private InventoryDragHandler dragHandler;
         
         // Drag state
-        private InventoryItemSO draggedItemDef;
-        private System.Guid tempInstanceID;
+        private PlacedItem draggedItem; // Store the full PlacedItem (includes durability, etc.)
         private InventoryItemVisual tempVisual;
+        private Transform tempParent; // Temporary parent for the visual during drag
         private bool isDragging = false;
 
         [Header("Debug")]
@@ -44,6 +42,18 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 Debug.LogError("[EquipmentSlotDragSource] No InventoryDragHandler found in scene!", this);
             }
+
+            // Create a temporary parent for drag visuals (sibling to the slot)
+            GameObject tempParentGO = new GameObject("EquipmentDragContainer");
+            tempParentGO.transform.SetParent(equipmentSlot.transform.parent, false);
+            tempParent = tempParentGO.transform;
+            
+            // Add RectTransform
+            RectTransform rt = tempParentGO.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.sizeDelta = Vector2.zero;
+            rt.anchoredPosition = Vector2.zero;
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -53,55 +63,63 @@ namespace TimeGame.Systems.Inventory.UI
                 return;
             }
 
-            // Get the equipped item
-            draggedItemDef = equipmentSlot.EquippedItem;
-            tempInstanceID = System.Guid.NewGuid();
+            // Get the equipped PlacedItem (this preserves durability, etc.)
+            // NOTE: Equipment slots need to be updated to store PlacedItem instead of just InventoryItemSO
+            InventoryItemSO itemDef = equipmentSlot.EquippedItem;
+            System.Guid equippedID = equipmentSlot.GetEquippedItemID();
             
-            Log($"Begin drag: {draggedItemDef.ItemName} from {equipmentSlot.GetDisplayName()}");
-
-            // Create a temporary PlacedItem
-            PlacedItem tempItem = new PlacedItem(
-                tempInstanceID,
-                draggedItemDef,
-                Vector2Int.zero,
-                GridDirection.Down
+            // Create PlacedItem if equipment slot doesn't have one
+            // IMPORTANT: This should ideally come from the equipment slot directly to preserve instance data
+            draggedItem = new PlacedItem(
+                equippedID,
+                itemDef,
+                Vector2Int.zero, // Equipment slots don't have grid positions
+                GridDirection.Down // Equipment items don't rotate in slots
             );
+            
+            Log($"Begin drag: {itemDef.ItemName} (ID: {equippedID})");
 
             // Unequip from slot (this hides the icon)
             equipmentSlot.UnequipItem();
 
-            // Create a temporary visual GameObject under this transform
-            GameObject tempVisualGO = new GameObject($"TempDragVisual_{draggedItemDef.ItemName}");
-            tempVisualGO.transform.SetParent(equipmentSlot.transform, false);
+            // Create temporary visual similar to how InventoryGridVisual spawns items
+            GameObject tempVisualGO = new GameObject($"DragVisual_{itemDef.ItemName}");
+            tempVisualGO.transform.SetParent(tempParent, false);
             
-            // Add RectTransform
+            // Add RectTransform with bottom-left pivot (like grid items)
             RectTransform tempRT = tempVisualGO.AddComponent<RectTransform>();
             tempRT.anchorMin = Vector2.zero;
             tempRT.anchorMax = Vector2.zero;
-            tempRT.pivot = new Vector2(0, 0); // Bottom-left pivot like grid items
-            tempRT.sizeDelta = new Vector2(64f, 64f); // Default size
+            tempRT.pivot = new Vector2(0, 0); // Bottom-left pivot
             
             // Add visual component
             tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
-            tempVisual.Initialize(tempItem);
+            
+            // Initialize with proper parameters
+            // Pass null for gridVisual since equipment slots don't have grids
+            tempVisual.Initialize(draggedItem, itemDef, 64f, null);
+            
+            // Position it at the equipment slot initially
+            Vector3 slotWorldPos = equipmentSlot.GetRectTransform().position;
+            tempVisualGO.transform.position = slotWorldPos;
             
             // Now trigger the drag handler
-            dragHandler.OnItemBeginDrag(tempInstanceID);
+            dragHandler.OnItemBeginDrag(draggedItem.InstanceID);
             
             isDragging = true;
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (!isDragging || dragHandler == null)
+            if (!isDragging || dragHandler == null || draggedItem == null)
             {
                 return;
             }
 
-            Log($"End drag: {draggedItemDef?.ItemName}");
+            Log($"End drag: {draggedItem.ItemDefinition.ItemName}");
 
             // Let drag handler handle the drop
-            dragHandler.OnItemEndDrag(tempInstanceID);
+            dragHandler.OnItemEndDrag(draggedItem.InstanceID);
 
             // Check if item was successfully placed
             // If temp visual still exists, drop failed
@@ -109,9 +127,12 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (dropFailed)
             {
-                // Re-equip to original slot
-                Log($"Drop failed - re-equipping {draggedItemDef.ItemName}");
-                equipmentSlot.TryEquipItem(draggedItemDef);
+                // Re-equip to original slot (preserves item instance data)
+                Log($"Drop failed - re-equipping {draggedItem.ItemDefinition.ItemName}");
+                
+                // Re-equip using the original item definition
+                // TODO: When equipment slots are updated to store PlacedItem, pass the full item here
+                equipmentSlot.TryEquipItem(draggedItem.ItemDefinition as InventoryItemSO);
                 
                 // Destroy temp visual
                 if (tempVisual != null && tempVisual.gameObject != null)
@@ -122,9 +143,17 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Cleanup
             isDragging = false;
-            draggedItemDef = null;
+            draggedItem = null;
             tempVisual = null;
-            tempInstanceID = System.Guid.Empty;
+        }
+
+        private void OnDestroy()
+        {
+            // Cleanup temp parent
+            if (tempParent != null)
+            {
+                Destroy(tempParent.gameObject);
+            }
         }
 
         private void Log(string message)
