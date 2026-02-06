@@ -7,8 +7,7 @@ namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Single-item equipment slot with type restrictions.
-    /// Used for center panel equipment slots (helmet, vest, weapon, etc.).
-    /// Accepts only items of specified types.
+    /// Registers with drag handler to accept dropped items.
     /// </summary>
     public class EquipmentSlot : MonoBehaviour, IInventoryDropTarget
     {
@@ -30,44 +29,48 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private Image slotBackgroundImage;
 
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = true; // Enable by default for debugging
+        [SerializeField] private bool verboseLogging = true;
 
         // State
         private InventoryItemSO equippedItem;
         private System.Guid equippedItemID;
         private RectTransform rectTransform;
-        private CanvasGroup itemIconCanvasGroup; // Cache the CanvasGroup
+        private CanvasGroup itemIconCanvasGroup;
+        private InventoryDragHandler dragHandler;
 
         // Events
         public event Action<InventoryItemSO> OnItemEquipped;
         public event Action<InventoryItemSO> OnItemUnequipped;
 
-        /// <summary>
-        /// Currently equipped item (null if empty)
-        /// </summary>
         public InventoryItemSO EquippedItem => equippedItem;
-
-        /// <summary>
-        /// Is this slot currently occupied?
-        /// </summary>
         public bool IsOccupied => equippedItem != null;
 
         private void Awake()
         {
-            Debug.Log($"[EquipmentSlot:{slotName}] Awake called!");
+            Log("Awake called");
             
             rectTransform = GetComponent<RectTransform>();
             
-            // Initialize CanvasGroup on itemIconImage if it exists
+            // Find drag handler and register
+            dragHandler = FindObjectOfType<InventoryDragHandler>();
+            if (dragHandler != null)
+            {
+                dragHandler.RegisterDropTarget(this);
+                Log($"Registered with drag handler");
+            }
+            else
+            {
+                Debug.LogWarning($"[EquipmentSlot:{slotName}] No InventoryDragHandler found - drag/drop won't work!");
+            }
+            
+            // Initialize CanvasGroup on itemIconImage
             if (itemIconImage != null)
             {
-                Debug.Log($"[EquipmentSlot:{slotName}] itemIconImage is assigned: {itemIconImage.gameObject.name}");
-                
                 itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
                 if (itemIconCanvasGroup == null)
                 {
                     itemIconCanvasGroup = itemIconImage.gameObject.AddComponent<CanvasGroup>();
-                    Debug.Log($"[EquipmentSlot:{slotName}] Added CanvasGroup to {itemIconImage.gameObject.name}");
+                    Log("Added CanvasGroup to itemIconImage");
                 }
             }
             else
@@ -76,6 +79,16 @@ namespace TimeGame.Systems.Inventory.UI
             }
             
             UpdateVisuals();
+        }
+
+        private void OnDestroy()
+        {
+            // Unregister from drag handler
+            if (dragHandler != null)
+            {
+                dragHandler.UnregisterDropTarget(this);
+                Log("Unregistered from drag handler");
+            }
         }
 
         #region IInventoryDropTarget Implementation
@@ -152,8 +165,6 @@ namespace TimeGame.Systems.Inventory.UI
 
         public bool TryEquipItem(InventoryItemSO item)
         {
-            Debug.Log($"[EquipmentSlot:{slotName}] TryEquipItem called with {(item != null ? item.ItemName : "NULL")}");
-            
             if (item == null)
             {
                 Debug.LogWarning($"[EquipmentSlot:{slotName}] Tried to equip null item");
@@ -173,19 +184,19 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (!typeMatch)
             {
-                Debug.LogWarning($"[EquipmentSlot:{slotName}] {item.ItemName} ({item.EquipmentType}) not accepted - only accepts: {string.Join(", ", acceptedTypes)}");
+                Log($"{item.ItemName} ({item.EquipmentType}) not accepted - only accepts: {string.Join(", ", acceptedTypes)}");
                 return false;
             }
 
             if (IsOccupied)
             {
-                Debug.LogWarning($"[EquipmentSlot:{slotName}] Already occupied by {equippedItem.ItemName}");
+                Log($"Already occupied by {equippedItem.ItemName}");
                 return false;
             }
 
             EquipItem(item);
             equippedItemID = System.Guid.NewGuid();
-            Debug.Log($"[EquipmentSlot:{slotName}] Successfully equipped {item.ItemName}");
+            Log($"Successfully equipped {item.ItemName}");
             return true;
         }
 
@@ -193,7 +204,6 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (!IsOccupied)
             {
-                Log("Cannot unequip - slot is empty");
                 return null;
             }
 
@@ -204,7 +214,7 @@ namespace TimeGame.Systems.Inventory.UI
             UpdateVisuals();
             OnItemUnequipped?.Invoke(unequippedItem);
 
-            Debug.Log($"[EquipmentSlot:{slotName}] Unequipped {unequippedItem.ItemName}");
+            Log($"Unequipped {unequippedItem.ItemName}");
             return unequippedItem;
         }
 
@@ -219,57 +229,35 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void EquipItem(InventoryItemSO item)
         {
-            Debug.Log($"[EquipmentSlot:{slotName}] EquipItem called for {item.ItemName}");
+            Log($"EquipItem called for {item.ItemName}");
             
             equippedItem = item;
             
             if (itemIconImage != null)
             {
-                Debug.Log($"[EquipmentSlot:{slotName}] Setting up itemIconImage for dragging");
-                
-                // CRITICAL: Enable raycast target so drag events are received
+                // Enable raycast target for drag events
                 itemIconImage.raycastTarget = true;
-                Debug.Log($"[EquipmentSlot:{slotName}] Set raycastTarget = true");
                 
-                // Get or add CanvasGroup
+                // Setup CanvasGroup
                 if (itemIconCanvasGroup == null)
                 {
                     itemIconCanvasGroup = itemIconImage.GetComponent<CanvasGroup>();
                     if (itemIconCanvasGroup == null)
                     {
                         itemIconCanvasGroup = itemIconImage.gameObject.AddComponent<CanvasGroup>();
-                        Debug.Log($"[EquipmentSlot:{slotName}] Added CanvasGroup");
                     }
                 }
                 
-                // CRITICAL: CanvasGroup must allow raycasts for drag events to work!
                 itemIconCanvasGroup.blocksRaycasts = true;
                 itemIconCanvasGroup.interactable = true;
-                Debug.Log($"[EquipmentSlot:{slotName}] Set CanvasGroup blocksRaycasts=true, interactable=true");
                 
-                // Add drag source component if not present
+                // Add drag source if not present
                 EquipmentSlotDragSource dragSource = itemIconImage.GetComponent<EquipmentSlotDragSource>();
                 if (dragSource == null)
                 {
-                    Debug.Log($"[EquipmentSlot:{slotName}] EquipmentSlotDragSource not found, adding it now...");
                     dragSource = itemIconImage.gameObject.AddComponent<EquipmentSlotDragSource>();
-                    if (dragSource != null)
-                    {
-                        Debug.Log($"[EquipmentSlot:{slotName}] ✓ Successfully added EquipmentSlotDragSource to {itemIconImage.gameObject.name}");
-                    }
-                    else
-                    {
-                        Debug.LogError($"[EquipmentSlot:{slotName}] ✗ Failed to add EquipmentSlotDragSource!", this);
-                    }
+                    Log($"✓ Added EquipmentSlotDragSource to {itemIconImage.gameObject.name}");
                 }
-                else
-                {
-                    Debug.Log($"[EquipmentSlot:{slotName}] EquipmentSlotDragSource already exists");
-                }
-            }
-            else
-            {
-                Debug.LogError($"[EquipmentSlot:{slotName}] itemIconImage is NULL! Cannot setup dragging.", this);
             }
             
             UpdateVisuals();
@@ -287,18 +275,13 @@ namespace TimeGame.Systems.Inventory.UI
                 if (itemIconCanvasGroup != null)
                 {
                     itemIconCanvasGroup.alpha = hasItem ? 1f : 0f;
-                    
-                    // CRITICAL: When hiding, disable raycasts. When showing, enable them.
                     itemIconCanvasGroup.blocksRaycasts = hasItem;
                     itemIconCanvasGroup.interactable = hasItem;
-                    
-                    Log($"Set itemIcon alpha to {(hasItem ? 1f : 0f)}, blocksRaycasts={hasItem}");
                 }
                 
                 if (hasItem && equippedItem.ItemIcon != null)
                 {
                     itemIconImage.sprite = equippedItem.ItemIcon;
-                    Log($"Set sprite to {equippedItem.ItemIcon.name}");
                 }
                 else if (!hasItem)
                 {
