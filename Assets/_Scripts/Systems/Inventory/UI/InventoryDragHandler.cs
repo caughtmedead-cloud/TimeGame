@@ -143,7 +143,12 @@ namespace TimeGame.Systems.Inventory.UI
             // CODE MONKEY: Calculate grid position offset
             mouseDragGridPositionOffset = mouseGridPosition - placedItem.AnchorPosition;
 
-            // Calculate canvas offset ONCE at drag start - this NEVER changes!
+            // Calculate canvas offset - CRITICAL: work in the SAME coordinate system!
+            // Parent to canvas FIRST so we can use anchoredPosition directly
+            RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
+            itemRT.SetParent(canvasRoot, worldPositionStays: true);
+            
+            // NOW both mouse and item are in canvas anchored position space
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRoot,
                 mouseScreenPos,
@@ -151,18 +156,16 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 mouseCanvasPos
             );
             
-            // Get item's current position in canvas local space
-            // Use InverseTransformPoint to properly convert from world space to canvas local space
-            RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
-            Vector2 itemCanvasPos = canvasRoot.InverseTransformPoint(itemRT.position);
+            // Get item's anchored position (same coordinate system as mouseCanvasPos)
+            Vector2 itemCanvasPos = itemRT.anchoredPosition;
             
             // This offset is set ONCE and never changes during the drag!
             mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
             
             Log($"Grid drag - Mouse: {mouseCanvasPos}, Item: {itemCanvasPos}, Offset: {mouseDragCanvasOffset}");
 
-            // Start drag
-            StartDragInternal(itemVisual, placedItem, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
+            // Start drag in free-float mode (item already parented to canvas)
+            StartDragInternal(itemVisual, placedItem, null, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
         }
 
         /// <summary>
