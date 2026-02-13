@@ -40,6 +40,7 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2Int mouseDragGridPositionOffset;        // Grid offset (for grid mode)
         private Vector2 mouseDragAnchoredPositionOffset;       // Pixel offset (for free-float mode)
         private GridDirection dir;                             // Current rotation
+        private bool forceGridMode = false;                    // Flag to prevent equipment drags from being hijacked by grids
         
         // Original state for returning item if drop fails
         private InventoryGridVisual originalGrid;              // Null if dragged from equipment slot
@@ -153,7 +154,8 @@ namespace TimeGame.Systems.Inventory.UI
                 mouseDragAnchoredPositionOffset += new Vector2(rotationOffset.x, rotationOffset.y) * sourceGrid.CellSize;
             }
 
-            // Start drag
+            // Start drag in grid mode (allow grid snapping)
+            forceGridMode = false;
             StartDragInternal(itemVisual, placedItem, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
         }
 
@@ -177,6 +179,10 @@ namespace TimeGame.Systems.Inventory.UI
             
             // Grid offset is zero (equipment slots don't have grid positions)
             mouseDragGridPositionOffset = Vector2Int.zero;
+
+            // CRITICAL: Force free-float mode for equipment slot drags
+            // This prevents the drag from being hijacked by grid detection in Update()
+            forceGridMode = true;
 
             // Start drag in free-float mode (currentGrid = null)
             StartDragInternal(visual, placedItem, null, sourceTarget, Vector2Int.zero, placedItem.Rotation);
@@ -244,6 +250,7 @@ namespace TimeGame.Systems.Inventory.UI
             draggingPlacedObject = null;
             currentGrid = null;
             originalSource = null;
+            forceGridMode = false;
         }
 
         #endregion
@@ -267,11 +274,22 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Determine drag mode based on mouse position
             Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
-            InventoryGridVisual targetGrid = GetGridUnderMouse(mouseScreenPos);
-
+            
+            // If we're in forced free-float mode (from equipment slot), allow entering grids
+            // but once we leave a grid, don't snap back to it
+            InventoryGridVisual targetGrid = null;
+            
+            if (!forceGridMode || currentGrid != null)
+            {
+                // Normal behavior: detect grids and allow snapping
+                targetGrid = GetGridUnderMouse(mouseScreenPos);
+            }
+            
             if (targetGrid != null)
             {
                 // GRID MODE: Snap to cells and lerp
+                // Once we enter a grid from equipment slot, disable force mode
+                forceGridMode = false;
                 UpdateGridMode(targetGrid, mouseScreenPos);
             }
             else
