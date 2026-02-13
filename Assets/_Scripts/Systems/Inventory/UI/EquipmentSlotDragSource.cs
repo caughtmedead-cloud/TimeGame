@@ -151,6 +151,9 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void CreateTempVisual(InventoryItemSO itemDef)
         {
+            RectTransform slotRT = equipmentSlot.GetRectTransform();
+            RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
+            
             // Create visual GameObject
             GameObject tempVisualGO = new GameObject($"DragVisual_{itemDef.ItemName}");
             
@@ -160,15 +163,11 @@ namespace TimeGame.Systems.Inventory.UI
             tempRT.anchorMax = Vector2.zero;
             tempRT.pivot = new Vector2(0, 0); // Bottom-left pivot
             
-            // Parent to canvas - this is where coordinate conversion happens!
-            RectTransform slotRT = equipmentSlot.GetRectTransform();
-            RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
-            tempRT.SetParent(canvasRT, worldPositionStays: false);
+            // Parent to canvas with worldPositionStays TRUE to maintain world position
+            tempRT.SetParent(canvasRT, worldPositionStays: true);
             
-            // Position the visual at the equipment slot's CENTER in canvas space
-            // Get the slot's rect center in world space, then convert to canvas local space
+            // Get the slot's center in world space
             Vector3 slotWorldCenter = slotRT.TransformPoint(slotRT.rect.center);
-            Vector2 slotCanvasPos = canvasRT.InverseTransformPoint(slotWorldCenter);
             
             // Calculate item's visual size at grid scale
             Vector2 itemVisualSize = new Vector2(
@@ -176,12 +175,14 @@ namespace TimeGame.Systems.Inventory.UI
                 itemDef.Height * gridCellSize
             );
             
-            // Position visual so its CENTER aligns with equipment slot's center
-            // Since visual has bottom-left pivot, we offset by half the size
-            Vector2 visualBottomLeft = slotCanvasPos - (itemVisualSize * 0.5f);
-            tempRT.anchoredPosition = visualBottomLeft;
+            // Set world position to slot center
+            tempRT.position = slotWorldCenter;
             
-            Log($"Slot center (canvas): {slotCanvasPos}, Visual bottom-left: {visualBottomLeft}, Size: {itemVisualSize}");
+            // Now offset by half size to center it (since pivot is bottom-left)
+            // Work in anchored position space after setting world position
+            tempRT.anchoredPosition -= itemVisualSize * 0.5f;
+            
+            Log($"Slot world center: {slotWorldCenter}, Visual anchored pos: {tempRT.anchoredPosition}, Size: {itemVisualSize}");
             
             // Add visual component with item's TRUE grid size
             tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
