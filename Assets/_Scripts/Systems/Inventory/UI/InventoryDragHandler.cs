@@ -151,19 +151,15 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 mouseCanvasPos
             );
             
-            // Get item's current position in canvas space
-            Vector3 itemWorldPos = itemVisual.transform.position;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRoot,
-                itemWorldPos,
-                null,
-                out Vector2 itemCanvasPos
-            );
+            // Get item's current position in canvas local space
+            // Use InverseTransformPoint to properly convert from world space to canvas local space
+            RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
+            Vector2 itemCanvasPos = canvasRoot.InverseTransformPoint(itemRT.position);
             
             // This offset is set ONCE and never changes during the drag!
             mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
             
-            Log($"Grid drag started - Canvas offset (LOCKED): {mouseDragCanvasOffset}");
+            Log($"Grid drag - Mouse: {mouseCanvasPos}, Item: {itemCanvasPos}, Offset: {mouseDragCanvasOffset}");
 
             // Start drag
             StartDragInternal(itemVisual, placedItem, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
@@ -187,7 +183,7 @@ namespace TimeGame.Systems.Inventory.UI
             // Store click offset - this NEVER changes during the drag!
             mouseDragCanvasOffset = clickOffsetInCanvasSpace;
             
-            Log($"Equipment drag started with offset (LOCKED): {clickOffsetInCanvasSpace}");
+            Log($"Equipment drag - Offset: {clickOffsetInCanvasSpace}");
             
             // Grid offset is zero (equipment slots don't have grid positions)
             mouseDragGridPositionOffset = Vector2Int.zero;
@@ -365,7 +361,6 @@ namespace TimeGame.Systems.Inventory.UI
                 draggingPlacedObject.transform.SetParent(canvasRoot, worldPositionStays: true);
                 
                 // DON'T recalculate offset! The offset was set at drag start and NEVER changes.
-                // This is what keeps the item locked to the same spot on the cursor!
                 
                 currentGrid = null;
             }
@@ -379,7 +374,6 @@ namespace TimeGame.Systems.Inventory.UI
             );
 
             // Item position = mouse position - ORIGINAL offset
-            // This keeps the item glued to the same spot on the cursor throughout the entire drag!
             itemRT.anchoredPosition = mouseCanvasPos - mouseDragCanvasOffset;
         }
 
