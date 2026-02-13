@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory.UI
@@ -166,31 +167,29 @@ namespace TimeGame.Systems.Inventory.UI
             // Parent to canvas with worldPositionStays TRUE to maintain world position
             tempRT.SetParent(canvasRT, worldPositionStays: true);
             
+            // Add visual component - Initialize() will set the size based on gridCellSize!
+            tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
+            tempVisual.Initialize(draggedItem, itemDef, gridCellSize, null);
+            
             // Get the slot's center in world space
             Vector3 slotWorldCenter = slotRT.TransformPoint(slotRT.rect.center);
             
-            // Calculate item's visual size at grid scale
+            // Calculate item's visual size (should match what Initialize set)
             Vector2 itemVisualSize = new Vector2(
                 itemDef.Width * gridCellSize,
                 itemDef.Height * gridCellSize
             );
             
-            // CRITICAL: Set the RectTransform's actual size!
-            tempRT.sizeDelta = itemVisualSize;
-            
             // Set world position to slot center
             tempRT.position = slotWorldCenter;
             
             // Now offset by half size to center it (since pivot is bottom-left)
-            // Work in anchored position space after setting world position
             tempRT.anchoredPosition -= itemVisualSize * 0.5f;
             
-            Log($"Slot world center: {slotWorldCenter}, Visual anchored pos: {tempRT.anchoredPosition}, Size: {itemVisualSize}");
+            // Force layout rebuild to ensure child visual updates
+            LayoutRebuilder.ForceRebuildLayoutImmediate(tempRT);
             
-            // Add visual component with item's TRUE grid size
-            tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
-            tempVisual.Initialize(draggedItem, itemDef, gridCellSize, null);
-            
+            Log($"Slot world center: {slotWorldCenter}, Visual size: {tempRT.sizeDelta}, Anchored pos: {tempRT.anchoredPosition}");
             Log($"Initialized visual with grid cell size: {gridCellSize}");
         }
 
