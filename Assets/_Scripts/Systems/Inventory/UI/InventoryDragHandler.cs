@@ -298,7 +298,7 @@ namespace TimeGame.Systems.Inventory.UI
                     Log($"Switched from {currentGrid.GetDisplayName()} to {targetGrid.GetDisplayName()}");
                 }
                 
-                draggingPlacedObject.transform.SetParent(targetGrid.GetRectTransform(), true);
+                draggingPlacedObject.transform.SetParent(targetGrid.GetRectTransform(), worldPositionStays: true);
                 currentGrid = targetGrid;
             }
 
@@ -347,11 +347,11 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 Log("Exited grid - entering free-float mode");
                 
-                // SIMPLE FIX: Just reparent and let Unity maintain the world position
-                // Then recalculate offset based on where the item ended up
+                // Reparent to canvas maintaining world position
                 draggingPlacedObject.transform.SetParent(canvasRoot, worldPositionStays: true);
                 
-                // Now calculate the offset between mouse and item in canvas space
+                // DON'T recalculate offset - instead, calculate where mouse is NOW
+                // and where item is NOW, then derive the offset that keeps them aligned
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     canvasRoot,
                     mouseScreenPos,
@@ -359,18 +359,18 @@ namespace TimeGame.Systems.Inventory.UI
                     out Vector2 mouseCanvasPos
                 );
                 
-                // Item's position in canvas space (Unity converted it when we reparented)
+                // Item's CURRENT position in canvas space (after reparenting)
                 Vector2 itemCanvasPos = itemRT.anchoredPosition;
                 
-                // Update offset to maintain visual continuity
+                // Calculate the offset to maintain current visual relationship
                 mouseDragAnchoredPositionOffset = mouseCanvasPos - itemCanvasPos;
                 
-                Log($"Recalculated free-float offset: {mouseDragAnchoredPositionOffset}");
+                Log($"Free-float offset: {mouseDragAnchoredPositionOffset} (mouse: {mouseCanvasPos}, item: {itemCanvasPos})");
                 
                 currentGrid = null;
             }
 
-            // Position item at mouse cursor with preserved click offset
+            // Position item at mouse cursor with offset
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRoot,
                 mouseScreenPos,
@@ -422,7 +422,7 @@ namespace TimeGame.Systems.Inventory.UI
             // If starting in free-float mode, parent to canvas immediately
             if (currentGrid == null && canvasRoot != null)
             {
-                visual.transform.SetParent(canvasRoot, true);
+                visual.transform.SetParent(canvasRoot, worldPositionStays: true);
                 Log("Started drag in free-float mode");
             }
             else if (currentGrid != null)
@@ -440,7 +440,7 @@ namespace TimeGame.Systems.Inventory.UI
                 // Return to grid
                 if (draggingPlacedObject.transform.parent != originalGrid.GetRectTransform())
                 {
-                    draggingPlacedObject.transform.SetParent(originalGrid.GetRectTransform(), true);
+                    draggingPlacedObject.transform.SetParent(originalGrid.GetRectTransform(), worldPositionStays: true);
                 }
                 
                 originalGrid.InventorySystem.TryAddItem(itemDef, originalGridPosition, originalDir, out _);
