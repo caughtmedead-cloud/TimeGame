@@ -286,10 +286,18 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void UpdateGridMode(InventoryGridVisual targetGrid, Vector2 mouseScreenPos)
         {
-            // Transition from free-float → grid?
+            // Transition from free-float → grid OR switching grids?
             if (currentGrid != targetGrid)
             {
-                Log($"Entered grid: {targetGrid.GetDisplayName()}");
+                if (currentGrid == null)
+                {
+                    Log($"Entered grid: {targetGrid.GetDisplayName()}");
+                }
+                else
+                {
+                    Log($"Switched from {currentGrid.GetDisplayName()} to {targetGrid.GetDisplayName()}");
+                }
+                
                 draggingPlacedObject.transform.SetParent(targetGrid.GetRectTransform(), true);
                 currentGrid = targetGrid;
             }
@@ -447,13 +455,17 @@ namespace TimeGame.Systems.Inventory.UI
             // Check all registered drop targets
             foreach (RaycastResult result in results)
             {
+                // Skip if it's the dragging item itself
+                if (draggingPlacedObject != null && result.gameObject == draggingPlacedObject.gameObject)
+                    continue;
+
                 foreach (IInventoryDropTarget target in registeredTargets)
                 {
                     // Check if this GameObject is part of the target
                     if (target is MonoBehaviour targetMono)
                     {
                         if (result.gameObject == targetMono.gameObject ||
-                            result.gameObject.GetComponentInParent<MonoBehaviour>() == targetMono)
+                            result.gameObject.transform.IsChildOf(targetMono.transform))
                         {
                             return target;
                         }
