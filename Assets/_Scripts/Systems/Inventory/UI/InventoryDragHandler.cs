@@ -196,9 +196,18 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (draggingPlacedObject == null)
             {
-                Debug.LogWarning("[InventoryDragHandler] OnItemEndDrag called but not dragging!");
+                Debug.LogWarning($"[InventoryDragHandler] OnItemEndDrag({itemInstanceID}) called but NOT DRAGGING!");
                 return;
             }
+
+            // CRITICAL: Check if this is a duplicate call
+            if (draggingPlacedObject.PlacedItem.InstanceID != itemInstanceID)
+            {
+                Debug.LogError($"[InventoryDragHandler] ID MISMATCH! Dragging {draggingPlacedObject.PlacedItem.InstanceID} but OnItemEndDrag called with {itemInstanceID}");
+                return;
+            }
+
+            Debug.Log($"[InventoryDragHandler] >>> BEGIN OnItemEndDrag({itemInstanceID}) <<<");
 
             // Try to find a drop target under mouse
             Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
@@ -208,6 +217,8 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (dropTarget != null)
             {
+                Debug.Log($"[InventoryDragHandler] Drop target found: {dropTarget.GetDisplayName()}");
+                
                 // Calculate local mouse position for this target
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     dropTarget.GetRectTransform(),
@@ -223,38 +234,44 @@ namespace TimeGame.Systems.Inventory.UI
 
                 if (dropped)
                 {
+                    Debug.Log($"[InventoryDragHandler] PLACEMENT SUCCESSFUL in {dropTarget.GetDisplayName()}");
+                    
                     // SUCCESS: Now remove from original grid
                     if (originalGrid != null)
                     {
-                        originalGrid.InventorySystem.RemoveItem(itemInstanceID);
-                        Debug.Log($"[InventoryDragHandler] ✓ Moved from {originalGrid.GetDisplayName()} → {dropTarget.GetDisplayName()}");
+                        bool removed = originalGrid.InventorySystem.RemoveItem(itemInstanceID);
+                        Debug.Log($"[InventoryDragHandler] ✓ Removed from original grid {originalGrid.GetDisplayName()}: {removed}");
                     }
                     else
                     {
-                        Debug.Log($"[InventoryDragHandler] ✓ Placed in {dropTarget.GetDisplayName()}");
+                        Debug.Log($"[InventoryDragHandler] No original grid to remove from");
                     }
                     
                     // Destroy the temp visual (target created its own)
+                    Debug.Log($"[InventoryDragHandler] Destroying drag visual...");
                     Destroy(draggingPlacedObject.gameObject);
                 }
                 else
                 {
                     // FAILED: Return to original (item never removed, so data is safe)
-                    Debug.Log($"[InventoryDragHandler] ✗ Cannot place - returning to original");
+                    Debug.Log($"[InventoryDragHandler] ✗ PLACEMENT FAILED in {dropTarget.GetDisplayName()} - returning to original");
                     ReturnToOriginalPosition();
                 }
             }
             else
             {
                 // No target: Return to original
-                Debug.Log($"[InventoryDragHandler] ✗ No target - returning to original");
+                Debug.Log($"[InventoryDragHandler] ✗ NO DROP TARGET - returning to original");
                 ReturnToOriginalPosition();
             }
 
             // Clear drag state
+            Debug.Log($"[InventoryDragHandler] Clearing drag state...");
             draggingPlacedObject = null;
             currentGrid = null;
             originalSource = null;
+            
+            Debug.Log($"[InventoryDragHandler] >>> END OnItemEndDrag({itemInstanceID}) <<<");
         }
 
         #endregion
@@ -407,10 +424,25 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void ReturnToOriginalPosition()
         {
+            Debug.Log($"[InventoryDragHandler] >>> ReturnToOriginalPosition called <<<");
+            
             InventoryItemSO itemDef = originalPlacedItem.ItemDefinition as InventoryItemSO;
             
             if (originalGrid != null)
             {
+                Debug.Log($"[InventoryDragHandler] Returning to GRID: {originalGrid.GetDisplayName()}");
+                
+                // Check if item is still in the grid
+                PlacedItem stillThere = originalGrid.InventorySystem.GetItemByID(originalPlacedItem.InstanceID);
+                if (stillThere != null)
+                {
+                    Debug.Log($"[InventoryDragHandler] Item STILL IN GRID - just destroying visual");
+                }
+                else
+                {
+                    Debug.LogError($"[InventoryDragHandler] Item NOT IN GRID! This means it was removed when it shouldn't have been!");
+                }
+                
                 // Return to grid
                 if (draggingPlacedObject.transform.parent != originalGrid.GetRectTransform())
                 {
@@ -419,23 +451,27 @@ namespace TimeGame.Systems.Inventory.UI
                 
                 // Item is still in original grid - just destroy the temp visual
                 Destroy(draggingPlacedObject.gameObject);
-                Debug.Log($"[InventoryDragHandler] Returned to: {originalGrid.GetDisplayName()}");
+                Debug.Log($"[InventoryDragHandler] Destroyed drag visual, item remains in {originalGrid.GetDisplayName()}");
             }
             else if (originalSource != null)
             {
+                Debug.Log($"[InventoryDragHandler] Returning to EQUIPMENT: {originalSource.GetDisplayName()}");
+                
                 // Return to equipment slot (or other non-grid source)
                 originalSource.TryPlaceItem(itemDef, originalDir, Vector2.zero, out _);
                 
                 // Destroy temp visual since equipment slot will create its own
                 Destroy(draggingPlacedObject.gameObject);
-                Debug.Log($"[InventoryDragHandler] Returned to: {originalSource.GetDisplayName()}");
+                Debug.Log($"[InventoryDragHandler] Re-equipped item in {originalSource.GetDisplayName()}");
             }
             else
             {
                 // No original source - just destroy the visual
-                Debug.LogWarning("[InventoryDragHandler] No original source to return to! Destroying visual.");
+                Debug.LogError("[InventoryDragHandler] NO ORIGINAL SOURCE! Item data will be lost!");
                 Destroy(draggingPlacedObject.gameObject);
             }
+            
+            Debug.Log($"[InventoryDragHandler] >>> ReturnToOriginalPosition complete <<<");
         }
 
         private IInventoryDropTarget GetDropTargetUnderMouse(Vector2 screenPosition)
