@@ -97,10 +97,11 @@ namespace TimeGame.Systems.Inventory.UI
             CreateTempVisual(itemDef);
 
             // Calculate click offset in canvas space
+            // Visual is already parented to canvas, so both mouse and visual are in the same coordinate system!
             RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
             RectTransform visualRT = tempVisual.GetComponent<RectTransform>();
             
-            // Convert mouse screen position to canvas local position
+            // Convert mouse screen position to canvas anchored position
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRT,
                 eventData.position,
@@ -108,11 +109,10 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 mouseCanvasPos
             );
             
-            // Visual's anchored position in canvas space
+            // Visual's position in canvas anchored position space (same coordinate system as mouse!)
             Vector2 visualCanvasPos = visualRT.anchoredPosition;
             
             // Calculate offset: how far is the click from the visual's bottom-left corner?
-            // Since visual has bottom-left pivot, anchoredPosition IS the bottom-left corner
             Vector2 clickOffset = mouseCanvasPos - visualCanvasPos;
             
             Log($"Mouse canvas pos: {mouseCanvasPos}, Visual canvas pos: {visualCanvasPos}, Click offset: {clickOffset}");
@@ -161,27 +161,19 @@ namespace TimeGame.Systems.Inventory.UI
             tempRT.anchorMax = Vector2.zero;
             tempRT.pivot = new Vector2(0, 0); // Bottom-left pivot
             
-            // CRITICAL: Position visual at equipment slot's center, accounting for item's true size
-            // Equipment slot displays items at arbitrary size, but the dragged visual 
-            // should be at the item's TRUE grid size
-            
-            RectTransform slotRT = equipmentSlot.GetRectTransform();
-            RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
-            
-            // Get slot's position in canvas space
-            Vector2 slotScreenPos = slotRT.position;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRT,
-                slotScreenPos,
-                null,
-                out Vector2 slotCanvasPos
-            );
-            
             // Calculate item's visual size at grid scale
             Vector2 itemVisualSize = new Vector2(
                 itemDef.Width * gridCellSize,
                 itemDef.Height * gridCellSize
             );
+            
+            // Position visual at equipment slot's position in canvas space
+            // CRITICAL: Use proper coordinate conversion - equipment slot → canvas anchored position
+            RectTransform slotRT = equipmentSlot.GetRectTransform();
+            RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
+            
+            // Convert slot's world position to canvas anchored position
+            Vector2 slotCanvasPos = canvasRT.InverseTransformPoint(slotRT.position);
             
             // Position visual so its CENTER aligns with equipment slot's center
             // Since visual has bottom-left pivot, we offset by half the size
