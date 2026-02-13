@@ -175,6 +175,9 @@ namespace TimeGame.Systems.Inventory.UI
                 itemDef.Height * gridCellSize
             );
             
+            // CRITICAL: Set the RectTransform's actual size!
+            tempRT.sizeDelta = itemVisualSize;
+            
             // Set world position to slot center
             tempRT.position = slotWorldCenter;
             
