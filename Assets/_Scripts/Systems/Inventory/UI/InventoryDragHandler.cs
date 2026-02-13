@@ -344,7 +344,42 @@ namespace TimeGame.Systems.Inventory.UI
             if (currentGrid != null)
             {
                 Log("Exited grid - entering free-float mode");
+                
+                // CRITICAL FIX: Recalculate offset when transitioning to free-float
+                // The offset we calculated in grid space doesn't work in canvas space!
+                
+                RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
+                
+                // Get current item position in canvas space BEFORE reparenting
+                Vector3 itemWorldPos = itemRT.position;
+                
+                // Reparent to canvas
                 draggingPlacedObject.transform.SetParent(canvasRoot, true);
+                
+                // Get item's new position in canvas local space
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    canvasRoot,
+                    itemWorldPos,
+                    null,
+                    out Vector2 itemCanvasPos
+                );
+                
+                // Set the visual's position in canvas space
+                itemRT.anchoredPosition = itemCanvasPos;
+                
+                // Calculate NEW offset based on current mouse and item position in canvas space
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    canvasRoot,
+                    mouseScreenPos,
+                    null,
+                    out Vector2 mouseCanvasPos
+                );
+                
+                // Update offset to maintain visual continuity
+                mouseDragAnchoredPositionOffset = mouseCanvasPos - itemRT.anchoredPosition;
+                
+                Log($"Recalculated free-float offset: {mouseDragAnchoredPositionOffset}");
+                
                 currentGrid = null;
             }
 
@@ -356,11 +391,11 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 localMousePos
             );
 
-            RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
+            RectTransform itemRT2 = draggingPlacedObject.GetComponent<RectTransform>();
             Vector2 targetPos = localMousePos - mouseDragAnchoredPositionOffset;
             
             // Faster lerp for free-floating (more responsive feel)
-            itemRT.anchoredPosition = Vector2.Lerp(itemRT.anchoredPosition, targetPos, Time.deltaTime * 30f);
+            itemRT2.anchoredPosition = Vector2.Lerp(itemRT2.anchoredPosition, targetPos, Time.deltaTime * 30f);
         }
 
         private void UpdateRotation()
