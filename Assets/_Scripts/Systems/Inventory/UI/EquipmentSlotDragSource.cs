@@ -86,6 +86,7 @@ namespace TimeGame.Systems.Inventory.UI
             Vector2 clickOffset = mouseCanvasPos - visualCanvasPos;
             
             Log($"Click offset: {clickOffset}");
+            Log($"Mouse canvas pos: {mouseCanvasPos}, Visual canvas pos: {visualCanvasPos}");
             
             // Start drag using equipment slot as source
             dragHandler.StartDragWithExistingVisual(
@@ -115,29 +116,26 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Create a temporary grid-sized visual for dragging.
-        /// This visual is NOT part of any grid - it's standalone.
+        /// Visual starts at equipment slot position, then drag handler moves it.
         /// </summary>
         private InventoryItemVisual CreateDragVisual(InventoryItemSO itemDef, PlacedItem placedItem)
         {
             // Create GameObject
             GameObject visualObj = new GameObject($"Drag_{itemDef.ItemName}");
-            visualObj.transform.SetParent(canvasRoot, false);
             
-            // Add RectTransform
+            // Add RectTransform FIRST
             RectTransform rt = visualObj.AddComponent<RectTransform>();
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.zero;
             rt.pivot = new Vector2(0, 0);
             
-            // Position at mouse
-            Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRoot,
-                mouseScreenPos,
-                null,
-                out Vector2 mouseCanvasPos
-            );
-            rt.anchoredPosition = mouseCanvasPos;
+            // Parent to equipment slot first, centered
+            visualObj.transform.SetParent(equipmentSlot.transform, false);
+            rt.anchoredPosition = Vector2.zero; // Center on equipment slot
+            
+            // Now parent to canvas, maintaining world position
+            // This is the SAME technique grid drags use!
+            visualObj.transform.SetParent(canvasRoot, worldPositionStays: true);
             
             // Add Image for visual
             Image image = visualObj.AddComponent<Image>();
