@@ -243,20 +243,19 @@ namespace TimeGame.Systems.Inventory.UI
                     originalGrid.InventorySystem.RemoveItem(itemInstanceID);
                 }
 
-                // WYSIWYG FIX: For grids, use direct inventory system call with grid position
-                // Avoids precision loss from local→grid→local→grid round-trip conversion
+                // WYSIWYG - THE RIGHT WAY: Use the visual's actual position!
+                // The visual is already snapped to where it should land. Just use that!
                 if (dropTarget is InventoryGridVisual targetGrid)
                 {
-                    // Convert to grid position
-                    Vector2Int mouseGridPos = targetGrid.LocalPositionToGridPosition(mouseLocalPos);
+                    // The visual is ALREADY positioned where it should go
+                    // Just read its grid position and use that!
+                    RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
+                    Vector2Int visualGridPos = targetGrid.LocalPositionToGridPosition(itemRT.anchoredPosition);
                     
-                    // Apply the drag offset (same as we do during drag)
-                    Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
+                    Debug.Log($"[InventoryDragHandler] PLACEMENT - Using visual's grid position: {visualGridPos}");
                     
-                    Debug.Log($"[InventoryDragHandler] PLACEMENT - mouseGridPos={mouseGridPos}, dragOffset={mouseDragGridPositionOffset}, placementGridPos={placementGridPos}");
-                    
-                    // Call inventory system DIRECTLY with grid position (no round-trip conversion!)
-                    dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placementGridPos, dir, out placedItem);
+                    // Call inventory system DIRECTLY with the visual's position
+                    dropped = targetGrid.InventorySystem.TryAddItem(itemDef, visualGridPos, dir, out placedItem);
                 }
                 else
                 {
@@ -364,17 +363,29 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 mouseLocalPos
             );
             
+            // Get item definition once
+            InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
+            
             // Calculate where item will land
             Vector2Int mouseGridPos = currentGrid.LocalPositionToGridPosition(mouseLocalPos);
-            Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
+            
+            // FIX: When offset is (0,0) (dragging from equipment), center item under cursor
+            Vector2Int dragOffset = mouseDragGridPositionOffset;
+            if (dragOffset == Vector2Int.zero && itemDef != null)
+            {
+                // Center the item: offset = itemSize / 2
+                Vector2Int itemSize = new Vector2Int(itemDef.GetRotatedWidth(dir), itemDef.GetRotatedHeight(dir));
+                dragOffset = new Vector2Int(itemSize.x / 2, itemSize.y / 2);
+            }
+            
+            Vector2Int placementGridPos = mouseGridPos - dragOffset;
             
             if (verboseLogging)
             {
-                Debug.Log($"[InventoryDragHandler] UPDATE VISUAL - mouseGridPos={mouseGridPos}, dragOffset={mouseDragGridPositionOffset}, visualPlacement={placementGridPos}");
+                Debug.Log($"[InventoryDragHandler] UPDATE VISUAL - mouseGridPos={mouseGridPos}, dragOffset={dragOffset}, visualPlacement={placementGridPos}");
             }
             
             // Clamp to grid boundaries
-            InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
             if (itemDef != null)
             {
                 Vector2Int itemSize = new Vector2Int(itemDef.GetRotatedWidth(dir), itemDef.GetRotatedHeight(dir));
