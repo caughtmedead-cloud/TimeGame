@@ -40,7 +40,6 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2Int mouseDragGridPositionOffset;        // Grid offset (for grid mode)
         private Vector2 mouseDragAnchoredPositionOffset;       // Pixel offset (for free-float mode)
         private GridDirection dir;                             // Current rotation
-        private bool forceGridMode = false;                    // Flag to prevent equipment drags from being hijacked by grids
         
         // Original state for returning item if drop fails
         private InventoryGridVisual originalGrid;              // Null if dragged from equipment slot
@@ -154,8 +153,7 @@ namespace TimeGame.Systems.Inventory.UI
                 mouseDragAnchoredPositionOffset += new Vector2(rotationOffset.x, rotationOffset.y) * sourceGrid.CellSize;
             }
 
-            // Start drag in grid mode (allow grid snapping)
-            forceGridMode = false;
+            // Start drag
             StartDragInternal(itemVisual, placedItem, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
         }
 
@@ -179,10 +177,6 @@ namespace TimeGame.Systems.Inventory.UI
             
             // Grid offset is zero (equipment slots don't have grid positions)
             mouseDragGridPositionOffset = Vector2Int.zero;
-
-            // CRITICAL: Force free-float mode for equipment slot drags
-            // This prevents the drag from being hijacked by grid detection in Update()
-            forceGridMode = true;
 
             // Start drag in free-float mode (currentGrid = null)
             StartDragInternal(visual, placedItem, null, sourceTarget, Vector2Int.zero, placedItem.Rotation);
@@ -250,7 +244,6 @@ namespace TimeGame.Systems.Inventory.UI
             draggingPlacedObject = null;
             currentGrid = null;
             originalSource = null;
-            forceGridMode = false;
         }
 
         #endregion
@@ -274,22 +267,11 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Determine drag mode based on mouse position
             Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
-            
-            // If we're in forced free-float mode (from equipment slot), allow entering grids
-            // but once we leave a grid, don't snap back to it
-            InventoryGridVisual targetGrid = null;
-            
-            if (!forceGridMode || currentGrid != null)
-            {
-                // Normal behavior: detect grids and allow snapping
-                targetGrid = GetGridUnderMouse(mouseScreenPos);
-            }
-            
+            InventoryGridVisual targetGrid = GetGridUnderMouse(mouseScreenPos);
+
             if (targetGrid != null)
             {
                 // GRID MODE: Snap to cells and lerp
-                // Once we enter a grid from equipment slot, disable force mode
-                forceGridMode = false;
                 UpdateGridMode(targetGrid, mouseScreenPos);
             }
             else
@@ -358,34 +340,18 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void UpdateFreeFloatMode(Vector2 mouseScreenPos)
         {
+            RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
+            
             // Transition from grid → free-float?
             if (currentGrid != null)
             {
                 Log("Exited grid - entering free-float mode");
                 
-                // CRITICAL FIX: Recalculate offset when transitioning to free-float
-                // The offset we calculated in grid space doesn't work in canvas space!
+                // SIMPLE FIX: Just reparent and let Unity maintain the world position
+                // Then recalculate offset based on where the item ended up
+                draggingPlacedObject.transform.SetParent(canvasRoot, worldPositionStays: true);
                 
-                RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
-                
-                // Get current item position in canvas space BEFORE reparenting
-                Vector3 itemWorldPos = itemRT.position;
-                
-                // Reparent to canvas
-                draggingPlacedObject.transform.SetParent(canvasRoot, true);
-                
-                // Get item's new position in canvas local space
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    canvasRoot,
-                    itemWorldPos,
-                    null,
-                    out Vector2 itemCanvasPos
-                );
-                
-                // Set the visual's position in canvas space
-                itemRT.anchoredPosition = itemCanvasPos;
-                
-                // Calculate NEW offset based on current mouse and item position in canvas space
+                // Now calculate the offset between mouse and item in canvas space
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     canvasRoot,
                     mouseScreenPos,
@@ -393,8 +359,11 @@ namespace TimeGame.Systems.Inventory.UI
                     out Vector2 mouseCanvasPos
                 );
                 
+                // Item's position in canvas space (Unity converted it when we reparented)
+                Vector2 itemCanvasPos = itemRT.anchoredPosition;
+                
                 // Update offset to maintain visual continuity
-                mouseDragAnchoredPositionOffset = mouseCanvasPos - itemRT.anchoredPosition;
+                mouseDragAnchoredPositionOffset = mouseCanvasPos - itemCanvasPos;
                 
                 Log($"Recalculated free-float offset: {mouseDragAnchoredPositionOffset}");
                 
@@ -409,11 +378,10 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 localMousePos
             );
 
-            RectTransform itemRT2 = draggingPlacedObject.GetComponent<RectTransform>();
             Vector2 targetPos = localMousePos - mouseDragAnchoredPositionOffset;
             
             // Faster lerp for free-floating (more responsive feel)
-            itemRT2.anchoredPosition = Vector2.Lerp(itemRT2.anchoredPosition, targetPos, Time.deltaTime * 30f);
+            itemRT.anchoredPosition = Vector2.Lerp(itemRT.anchoredPosition, targetPos, Time.deltaTime * 30f);
         }
 
         private void UpdateRotation()
