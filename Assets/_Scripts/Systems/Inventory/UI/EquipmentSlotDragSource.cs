@@ -102,7 +102,7 @@ namespace TimeGame.Systems.Inventory.UI
             // Add grid visual component
             tempGrid = tempGridObject.AddComponent<InventoryGridVisual>();
             
-            // Initialize with item's size (using dummy values for origin/weight)
+            // Initialize with item-sized inventory system
             tempGrid.Initialize(
                 new InventorySystem(
                     width: itemDef.Width, 
@@ -110,9 +110,7 @@ namespace TimeGame.Systems.Inventory.UI
                     cellSize: 64f,
                     origin: Vector3.zero,
                     maxWeight: 999f
-                ),
-                cellSize: 64f,
-                maxWeight: null
+                )
             );
             
             // Make invisible
