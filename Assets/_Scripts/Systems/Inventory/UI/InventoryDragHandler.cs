@@ -369,11 +369,11 @@ namespace TimeGame.Systems.Inventory.UI
                     canvasRoot,
                     mouseScreenPos,
                     null,
-                    out Vector2 mouseCanvasPos
+                    out Vector2 currentMousePos
                 );
                 
                 Vector2 itemCanvasPos = itemRT.anchoredPosition;
-                mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
+                mouseDragCanvasOffset = currentMousePos - itemCanvasPos;
                 
                 Log($"Free-float offset recalculated: {mouseDragCanvasOffset}");
                 
