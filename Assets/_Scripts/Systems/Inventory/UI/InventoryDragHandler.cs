@@ -229,23 +229,7 @@ namespace TimeGame.Systems.Inventory.UI
                 );
 
                 InventoryItemSO itemDef = originalPlacedItem.ItemDefinition as InventoryItemSO;
-
-                // CRITICAL FIX: Account for drag offset when placing in grids
-                // The visual is centered on cursor, but placement needs the anchor position
-                Vector2 placementLocalPos = mouseLocalPos;
-                if (dropTarget is InventoryGridVisual targetGrid)
-                {
-                    // Convert to grid position
-                    Vector2Int mouseGridPos = targetGrid.LocalPositionToGridPosition(mouseLocalPos);
-                    
-                    // Apply the offset (same as we do during drag)
-                    Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
-                    
-                    // Convert back to local position for TryPlaceItem
-                    placementLocalPos = targetGrid.GridPositionToLocalPosition(placementGridPos);
-                    
-                    Debug.Log($"[InventoryDragHandler] Grid placement: mouse={mouseGridPos}, offset={mouseDragGridPositionOffset}, placement={placementGridPos}");
-                }
+                PlacedItem placedItem = null;
 
                 // CRITICAL FIX: Same-grid movement issue
                 // If moving within the same grid, remove item BEFORE checking placement
@@ -257,8 +241,26 @@ namespace TimeGame.Systems.Inventory.UI
                     originalGrid.InventorySystem.RemoveItem(itemInstanceID);
                 }
 
-                // Try to place the item
-                dropped = dropTarget.TryPlaceItem(itemDef, dir, placementLocalPos, out PlacedItem placedItem);
+                // WYSIWYG FIX: For grids, use direct inventory system call with grid position
+                // Avoids precision loss from local→grid→local→grid round-trip conversion
+                if (dropTarget is InventoryGridVisual targetGrid)
+                {
+                    // Convert to grid position
+                    Vector2Int mouseGridPos = targetGrid.LocalPositionToGridPosition(mouseLocalPos);
+                    
+                    // Apply the offset (same as we do during drag)
+                    Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
+                    
+                    Debug.Log($"[InventoryDragHandler] Grid placement: mouse={mouseGridPos}, offset={mouseDragGridPositionOffset}, placement={placementGridPos}");
+                    
+                    // Call inventory system DIRECTLY with grid position (no round-trip conversion!)
+                    dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placementGridPos, dir, out placedItem);
+                }
+                else
+                {
+                    // Non-grid drop target (equipment slot, etc.) - use interface method
+                    dropped = dropTarget.TryPlaceItem(itemDef, dir, mouseLocalPos, out placedItem);
+                }
 
                 if (dropped)
                 {
