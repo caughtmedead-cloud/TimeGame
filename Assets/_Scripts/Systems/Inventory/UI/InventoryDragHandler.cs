@@ -476,8 +476,9 @@ namespace TimeGame.Systems.Inventory.UI
                     // Item was removed (same-grid move) - need to add it back!
                     Debug.Log($"[InventoryDragHandler] Item NOT IN GRID - re-adding at original position");
                     
-                    // Re-add item at original position
-                    bool readded = originalGrid.InventorySystem.PlaceItem(
+                    // Re-add item at original position WITH SAME INSTANCE ID
+                    bool readded = originalGrid.InventorySystem.TryAddItem(
+                        originalPlacedItem.InstanceID,
                         itemDef,
                         originalGridPosition,
                         originalDir,
