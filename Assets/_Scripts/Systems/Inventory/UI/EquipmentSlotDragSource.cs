@@ -106,7 +106,14 @@ namespace TimeGame.Systems.Inventory.UI
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            // Drag handler owns the visual now - it will clean up
+            if (dragHandler != null && draggedPlacedItem != null)
+            {
+                // CRITICAL: Tell drag handler the drag ended so it can complete drop/return
+                dragHandler.OnItemEndDrag(draggedPlacedItem.InstanceID);
+                Log("Notified drag handler of end");
+            }
+            
+            // Clear local state
             dragVisual = null;
             draggedItem = null;
             draggedPlacedItem = null;
