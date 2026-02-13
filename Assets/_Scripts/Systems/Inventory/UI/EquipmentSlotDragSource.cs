@@ -1,24 +1,27 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
-    /// Makes equipment slot items draggable using StartDragWithExistingVisual.
-    /// Creates a temporary grid, places item, gets the visual, then starts drag.
+    /// Drag source for equipment slots.
+    /// Creates a temporary grid-sized visual for dragging.
+    /// NO temp grids - just creates visual from item data.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
+    public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         private EquipmentSlot equipmentSlot;
         private InventoryDragHandler dragHandler;
         private RectTransform canvasRoot;
         
-        // Temporary grid for drag operation
-        private GameObject tempGridObject;
-        private InventoryGridVisual tempGrid;
+        // Drag state
+        private InventoryItemVisual dragVisual;
+        private InventoryItemSO draggedItem;
+        private PlacedItem draggedPlacedItem;
         
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = true;
@@ -52,23 +55,22 @@ namespace TimeGame.Systems.Inventory.UI
                 return;
             }
 
-            InventoryItemSO itemDef = equipmentSlot.EquippedItem;
-            Log($"Beginning drag of {itemDef.ItemName}");
+            draggedItem = equipmentSlot.EquippedItem;
+            Log($"Beginning drag of {draggedItem.ItemName}");
             
-            // Unequip from slot
+            // Create PlacedItem data (for drag handler)
+            draggedPlacedItem = new PlacedItem(
+                equipmentSlot.GetEquippedItemID(),
+                draggedItem,
+                Vector2Int.zero,
+                GridDirection.Down
+            );
+            
+            // Unequip from slot (this hides the slot visual)
             equipmentSlot.UnequipItem();
             
-            // Create temporary grid and add item
-            tempGrid = CreateTempGridAndAddItem(itemDef, out PlacedItem placedItem);
-            
-            // Get the visual that was spawned
-            InventoryItemVisual visual = tempGrid.transform.GetComponentInChildren<InventoryItemVisual>();
-            if (visual == null)
-            {
-                Debug.LogError("[EquipmentSlotDragSource] Could not find visual in temp grid!");
-                CleanupTempGrid();
-                return;
-            }
+            // Create grid-sized drag visual
+            dragVisual = CreateDragVisual(draggedItem, draggedPlacedItem);
             
             // Calculate click offset in canvas space
             Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
@@ -79,27 +81,21 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 mouseCanvasPos
             );
             
-            // Parent visual to canvas to get its position in canvas space
-            RectTransform visualRT = visual.GetComponent<RectTransform>();
-            visualRT.SetParent(canvasRoot, worldPositionStays: true);
-            
+            RectTransform visualRT = dragVisual.GetComponent<RectTransform>();
             Vector2 visualCanvasPos = visualRT.anchoredPosition;
             Vector2 clickOffset = mouseCanvasPos - visualCanvasPos;
             
             Log($"Click offset: {clickOffset}");
             
-            // Register temp grid as drop target
-            dragHandler.RegisterDropTarget(tempGrid);
-            
-            // Start drag using the correct method for equipment slots
+            // Start drag using equipment slot as source
             dragHandler.StartDragWithExistingVisual(
-                visual, 
-                placedItem, 
-                equipmentSlot,  // Equipment slot is the source
+                dragVisual,
+                draggedPlacedItem,
+                equipmentSlot,
                 clickOffset
             );
             
-            Log("Started drag with existing visual");
+            Log("Started drag with grid-sized visual");
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -109,61 +105,77 @@ namespace TimeGame.Systems.Inventory.UI
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            CleanupTempGrid();
+            // Drag handler owns the visual now - it will clean up
+            dragVisual = null;
+            draggedItem = null;
+            draggedPlacedItem = null;
+            
+            Log("Drag ended");
         }
 
-        private InventoryGridVisual CreateTempGridAndAddItem(InventoryItemSO itemDef, out PlacedItem placedItem)
+        /// <summary>
+        /// Create a temporary grid-sized visual for dragging.
+        /// This visual is NOT part of any grid - it's standalone.
+        /// </summary>
+        private InventoryItemVisual CreateDragVisual(InventoryItemSO itemDef, PlacedItem placedItem)
         {
-            // Create invisible grid GameObject
-            tempGridObject = new GameObject("TempEquipmentDragGrid");
-            tempGridObject.transform.SetParent(transform.root, false);
+            // Create GameObject
+            GameObject visualObj = new GameObject($"Drag_{itemDef.ItemName}");
+            visualObj.transform.SetParent(canvasRoot, false);
             
             // Add RectTransform
-            RectTransform rt = tempGridObject.AddComponent<RectTransform>();
+            RectTransform rt = visualObj.AddComponent<RectTransform>();
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.zero;
-            rt.sizeDelta = Vector2.zero;
+            rt.pivot = new Vector2(0, 0);
             
-            // Add grid visual component
-            InventoryGridVisual grid = tempGridObject.AddComponent<InventoryGridVisual>();
-            
-            // Initialize with item-sized inventory system
-            grid.Initialize(
-                new InventorySystem(
-                    width: itemDef.Width, 
-                    height: itemDef.Height,
-                    cellSize: 64f,
-                    origin: Vector3.zero,
-                    maxWeight: 999f
-                )
+            // Position at mouse
+            Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRoot,
+                mouseScreenPos,
+                null,
+                out Vector2 mouseCanvasPos
             );
+            rt.anchoredPosition = mouseCanvasPos;
             
-            // Make invisible
-            CanvasGroup cg = tempGridObject.AddComponent<CanvasGroup>();
-            cg.alpha = 0f;
-            cg.blocksRaycasts = false;
-            
-            // Add item to grid (this creates the PlacedItem and spawns visual)
-            if (!grid.InventorySystem.TryAddItem(itemDef, Vector2Int.zero, GridDirection.Down, out placedItem))
+            // Add Image for visual
+            Image image = visualObj.AddComponent<Image>();
+            if (itemDef.ItemIcon != null)
             {
-                Debug.LogError("[EquipmentSlotDragSource] Failed to add item to temp grid!");
+                image.sprite = itemDef.ItemIcon;
+            }
+            else
+            {
+                image.color = GetColorForRarity(itemDef.Rarity);
             }
             
-            Log($"Created temp grid: {itemDef.Width}x{itemDef.Height}");
+            // Add CanvasGroup
+            CanvasGroup cg = visualObj.AddComponent<CanvasGroup>();
+            cg.blocksRaycasts = false; // Don't block raycasts during drag
             
-            return grid;
+            // Add InventoryItemVisual component
+            InventoryItemVisual visual = visualObj.AddComponent<InventoryItemVisual>();
+            
+            // Initialize with grid size (64px cells)
+            float cellSize = 64f;
+            visual.Initialize(placedItem, itemDef, cellSize, null); // null = no grid
+            
+            Log($"Created drag visual: {itemDef.Width}x{itemDef.Height} at {cellSize}px cells");
+            
+            return visual;
         }
 
-        private void CleanupTempGrid()
+        private Color GetColorForRarity(ItemRarity rarity)
         {
-            if (tempGrid != null)
+            switch (rarity)
             {
-                dragHandler.UnregisterDropTarget(tempGrid);
-                Destroy(tempGridObject);
-                tempGrid = null;
-                tempGridObject = null;
-                
-                Log("Cleaned up temp grid");
+                case ItemRarity.Common: return new Color(0.7f, 0.7f, 0.7f);
+                case ItemRarity.Uncommon: return new Color(0.3f, 0.8f, 0.3f);
+                case ItemRarity.Rare: return new Color(0.3f, 0.5f, 1f);
+                case ItemRarity.Epic: return new Color(0.8f, 0.3f, 0.8f);
+                case ItemRarity.Legendary: return new Color(1f, 0.6f, 0f);
+                default: return Color.white;
             }
         }
 
