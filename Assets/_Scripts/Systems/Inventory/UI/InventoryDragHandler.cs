@@ -139,6 +139,8 @@ namespace TimeGame.Systems.Inventory.UI
 
             // CODE MONKEY: Calculate grid position offset
             mouseDragGridPositionOffset = mouseGridPosition - placedItem.AnchorPosition;
+            
+            Debug.Log($"[InventoryDragHandler] BEGIN DRAG - mouseGridPos={mouseGridPosition}, itemAnchor={placedItem.AnchorPosition}, CALCULATED OFFSET={mouseDragGridPositionOffset}");
 
             // Calculate canvas offset - CRITICAL: work in the SAME coordinate system!
             // Parent to canvas FIRST so we can use anchoredPosition directly
@@ -248,10 +250,10 @@ namespace TimeGame.Systems.Inventory.UI
                     // Convert to grid position
                     Vector2Int mouseGridPos = targetGrid.LocalPositionToGridPosition(mouseLocalPos);
                     
-                    // Apply the offset (same as we do during drag)
+                    // Apply the drag offset (same as we do during drag)
                     Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
                     
-                    Debug.Log($"[InventoryDragHandler] Grid placement: mouse={mouseGridPos}, offset={mouseDragGridPositionOffset}, placement={placementGridPos}");
+                    Debug.Log($"[InventoryDragHandler] PLACEMENT - mouseGridPos={mouseGridPos}, dragOffset={mouseDragGridPositionOffset}, placementGridPos={placementGridPos}");
                     
                     // Call inventory system DIRECTLY with grid position (no round-trip conversion!)
                     dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placementGridPos, dir, out placedItem);
@@ -365,6 +367,11 @@ namespace TimeGame.Systems.Inventory.UI
             // Calculate where item will land
             Vector2Int mouseGridPos = currentGrid.LocalPositionToGridPosition(mouseLocalPos);
             Vector2Int placementGridPos = mouseGridPos - mouseDragGridPositionOffset;
+            
+            if (verboseLogging)
+            {
+                Debug.Log($"[InventoryDragHandler] UPDATE VISUAL - mouseGridPos={mouseGridPos}, dragOffset={mouseDragGridPositionOffset}, visualPlacement={placementGridPos}");
+            }
             
             // Clamp to grid boundaries
             InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
