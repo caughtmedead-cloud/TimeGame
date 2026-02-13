@@ -1,196 +1,120 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
-    /// Makes equipment slot items draggable by creating a temp visual
-    /// and handing it off to the InventoryDragHandler.
-    /// 
-    /// Equipment slots store items at any size but display them uniformly.
-    /// When dragging OUT, the item visual is created at its TRUE grid size
-    /// so it can be placed properly in inventory grids.
+    /// Makes equipment slot items draggable using the standard grid drag system.
+    /// Creates a temporary 1x1 grid, places the item in it, then triggers normal grid drag.
+    /// This ensures equipment drags work EXACTLY like inventory drags.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
     {
         private EquipmentSlot equipmentSlot;
         private InventoryDragHandler dragHandler;
-        private Canvas rootCanvas;
         
-        // Drag state
-        private PlacedItem draggedItem;
-        private InventoryItemVisual tempVisual;
-        private bool isDragging = false;
-
-        [Header("Visual Settings")]
-        [Tooltip("Cell size for grid-based inventory (should match your inventory grid cell size)")]
-        [SerializeField] private float gridCellSize = 64f;
-
+        // Temporary grid for drag operation
+        private GameObject tempGridObject;
+        private InventoryGridVisual tempGrid;
+        private System.Guid draggedItemID;
+        
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = true;
 
         private void Awake()
         {
-            Log("Awake called");
-            
-            // Find parent equipment slot
             equipmentSlot = GetComponentInParent<EquipmentSlot>();
             if (equipmentSlot == null)
             {
                 Debug.LogError("[EquipmentSlotDragSource] No EquipmentSlot found in parent!", this);
             }
             
-            // Find drag handler
             dragHandler = FindObjectOfType<InventoryDragHandler>();
             if (dragHandler == null)
             {
                 Debug.LogError("[EquipmentSlotDragSource] No InventoryDragHandler found in scene!", this);
             }
-
-            // Find root canvas
-            rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
-            if (rootCanvas == null)
-            {
-                Debug.LogError("[EquipmentSlotDragSource] Cannot find root canvas!", this);
-            }
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            Log($"OnBeginDrag triggered! Button: {eventData.button}");
-            
-            if (equipmentSlot == null || dragHandler == null || rootCanvas == null)
+            if (equipmentSlot == null || dragHandler == null || !equipmentSlot.IsOccupied)
             {
-                Debug.LogError("[EquipmentSlotDragSource] Missing required references!");
-                return;
-            }
-            
-            if (!equipmentSlot.IsOccupied)
-            {
-                Log("Equipment slot is not occupied");
                 return;
             }
 
-            // Get equipped item data
             InventoryItemSO itemDef = equipmentSlot.EquippedItem;
-            System.Guid equippedID = equipmentSlot.GetEquippedItemID();
+            Log($"Beginning drag of {itemDef.ItemName}");
             
-            Log($"Beginning drag of {itemDef.ItemName} (ID: {equippedID})");
-            Log($"Item grid size: {itemDef.Width}x{itemDef.Height}");
-            
-            // Create PlacedItem data
-            draggedItem = new PlacedItem(
-                equippedID,
-                itemDef,
-                Vector2Int.zero,
-                GridDirection.Down
-            );
-
-            // Unequip from slot (this hides the icon in the slot)
+            // Unequip from slot
+            draggedItemID = equipmentSlot.GetEquippedItemID();
             equipmentSlot.UnequipItem();
-            Log("Unequipped item from slot");
-
-            // Create temporary visual at item's TRUE grid size
-            CreateTempVisual(itemDef);
-
-            // Calculate click offset in canvas space
-            // Visual is already parented to canvas, so both mouse and visual are in the same coordinate system!
-            RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
-            RectTransform visualRT = tempVisual.GetComponent<RectTransform>();
             
-            // Convert mouse screen position to canvas anchored position
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRT,
-                eventData.position,
-                null,
-                out Vector2 mouseCanvasPos
-            );
+            // Create temporary grid (invisible, just for drag logic)
+            CreateTempGrid(itemDef);
             
-            // Visual's position in canvas anchored position space (same coordinate system as mouse!)
-            Vector2 visualCanvasPos = visualRT.anchoredPosition;
+            // Place item in temp grid
+            tempGrid.InventorySystem.TryAddItem(itemDef, Vector2Int.zero, GridDirection.Down, out PlacedItem placed);
             
-            // Calculate offset: how far is the click from the visual's bottom-left corner?
-            Vector2 clickOffset = mouseCanvasPos - visualCanvasPos;
+            // Register temp grid as drop target
+            dragHandler.RegisterDropTarget(tempGrid);
             
-            Log($"Mouse canvas pos: {mouseCanvasPos}, Visual canvas pos: {visualCanvasPos}, Click offset: {clickOffset}");
-
-            // Hand off to drag handler
-            dragHandler.StartDragWithExistingVisual(tempVisual, draggedItem, equipmentSlot, clickOffset);
-            Log("Handed off to drag handler");
+            // Trigger normal grid drag
+            dragHandler.OnItemBeginDrag(draggedItemID);
             
-            isDragging = true;
+            Log("Triggered standard grid drag");
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            // Drag handler handles all movement
+            // Drag handler handles everything
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            Log("OnEndDrag triggered");
-            
-            if (!isDragging || dragHandler == null || draggedItem == null)
+            if (tempGrid != null)
             {
-                Log($"OnEndDrag early exit - isDragging: {isDragging}");
-                return;
+                // Unregister and destroy temp grid
+                dragHandler.UnregisterDropTarget(tempGrid);
+                Destroy(tempGridObject);
+                tempGrid = null;
+                tempGridObject = null;
+                
+                Log("Cleaned up temp grid");
             }
-
-            // Let drag handler handle the drop
-            dragHandler.OnItemEndDrag(draggedItem.InstanceID);
-            Log("Called dragHandler.OnItemEndDrag()");
-
-            // Cleanup
-            isDragging = false;
-            draggedItem = null;
-            tempVisual = null; // Drag handler owns cleanup now
         }
 
-        private void CreateTempVisual(InventoryItemSO itemDef)
+        private void CreateTempGrid(InventoryItemSO itemDef)
         {
-            RectTransform slotRT = equipmentSlot.GetRectTransform();
-            RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
+            // Create invisible grid GameObject
+            tempGridObject = new GameObject("TempEquipmentDragGrid");
+            tempGridObject.transform.SetParent(transform.root, false);
             
-            // Create visual GameObject
-            GameObject tempVisualGO = new GameObject($"DragVisual_{itemDef.ItemName}");
+            // Add RectTransform
+            RectTransform rt = tempGridObject.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.zero;
+            rt.sizeDelta = Vector2.zero;
             
-            // Add RectTransform with bottom-left pivot (matches grid items)
-            RectTransform tempRT = tempVisualGO.AddComponent<RectTransform>();
-            tempRT.anchorMin = Vector2.zero;
-            tempRT.anchorMax = Vector2.zero;
-            tempRT.pivot = new Vector2(0, 0); // Bottom-left pivot
+            // Add grid visual component
+            tempGrid = tempGridObject.AddComponent<InventoryGridVisual>();
             
-            // Parent to canvas with worldPositionStays TRUE to maintain world position
-            tempRT.SetParent(canvasRT, worldPositionStays: true);
-            
-            // Add visual component - Initialize() will set the size based on gridCellSize!
-            tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
-            tempVisual.Initialize(draggedItem, itemDef, gridCellSize, null);
-            
-            // Get the slot's center in world space
-            Vector3 slotWorldCenter = slotRT.TransformPoint(slotRT.rect.center);
-            
-            // Calculate item's visual size (should match what Initialize set)
-            Vector2 itemVisualSize = new Vector2(
-                itemDef.Width * gridCellSize,
-                itemDef.Height * gridCellSize
+            // Initialize with item's size
+            tempGrid.Initialize(
+                new InventorySystem(itemDef.Width, itemDef.Height),
+                cellSize: 64f,
+                maxWeight: null
             );
             
-            // Set world position to slot center
-            tempRT.position = slotWorldCenter;
+            // Make invisible
+            CanvasGroup cg = tempGridObject.AddComponent<CanvasGroup>();
+            cg.alpha = 0f;
+            cg.blocksRaycasts = false;
             
-            // Now offset by half size to center it (since pivot is bottom-left)
-            tempRT.anchoredPosition -= itemVisualSize * 0.5f;
-            
-            // Force layout rebuild to ensure child visual updates
-            LayoutRebuilder.ForceRebuildLayoutImmediate(tempRT);
-            
-            Log($"Slot world center: {slotWorldCenter}, Visual size: {tempRT.sizeDelta}, Anchored pos: {tempRT.anchoredPosition}");
-            Log($"Initialized visual with grid cell size: {gridCellSize}");
+            Log($"Created temp grid: {itemDef.Width}x{itemDef.Height}");
         }
 
         private void Log(string message)
