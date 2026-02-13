@@ -30,6 +30,11 @@ namespace TimeGame.Systems.Inventory.UI
         /// The inventory item definition.
         /// </summary>
         public InventoryItemSO ItemDefinition { get; private set; }
+        
+        /// <summary>
+        /// The inner visual transform that holds rotation.
+        /// </summary>
+        public RectTransform VisualTransform => visualTransform;
 
         private void Awake()
         {
