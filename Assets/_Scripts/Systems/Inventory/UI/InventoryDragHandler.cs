@@ -164,7 +164,7 @@ namespace TimeGame.Systems.Inventory.UI
             InventoryItemVisual visual, 
             PlacedItem placedItem, 
             IInventoryDropTarget sourceTarget,
-            Vector2 clickOffsetInScreenSpace)
+            Vector2 clickOffsetInCanvasSpace)
         {
             if (visual == null || placedItem == null)
             {
@@ -172,8 +172,10 @@ namespace TimeGame.Systems.Inventory.UI
                 return;
             }
 
-            // Store click offset for free-floating mode
-            mouseDragAnchoredPositionOffset = clickOffsetInScreenSpace;
+            // Store click offset for free-floating mode (already in canvas space)
+            mouseDragAnchoredPositionOffset = clickOffsetInCanvasSpace;
+            
+            Log($"Starting drag with offset: {clickOffsetInCanvasSpace}");
             
             // Grid offset is zero (equipment slots don't have grid positions)
             mouseDragGridPositionOffset = Vector2Int.zero;
@@ -350,8 +352,7 @@ namespace TimeGame.Systems.Inventory.UI
                 // Reparent to canvas maintaining world position
                 draggingPlacedObject.transform.SetParent(canvasRoot, worldPositionStays: true);
                 
-                // DON'T recalculate offset - instead, calculate where mouse is NOW
-                // and where item is NOW, then derive the offset that keeps them aligned
+                // Calculate where mouse is NOW and where item is NOW
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     canvasRoot,
                     mouseScreenPos,
@@ -365,7 +366,7 @@ namespace TimeGame.Systems.Inventory.UI
                 // Calculate the offset to maintain current visual relationship
                 mouseDragAnchoredPositionOffset = mouseCanvasPos - itemCanvasPos;
                 
-                Log($"Free-float offset: {mouseDragAnchoredPositionOffset} (mouse: {mouseCanvasPos}, item: {itemCanvasPos})");
+                Log($"Free-float offset: {mouseDragAnchoredPositionOffset}");
                 
                 currentGrid = null;
             }
@@ -380,8 +381,9 @@ namespace TimeGame.Systems.Inventory.UI
 
             Vector2 targetPos = localMousePos - mouseDragAnchoredPositionOffset;
             
-            // Faster lerp for free-floating (more responsive feel)
-            itemRT.anchoredPosition = Vector2.Lerp(itemRT.anchoredPosition, targetPos, Time.deltaTime * 30f);
+            // CRITICAL FIX: NO LERPING in free-float mode!
+            // Set position directly so item stays locked to cursor
+            itemRT.anchoredPosition = targetPos;
         }
 
         private void UpdateRotation()
