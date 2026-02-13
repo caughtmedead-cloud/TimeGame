@@ -159,8 +159,9 @@ namespace TimeGame.Systems.Inventory.UI
             // This offset is set ONCE and never changes during the drag!
             mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
 
-            // Start drag - preserve the sourceGrid as originalGrid
-            StartDragInternal(itemVisual, placedItem, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
+            // CRITICAL: Visual is canvas-parented, so currentGrid = null
+            // But preserve sourceGrid as originalGrid for return-to-original logic
+            StartDragInternal(itemVisual, placedItem, null, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
         }
 
         /// <summary>
@@ -184,8 +185,8 @@ namespace TimeGame.Systems.Inventory.UI
             // Grid offset is zero (equipment slots don't have grid positions)
             mouseDragGridPositionOffset = Vector2Int.zero;
 
-            // Start drag in free-float mode (currentGrid = null)
-            StartDragInternal(visual, placedItem, null, sourceTarget, Vector2Int.zero, placedItem.Rotation);
+            // Equipment slots: no grids involved
+            StartDragInternal(visual, placedItem, null, null, sourceTarget, Vector2Int.zero, placedItem.Rotation);
         }
 
         /// <summary>
@@ -399,17 +400,18 @@ namespace TimeGame.Systems.Inventory.UI
         private void StartDragInternal(
             InventoryItemVisual visual, 
             PlacedItem placedItem, 
-            InventoryGridVisual startGrid,
+            InventoryGridVisual startGrid,        // Current grid (visual parent)
+            InventoryGridVisual sourceGrid,       // Original grid (for return)
             IInventoryDropTarget sourceTarget,
             Vector2Int gridPosition,
             GridDirection rotation)
         {
             draggingPlacedObject = visual;
-            currentGrid = startGrid;
+            currentGrid = startGrid;  // Can be null if visual is canvas-parented
             dir = rotation;
 
             // Save original state
-            originalGrid = startGrid;
+            originalGrid = sourceGrid;  // Where drag started from (can differ from currentGrid)
             originalSource = sourceTarget;
             originalGridPosition = gridPosition;
             originalDir = rotation;
