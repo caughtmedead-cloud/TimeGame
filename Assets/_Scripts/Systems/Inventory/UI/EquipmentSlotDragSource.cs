@@ -81,13 +81,15 @@ namespace TimeGame.Systems.Inventory.UI
             Log($"Beginning drag of {itemDef.ItemName} (ID: {equippedID})");
             Log($"Item grid size: {itemDef.Width}x{itemDef.Height}");
             
-            // Create PlacedItem data
+            // Create PlacedItem data with NEW GUID to avoid conflicts
             draggedItem = new PlacedItem(
-                equippedID,
+                System.Guid.NewGuid(), // CRITICAL: New GUID prevents conflicts with grid items
                 itemDef,
                 Vector2Int.zero,
                 GridDirection.Down
             );
+
+            Log($"Created new drag item with ID: {draggedItem.InstanceID}");
 
             // Unequip from slot (this hides the icon in the slot)
             equipmentSlot.UnequipItem();
@@ -112,7 +114,6 @@ namespace TimeGame.Systems.Inventory.UI
             Vector2 visualCanvasPos = visualRT.anchoredPosition;
             
             // Calculate offset: how far is the click from the visual's bottom-left corner?
-            // Since visual has bottom-left pivot, anchoredPosition IS the bottom-left corner
             Vector2 clickOffset = mouseCanvasPos - visualCanvasPos;
             
             Log($"Mouse canvas pos: {mouseCanvasPos}, Visual canvas pos: {visualCanvasPos}, Click offset: {clickOffset}");
@@ -161,10 +162,7 @@ namespace TimeGame.Systems.Inventory.UI
             tempRT.anchorMax = Vector2.zero;
             tempRT.pivot = new Vector2(0, 0); // Bottom-left pivot
             
-            // CRITICAL: Position visual at equipment slot's center, accounting for item's true size
-            // Equipment slot displays items at arbitrary size, but the dragged visual 
-            // should be at the item's TRUE grid size
-            
+            // Position visual at equipment slot's center, accounting for item's true size
             RectTransform slotRT = equipmentSlot.GetRectTransform();
             RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
             
@@ -184,7 +182,6 @@ namespace TimeGame.Systems.Inventory.UI
             );
             
             // Position visual so its CENTER aligns with equipment slot's center
-            // Since visual has bottom-left pivot, we offset by half the size
             Vector2 visualBottomLeft = slotCanvasPos - (itemVisualSize * 0.5f);
             tempRT.anchoredPosition = visualBottomLeft;
             
@@ -193,6 +190,15 @@ namespace TimeGame.Systems.Inventory.UI
             // Add visual component with item's TRUE grid size
             tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
             tempVisual.Initialize(draggedItem, itemDef, gridCellSize, null);
+            
+            // CRITICAL: Remove InventoryItemDragDrop if it was added
+            // This prevents double-drag triggering
+            InventoryItemDragDrop dragDrop = tempVisualGO.GetComponent<InventoryItemDragDrop>();
+            if (dragDrop != null)
+            {
+                Log("Removed InventoryItemDragDrop from temp visual to prevent conflicts");
+                Destroy(dragDrop);
+            }
             
             Log($"Initialized visual with grid cell size: {gridCellSize}");
         }
