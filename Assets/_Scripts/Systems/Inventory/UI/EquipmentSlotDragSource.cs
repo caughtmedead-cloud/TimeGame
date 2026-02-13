@@ -9,7 +9,9 @@ namespace TimeGame.Systems.Inventory.UI
     /// Makes equipment slot items draggable by creating a temp visual
     /// and handing it off to the InventoryDragHandler.
     /// 
-    /// This creates seamless dragging from equipment slots into inventory grids.
+    /// Equipment slots store items at any size but display them uniformly.
+    /// When dragging OUT, the item visual is created at its TRUE grid size
+    /// so it can be placed properly in inventory grids.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
@@ -24,7 +26,8 @@ namespace TimeGame.Systems.Inventory.UI
         private bool isDragging = false;
 
         [Header("Visual Settings")]
-        [SerializeField] private float cellSize = 64f; // Size for visual creation
+        [Tooltip("Cell size for grid-based inventory (should match your inventory grid cell size)")]
+        [SerializeField] private float gridCellSize = 64f;
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = true;
@@ -76,6 +79,7 @@ namespace TimeGame.Systems.Inventory.UI
             System.Guid equippedID = equipmentSlot.GetEquippedItemID();
             
             Log($"Beginning drag of {itemDef.ItemName} (ID: {equippedID})");
+            Log($"Item grid size: {itemDef.Width}x{itemDef.Height}");
             
             // Create PlacedItem data
             draggedItem = new PlacedItem(
@@ -89,10 +93,10 @@ namespace TimeGame.Systems.Inventory.UI
             equipmentSlot.UnequipItem();
             Log("Unequipped item from slot");
 
-            // Create temporary visual
+            // Create temporary visual at item's TRUE grid size
             CreateTempVisual(itemDef);
 
-            // CRITICAL FIX: Calculate click offset properly in canvas space
+            // Calculate click offset in canvas space
             RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
             RectTransform visualRT = tempVisual.GetComponent<RectTransform>();
             
@@ -104,10 +108,11 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 mouseCanvasPos
             );
             
-            // Visual's anchored position in canvas space (it's already parented to canvas)
+            // Visual's anchored position in canvas space
             Vector2 visualCanvasPos = visualRT.anchoredPosition;
             
-            // Calculate offset: how far is the click from the visual's position?
+            // Calculate offset: how far is the click from the visual's bottom-left corner?
+            // Since visual has bottom-left pivot, anchoredPosition IS the bottom-left corner
             Vector2 clickOffset = mouseCanvasPos - visualCanvasPos;
             
             Log($"Mouse canvas pos: {mouseCanvasPos}, Visual canvas pos: {visualCanvasPos}, Click offset: {clickOffset}");
@@ -154,13 +159,17 @@ namespace TimeGame.Systems.Inventory.UI
             RectTransform tempRT = tempVisualGO.AddComponent<RectTransform>();
             tempRT.anchorMin = Vector2.zero;
             tempRT.anchorMax = Vector2.zero;
-            tempRT.pivot = new Vector2(0, 0);
+            tempRT.pivot = new Vector2(0, 0); // Bottom-left pivot
             
-            // Position it at the equipment slot initially
-            // Convert equipment slot's screen position to canvas local position
+            // CRITICAL: Position visual at equipment slot's center, accounting for item's true size
+            // Equipment slot displays items at arbitrary size, but the dragged visual 
+            // should be at the item's TRUE grid size
+            
+            RectTransform slotRT = equipmentSlot.GetRectTransform();
             RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
-            Vector3 slotScreenPos = equipmentSlot.GetRectTransform().position;
             
+            // Get slot's position in canvas space
+            Vector2 slotScreenPos = slotRT.position;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRT,
                 slotScreenPos,
@@ -168,15 +177,24 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 slotCanvasPos
             );
             
-            tempRT.anchoredPosition = slotCanvasPos;
+            // Calculate item's visual size at grid scale
+            Vector2 itemVisualSize = new Vector2(
+                itemDef.Width * gridCellSize,
+                itemDef.Height * gridCellSize
+            );
             
-            Log($"Created temp visual GameObject at canvas position: {slotCanvasPos}");
+            // Position visual so its CENTER aligns with equipment slot's center
+            // Since visual has bottom-left pivot, we offset by half the size
+            Vector2 visualBottomLeft = slotCanvasPos - (itemVisualSize * 0.5f);
+            tempRT.anchoredPosition = visualBottomLeft;
             
-            // Add visual component
+            Log($"Created temp visual at canvas position: {visualBottomLeft} (item size: {itemVisualSize})");
+            
+            // Add visual component with item's TRUE grid size
             tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
-            tempVisual.Initialize(draggedItem, itemDef, cellSize, null);
+            tempVisual.Initialize(draggedItem, itemDef, gridCellSize, null);
             
-            Log($"Initialized visual");
+            Log($"Initialized visual with grid cell size: {gridCellSize}");
         }
 
         private void Log(string message)
