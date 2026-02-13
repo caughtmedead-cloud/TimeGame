@@ -168,7 +168,7 @@ namespace TimeGame.Systems.Inventory.UI
             StartDragInternal(itemVisual, placedItem, null, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
             
             // DEBUG: Check rotation state
-            Debug.Log($"[InventoryDragHandler] DRAG START - Visual rotation: {itemVisual.transform.rotation.eulerAngles}, PlacedItem.Rotation: {placedItem.Rotation}, dir: {dir}");
+            Debug.Log($"[InventoryDragHandler] DRAG START - Visual child rotation: {itemVisual.VisualTransform.localRotation.eulerAngles}, PlacedItem.Rotation: {placedItem.Rotation}, dir: {dir}");
         }
 
         /// <summary>
@@ -452,12 +452,14 @@ namespace TimeGame.Systems.Inventory.UI
             // DEBUG: Log first frame of rotation
             if (!loggedRotation)
             {
-                Debug.Log($"[InventoryDragHandler] FIRST UPDATE ROTATION - Current: {draggingPlacedObject.transform.rotation.eulerAngles}, Target angle: {rotationAngle}, Target Quaternion: {Quaternion.Euler(0, 0, -rotationAngle).eulerAngles}, dir: {dir}");
+                Debug.Log($"[InventoryDragHandler] FIRST UPDATE ROTATION - Current: {draggingPlacedObject.VisualTransform.localRotation.eulerAngles}, Target angle: {rotationAngle}, Target Quaternion: {Quaternion.Euler(0, 0, -rotationAngle).eulerAngles}, dir: {dir}");
                 loggedRotation = true;
             }
             
-            draggingPlacedObject.transform.rotation = Quaternion.Lerp(
-                draggingPlacedObject.transform.rotation,
+            // CRITICAL: Rotate the VISUAL CHILD, not the root transform!
+            // The root is grid-aligned (no rotation), the child holds the visual rotation
+            draggingPlacedObject.VisualTransform.localRotation = Quaternion.Lerp(
+                draggingPlacedObject.VisualTransform.localRotation,
                 Quaternion.Euler(0, 0, -rotationAngle),
                 Time.deltaTime * 15f
             );
@@ -610,7 +612,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             foreach (IInventoryDropTarget target in registeredTargets)
             {
-            if (target is InventoryGridVisual gridVisual)
+                if (target is InventoryGridVisual gridVisual)
                 {
                     if (gridVisual.InventorySystem != null && 
                         gridVisual.InventorySystem.GetItemByID(itemID) != null)
