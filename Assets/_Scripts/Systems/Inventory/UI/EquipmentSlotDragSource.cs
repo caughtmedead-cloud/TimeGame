@@ -92,25 +92,25 @@ namespace TimeGame.Systems.Inventory.UI
             // Create temporary visual
             CreateTempVisual(itemDef);
 
-            // Calculate click offset in screen space
+            // CRITICAL FIX: Calculate click offset properly in canvas space
             RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
+            RectTransform visualRT = tempVisual.GetComponent<RectTransform>();
+            
+            // Convert mouse screen position to canvas local position
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRT,
                 eventData.position,
                 null,
-                out Vector2 clickLocalPos
+                out Vector2 mouseCanvasPos
             );
-
-            // Get visual's current position in canvas space
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRT,
-                tempVisual.GetComponent<RectTransform>().position,
-                null,
-                out Vector2 visualLocalPos
-            );
-
-            Vector2 clickOffset = clickLocalPos - visualLocalPos;
-            Log($"Click offset: {clickOffset}");
+            
+            // Visual's anchored position in canvas space (it's already parented to canvas)
+            Vector2 visualCanvasPos = visualRT.anchoredPosition;
+            
+            // Calculate offset: how far is the click from the visual's position?
+            Vector2 clickOffset = mouseCanvasPos - visualCanvasPos;
+            
+            Log($"Mouse canvas pos: {mouseCanvasPos}, Visual canvas pos: {visualCanvasPos}, Click offset: {clickOffset}");
 
             // Hand off to drag handler
             dragHandler.StartDragWithExistingVisual(tempVisual, draggedItem, equipmentSlot, clickOffset);
@@ -157,15 +157,26 @@ namespace TimeGame.Systems.Inventory.UI
             tempRT.pivot = new Vector2(0, 0);
             
             // Position it at the equipment slot initially
-            tempRT.position = equipmentSlot.GetRectTransform().position;
+            // Convert equipment slot's screen position to canvas local position
+            RectTransform canvasRT = rootCanvas.GetComponent<RectTransform>();
+            Vector3 slotScreenPos = equipmentSlot.GetRectTransform().position;
             
-            Log("Created temp visual GameObject");
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRT,
+                slotScreenPos,
+                null,
+                out Vector2 slotCanvasPos
+            );
+            
+            tempRT.anchoredPosition = slotCanvasPos;
+            
+            Log($"Created temp visual GameObject at canvas position: {slotCanvasPos}");
             
             // Add visual component
             tempVisual = tempVisualGO.AddComponent<InventoryItemVisual>();
             tempVisual.Initialize(draggedItem, itemDef, cellSize, null);
             
-            Log($"Initialized visual at position {tempRT.position}");
+            Log($"Initialized visual");
         }
 
         private void Log(string message)
