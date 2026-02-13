@@ -102,13 +102,13 @@ namespace TimeGame.Systems.Inventory.UI
             // Add grid visual component
             tempGrid = tempGridObject.AddComponent<InventoryGridVisual>();
             
-            // Initialize with item's size (using dummy values for position/weight)
+            // Initialize with item's size (using dummy values for origin/weight)
             tempGrid.Initialize(
                 new InventorySystem(
                     width: itemDef.Width, 
                     height: itemDef.Height,
                     cellSize: 64f,
-                    anchorPosition: Vector3.zero,
+                    origin: Vector3.zero,
                     maxWeight: 999f
                 ),
                 cellSize: 64f,
