@@ -41,6 +41,7 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2 mouseDragCanvasOffset;                 // Offset in canvas space (NEVER changes during drag!)
         private GridDirection dir;                             // Current rotation
         private Vector2Int lastTargetGridPosition;             // Where the visual is LERPING TO (for placement)
+        private bool loggedRotation = false;                   // DEBUG: Track if we logged rotation this drag
         
         // Original state for returning item if drop fails
         private InventoryGridVisual originalGrid;              // Null if dragged from equipment slot
@@ -166,9 +167,8 @@ namespace TimeGame.Systems.Inventory.UI
             // But preserve sourceGrid as originalGrid for return-to-original logic
             StartDragInternal(itemVisual, placedItem, null, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
             
-            // NOTE: Visual ALREADY has correct rotation from placement
-            // Re-parenting with worldPositionStays: true maintains rotation
-            // UpdateRotation() will lerp only when user presses R during drag
+            // DEBUG: Check rotation state
+            Debug.Log($"[InventoryDragHandler] DRAG START - Visual rotation: {itemVisual.transform.rotation.eulerAngles}, PlacedItem.Rotation: {placedItem.Rotation}, dir: {dir}");
         }
 
         /// <summary>
@@ -313,6 +313,7 @@ namespace TimeGame.Systems.Inventory.UI
             draggingPlacedObject = null;
             currentGrid = null;
             originalSource = null;
+            loggedRotation = false; // DEBUG: Reset for next drag
             
             Debug.Log($"[InventoryDragHandler] >>> END OnItemEndDrag({itemInstanceID}) <<<");
         }
@@ -447,6 +448,13 @@ namespace TimeGame.Systems.Inventory.UI
         {
             InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
             float rotationAngle = itemDef != null ? itemDef.GetRotationAngle(dir) : 0f;
+            
+            // DEBUG: Log first frame of rotation
+            if (!loggedRotation)
+            {
+                Debug.Log($"[InventoryDragHandler] FIRST UPDATE ROTATION - Current: {draggingPlacedObject.transform.rotation.eulerAngles}, Target angle: {rotationAngle}, Target Quaternion: {Quaternion.Euler(0, 0, -rotationAngle).eulerAngles}, dir: {dir}");
+                loggedRotation = true;
+            }
             
             draggingPlacedObject.transform.rotation = Quaternion.Lerp(
                 draggingPlacedObject.transform.rotation,
@@ -602,7 +610,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             foreach (IInventoryDropTarget target in registeredTargets)
             {
-                if (target is InventoryGridVisual gridVisual)
+            if (target is InventoryGridVisual gridVisual)
                 {
                     if (gridVisual.InventorySystem != null && 
                         gridVisual.InventorySystem.GetItemByID(itemID) != null)
