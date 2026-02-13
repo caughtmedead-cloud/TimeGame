@@ -166,13 +166,9 @@ namespace TimeGame.Systems.Inventory.UI
             // But preserve sourceGrid as originalGrid for return-to-original logic
             StartDragInternal(itemVisual, placedItem, null, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
             
-            // FIX: Set rotation immediately to match stored rotation (don't wait for lerp)
-            InventoryItemSO itemDef = placedItem.ItemDefinition as InventoryItemSO;
-            if (itemDef != null)
-            {
-                float rotationAngle = itemDef.GetRotationAngle(placedItem.Rotation);
-                itemVisual.transform.rotation = Quaternion.Euler(0, 0, -rotationAngle);
-            }
+            // NOTE: Visual ALREADY has correct rotation from placement
+            // Re-parenting with worldPositionStays: true maintains rotation
+            // UpdateRotation() will lerp only when user presses R during drag
         }
 
         /// <summary>
@@ -199,13 +195,9 @@ namespace TimeGame.Systems.Inventory.UI
             // Equipment slots: no grids involved
             StartDragInternal(visual, placedItem, null, null, sourceTarget, Vector2Int.zero, placedItem.Rotation);
             
-            // FIX: Set rotation immediately to match stored rotation
-            InventoryItemSO itemDef = placedItem.ItemDefinition as InventoryItemSO;
-            if (itemDef != null)
-            {
-                float rotationAngle = itemDef.GetRotationAngle(placedItem.Rotation);
-                visual.transform.rotation = Quaternion.Euler(0, 0, -rotationAngle);
-            }
+            // NOTE: Visual should ALREADY have correct rotation from when it was equipped
+            // If not, the equipment slot needs to set rotation when creating the visual
+            // UpdateRotation() will lerp only when user presses R during drag
         }
 
         /// <summary>
