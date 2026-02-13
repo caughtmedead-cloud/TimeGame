@@ -40,6 +40,7 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2Int mouseDragGridPositionOffset;        // Grid offset (for grid mode)
         private Vector2 mouseDragCanvasOffset;                 // Offset in canvas space (NEVER changes during drag!)
         private GridDirection dir;                             // Current rotation
+        private Vector2Int lastTargetGridPosition;             // Where the visual is LERPING TO (for placement)
         
         // Original state for returning item if drop fails
         private InventoryGridVisual originalGrid;              // Null if dragged from equipment slot
@@ -243,19 +244,18 @@ namespace TimeGame.Systems.Inventory.UI
                     originalGrid.InventorySystem.RemoveItem(itemInstanceID);
                 }
 
-                // WYSIWYG - THE RIGHT WAY: Use the visual's actual position!
-                // The visual is already snapped to where it should land. Just use that!
+                // WYSIWYG - THE RIGHT WAY: Use the TARGET position, not the lerping visual!
+                // The visual is smoothly lerping toward the target, so reading its position gives mid-lerp coords
                 if (dropTarget is InventoryGridVisual targetGrid)
                 {
-                    // The visual is ALREADY positioned where it should go
-                    // Just read its grid position and use that!
-                    RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
-                    Vector2Int visualGridPos = targetGrid.LocalPositionToGridPosition(itemRT.anchoredPosition);
+                    // Use the last calculated target position (where visual is lerping TO)
+                    // NOT the visual's current position (which is mid-lerp)
+                    Vector2Int placementPos = lastTargetGridPosition;
                     
-                    Debug.Log($"[InventoryDragHandler] PLACEMENT - Using visual's grid position: {visualGridPos}");
+                    Debug.Log($"[InventoryDragHandler] PLACEMENT - Using target grid position: {placementPos}");
                     
-                    // Call inventory system DIRECTLY with the visual's position
-                    dropped = targetGrid.InventorySystem.TryAddItem(itemDef, visualGridPos, dir, out placedItem);
+                    // Call inventory system DIRECTLY with the target position
+                    dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placementPos, dir, out placedItem);
                 }
                 else
                 {
@@ -392,6 +392,9 @@ namespace TimeGame.Systems.Inventory.UI
                 placementGridPos.x = Mathf.Clamp(placementGridPos.x, 0, currentGrid.InventorySystem.Width - itemSize.x);
                 placementGridPos.y = Mathf.Clamp(placementGridPos.y, 0, currentGrid.InventorySystem.Height - itemSize.y);
             }
+            
+            // CRITICAL: Store this for placement! The visual lerps toward it, so reading visual position gives mid-lerp coords
+            lastTargetGridPosition = placementGridPos;
             
             // Convert to local position
             Vector2 targetPosition = currentGrid.GridPositionToLocalPosition(placementGridPos);
