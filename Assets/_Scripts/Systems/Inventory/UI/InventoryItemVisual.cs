@@ -9,6 +9,10 @@ namespace TimeGame.Systems.Inventory.UI
     /// Uses a two-transform hierarchy for proper rotation:
     /// - Outer: Grid-aligned positioning (pivot 0,0)
     /// - Inner: Visual rotation (pivot 0.5,0.5 - center)
+    /// 
+    /// Can be used for:
+    /// 1. Grid items (with drag-drop)
+    /// 2. Standalone drag visuals (no drag-drop)
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public class InventoryItemVisual : MonoBehaviour
@@ -59,8 +63,8 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Initialize this visual with item data and grid reference.
-        /// Note: gridVisual can be null for items dragged from equipment slots.
+        /// Initialize this visual with item data.
+        /// gridVisual: null for standalone visuals, non-null for grid items
         /// </summary>
         public void Initialize(PlacedItem placedItem, InventoryItemSO itemDef, float cellSize, InventoryGridVisual gridVisual)
         {
@@ -107,7 +111,7 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             // Add drag-drop component ONLY if we have a grid (grid items only)
-            // Equipment slot items don't need drag-drop since they use EquipmentSlotDragSource
+            // Standalone visuals (equipment drags, temporary visuals) don't need drag-drop
             if (gridVisual != null)
             {
                 InventoryItemDragDrop dragDrop = gameObject.GetComponent<InventoryItemDragDrop>();
@@ -126,8 +130,17 @@ namespace TimeGame.Systems.Inventory.UI
                 // Setup drag-drop component
                 dragDrop.Setup(gridVisual, placedItem.InstanceID);
             }
+            else
+            {
+                // Standalone visual - ensure CanvasGroup exists but no drag-drop
+                CanvasGroup canvasGroup = gameObject.GetComponent<CanvasGroup>();
+                if (canvasGroup == null)
+                {
+                    canvasGroup = gameObject.AddComponent<CanvasGroup>();
+                }
+            }
 
-            // Position is set by InventoryGridVisual or by the drag source
+            // Position is set by InventoryGridVisual or by the caller
         }
 
         /// <summary>
