@@ -159,8 +159,8 @@ namespace TimeGame.Systems.Inventory.UI
             // This offset is set ONCE and never changes during the drag!
             mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
 
-            // Start drag in free-float mode (item already parented to canvas)
-            StartDragInternal(itemVisual, placedItem, null, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
+            // Start drag - preserve the sourceGrid as originalGrid
+            StartDragInternal(itemVisual, placedItem, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
         }
 
         /// <summary>
