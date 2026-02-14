@@ -409,12 +409,14 @@ namespace TimeGame.Systems.Inventory.UI
             // Convert to local position
             Vector2 targetPosition = currentGrid.GridPositionToLocalPosition(placementGridPos);
 
-            // Apply rotation offset
-            if (itemDef != null)
-            {
-                Vector2Int rotationOffset = itemDef.GetRotationOffset(dir);
-                targetPosition += new Vector2(rotationOffset.x, rotationOffset.y) * currentGrid.CellSize;
-            }
+            // REMOVED: Don't apply rotation offset during drag!
+            // The rotation offset is for PLACED items to center them.
+            // During dragging, we want items to rotate IN PLACE without shifting!
+            // if (itemDef != null)
+            // {
+            //     Vector2Int rotationOffset = itemDef.GetRotationOffset(dir);
+            //     targetPosition += new Vector2(rotationOffset.x, rotationOffset.y) * currentGrid.CellSize;
+            // }
 
             // Smooth lerp to target
             RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
