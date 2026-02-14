@@ -332,22 +332,8 @@ namespace TimeGame.Systems.Inventory.UI
                 InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
                 if (itemDef != null && itemDef.CanRotate)
                 {
-                    // Store old rotation offset before changing direction
-                    Vector2Int oldRotationOffset = itemDef.GetRotationOffset(dir);
-                    
-                    // Change rotation
                     dir = itemDef.GetNextRotation(dir);
-                    
-                    // Get new rotation offset
-                    Vector2Int newRotationOffset = itemDef.GetRotationOffset(dir);
-                    
-                    // CRITICAL: Compensate for rotation offset change!
-                    // The rotation offset shifts the visual position. When it changes,
-                    // we need to adjust the drag offset to keep the visual in the same place.
-                    Vector2Int offsetDelta = newRotationOffset - oldRotationOffset;
-                    mouseDragGridPositionOffset -= offsetDelta;
-                    
-                    Debug.Log($"[InventoryDragHandler] ROTATION CHANGED - New dir: {dir}, Old offset: {oldRotationOffset}, New offset: {newRotationOffset}, Drag offset adjusted by {-offsetDelta}, New drag offset: {mouseDragGridPositionOffset}");
+                    Debug.Log($"[InventoryDragHandler] ROTATION CHANGED - New dir: {dir}");
                 }
             }
 
