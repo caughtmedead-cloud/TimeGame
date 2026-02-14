@@ -14,41 +14,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.02
   subtype: freeProjectFiles
-  lastShownTimestamp: 1770255715
+  lastShownTimestamp: 1770968130
   lastUpdateResponse:
     version: 1.02
     versionUrl: https://unitycodemonkey.com
     enabled: 0
-  checkedLastUpdateTimestamp: 1770255715
+  checkedLastUpdateTimestamp: 1770968131
   lastQOTDResponse:
-    questionId: 269
-    questionText: What is the correct way to show a variable in the Editor?
-    answerA: public int health;
-    answerB: public static int health;
-    answerC: '[SerializeField] private int health;'
-    answerD: private int health;
+    questionId: 271
+    questionText: Can Color ever be null?
+    answerA: Yes, always
+    answerB: No
+    answerC: Yes, as Nullable
+    answerD: 
     answerE: 
-  lastQotdTimestamp: 1770255716
+  lastQotdTimestamp: 1770968131
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/gameDevReport_2.png
     topText: Stay up to date with the latest in Game Dev straight to your inbox!
     topLink: gamedevreport
     bottomText: My 10+ Years of C# Knowledge in 1 Course!
     bottomLink: csharpcourse
-  lastDynamicHeaderTimestamp: 1770255716
+  lastDynamicHeaderTimestamp: 1770968131
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freeprojectfiles">Browse all the FREE Project
       Files! Click Here!</a><br><a href="https://cmonkey.co/freecourses">Check out
       all my FREE courses! Click Here!</a>
-  websiteLatestMessageTimestamp: 1770255716
+  websiteLatestMessageTimestamp: 1770968131
   websiteLatestVideos:
     videos:
+    - youTubeId: Vb5BZu7TOIk
+      title: 8 QUICK Game Dev Tips for SUCCESS!
+    - youTubeId: 4cG_gdjQ4no
+      title: TOP 10 NEW Games, Made with Unity! (JANUARY 2026)
     - youTubeId: Vc_38R17zNs
       title: 'Productivity Tip: DON''T Finish Your Tasks!'
     - youTubeId: B2G1ZTKzJSM
       title: BEST NEW Visual Assets to INSPIRE YOU! (JANUARY 2026)
-    - youTubeId: dYImrPahrME
-      title: STUCK for HOURS trying to write Code? Watch this!
-    - youTubeId: ZxPFiJgEQT0
-      title: TOP 10 NEW Systems and Tools JANUARY 2026! | Unity Asset Store
-  websiteLatestVideosTimestamp: 1770255716
+  websiteLatestVideosTimestamp: 1770968131

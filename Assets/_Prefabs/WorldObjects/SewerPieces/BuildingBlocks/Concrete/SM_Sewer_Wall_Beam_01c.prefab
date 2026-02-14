@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8153326091823383868}
   - component: {fileID: 5019526977896476801}
   - component: {fileID: 6345928420830154013}
-  - component: {fileID: -1081209125886666787}
+  - component: {fileID: 4055247387549579115}
   m_Layer: 0
   m_Name: SM_Sewer_Wall_Beam_01c
   m_TagString: Untagged
@@ -28,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 167999631304860905}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 16.66138, y: 0.008868971, z: -19.549707}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -87,8 +87,8 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &-1081209125886666787
-MeshCollider:
+--- !u!65 &4055247387549579115
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -105,7 +105,6 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 5392115855505665977, guid: 1f1aef659b79a894ebf97fc74799493f, type: 3}
+  serializedVersion: 3
+  m_Size: {x: 0.5013739, y: 2.001688, z: 2.0013542}
+  m_Center: {x: -0.24985217, y: 1.0000381, z: 0.9999172}

@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7f8e5c2d4b9a1e6f3d8c2a5b7e9f4d1c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/Editor/AssetStoreUtility.cs
+  uploadId: 839450

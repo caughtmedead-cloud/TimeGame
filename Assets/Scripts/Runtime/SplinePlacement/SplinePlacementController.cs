@@ -9,127 +9,156 @@ namespace SplinePlacement
         [Header("Configuration")]
         public SplineSegmentLibrary segmentLibrary;
         
-        [Header("Spline Settings")]
-        public List<Vector3> splinePoints = new List<Vector3>();
-        public float segmentSpacing = 1f;
-        public bool autoUpdate = true;
-        public bool closedLoop = false;
+        [Header("Grid Settings")]
+        public float gridSize = 1.82f;
+        public bool snapToGrid = true;
         
         [Header("Placement Options")]
-        public bool alignToSpline = true;
-        public bool snapToGround = false;
-        public LayerMask groundLayer;
-        public float groundOffset = 0f;
+        public bool snapToSurface = false;
+        public LayerMask surfaceLayer = -1;
+        public float surfaceOffset = 0f;
+        
+        [Header("Preview")]
+        public Material previewMaterial;
+        public Color previewColor = new Color(0, 1, 0, 0.5f);
         
         [Header("Debug")]
         public bool showGizmos = true;
-        public Color splineColor = Color.cyan;
+        public Color gridColor = Color.gray;
+        public Color pathColor = Color.cyan;
         
+        [System.Serializable]
+        public class GridNode
+        {
+            public Vector3 position;
+            public Vector3 direction;
+            public SegmentType segmentType;
+            public GameObject placedObject;
+        }
+        
+        public List<GridNode> pathNodes = new List<GridNode>();
         private List<GameObject> placedSegments = new List<GameObject>();
         
-        public void RegenerateSegments()
+        public Vector3 SnapToGrid(Vector3 worldPosition)
+        {
+            if (!snapToGrid)
+                return worldPosition;
+            
+            Vector3 snapped = new Vector3(
+                Mathf.Round(worldPosition.x / gridSize) * gridSize,
+                worldPosition.y,
+                Mathf.Round(worldPosition.z / gridSize) * gridSize
+            );
+            
+            return snapped;
+        }
+        
+        public void AddNode(Vector3 worldPosition, Vector3 direction, SegmentType segmentType)
+        {
+            Vector3 snappedPos = SnapToGrid(worldPosition);
+            
+            GridNode node = new GridNode
+            {
+                position = snappedPos,
+                direction = direction,
+                segmentType = segmentType
+            };
+            
+            pathNodes.Add(node);
+        }
+        
+        public void CommitPath()
         {
             ClearSegments();
             
-            if (segmentLibrary == null || splinePoints.Count < 2)
+            if (segmentLibrary == null || pathNodes.Count == 0)
+            {
+                Debug.LogWarning("Cannot commit path: No segment library or no nodes.");
                 return;
-            
-            PlaceSegmentsAlongSpline();
-        }
-        
-        private void PlaceSegmentsAlongSpline()
-        {
-            for (int i = 0; i < splinePoints.Count - 1; i++)
-            {
-                Vector3 start = transform.TransformPoint(splinePoints[i]);
-                Vector3 end = transform.TransformPoint(splinePoints[i + 1]);
-                
-                PlaceSegmentsBetweenPoints(start, end, i);
             }
             
-            if (closedLoop && splinePoints.Count > 2)
-            {
-                Vector3 start = transform.TransformPoint(splinePoints[splinePoints.Count - 1]);
-                Vector3 end = transform.TransformPoint(splinePoints[0]);
-                PlaceSegmentsBetweenPoints(start, end, splinePoints.Count - 1);
-            }
-        }
-        
-        private void PlaceSegmentsBetweenPoints(Vector3 start, Vector3 end, int segmentIndex)
-        {
-            Vector3 direction = end - start;
-            float distance = direction.magnitude;
-            direction.Normalize();
+            Debug.Log($"Committing path with {pathNodes.Count} nodes...");
+            ApplyStartAndEndCaps();
             
-            float spacing = segmentLibrary.defaultSegmentSpacing > 0 ? segmentLibrary.defaultSegmentSpacing : 1f;
-            int segmentCount = Mathf.Max(1, Mathf.FloorToInt(distance / spacing));
-            
-            for (int i = 0; i < segmentCount; i++)
+            for (int i = 0; i < pathNodes.Count; i++)
             {
-                float t = (float)i / segmentCount;
-                Vector3 position = Vector3.Lerp(start, end, t);
+                GridNode node = pathNodes[i];
+                SplineSegmentData segmentData = segmentLibrary.GetSegmentByType(node.segmentType);
                 
-                if (snapToGround && Physics.Raycast(position + Vector3.up * 10f, Vector3.down, out RaycastHit hit, 20f, groundLayer))
-                {
-                    position = hit.point + Vector3.up * groundOffset;
-                }
-                
-                Quaternion rotation = alignToSpline ? Quaternion.LookRotation(direction) : Quaternion.identity;
-                
-                SplineSegmentData segmentData = GetSegmentDataForPosition(segmentIndex, i, segmentCount);
                 if (segmentData?.prefab != null)
                 {
-                    Vector3 finalPosition = position - rotation * segmentData.connectionPointOffset;
+                    Quaternion rotation = CalculateSegmentRotation(node, i);
                     
-                    GameObject instance = Instantiate(segmentData.prefab, finalPosition, rotation, transform);
-                    instance.name = $"{segmentData.prefab.name}_{placedSegments.Count}";
+                    GameObject instance = Instantiate(segmentData.prefab, node.position, rotation, transform);
+                    instance.name = $"{segmentData.segmentType}_{i}";
                     placedSegments.Add(instance);
+                    node.placedObject = instance;
+                    
+                    Debug.Log($"  Node {i}: {node.segmentType} at {node.position}, direction: {node.direction}");
+                }
+                else
+                {
+                    Debug.LogWarning($"  Node {i}: Missing prefab for {node.segmentType}");
                 }
             }
+            
+            Debug.Log($"Committed {placedSegments.Count} segments.");
         }
         
-        private SplineSegmentData GetSegmentDataForPosition(int splineIndex, int segmentIndex, int totalSegments)
+        private Quaternion CalculateSegmentRotation(GridNode node, int index)
         {
-            if (segmentIndex == 0 && splineIndex == 0)
-            {
-                SplineSegmentData startCap = segmentLibrary.GetSegmentByType(SegmentType.StartCap);
-                if (startCap?.prefab != null) return startCap;
-            }
+            if (node.direction == Vector3.zero)
+                return Quaternion.identity;
             
-            if (segmentIndex == totalSegments - 1 && splineIndex == splinePoints.Count - 2 && !closedLoop)
+            if (node.segmentType == SegmentType.Corner90)
             {
-                SplineSegmentData endCap = segmentLibrary.GetSegmentByType(SegmentType.EndCap);
-                if (endCap?.prefab != null) return endCap;
-            }
-            
-            if (segmentLibrary.autoDetectAngles && splineIndex > 0 && splineIndex < splinePoints.Count - 1)
-            {
-                float angle = CalculateAngleAtPoint(splineIndex);
+                Vector3 incomingDir = index > 0 ? pathNodes[index - 1].direction : Vector3.forward;
+                Vector3 outgoingDir = node.direction;
                 
-                if (angle > 80f && angle < 100f)
-                {
-                    SplineSegmentData corner = segmentLibrary.GetSegmentByType(SegmentType.Corner90);
-                    if (corner?.prefab != null) return corner;
-                }
-                else if (angle > 40f && angle < 50f)
-                {
-                    SplineSegmentData corner = segmentLibrary.GetSegmentByType(SegmentType.Corner45);
-                    if (corner?.prefab != null) return corner;
-                }
+                float angle = Vector3.SignedAngle(incomingDir, outgoingDir, Vector3.up);
+                
+                Quaternion faceIncoming = Quaternion.LookRotation(incomingDir);
+                Quaternion tiltDown = Quaternion.Euler(90f, 0f, 0f);
+                Quaternion turnLeft = Quaternion.Euler(0f, angle, 0f);
+                
+                Debug.Log($"    Corner: incoming={incomingDir}, outgoing={outgoingDir}, angle={angle}");
+                
+                return turnLeft * faceIncoming * tiltDown;
             }
-            
-            return segmentLibrary.GetSegmentByType(SegmentType.Straight);
+            else
+            {
+                return Quaternion.LookRotation(node.direction) * Quaternion.Euler(90f, 0f, 0f);
+            }
         }
         
-        private float CalculateAngleAtPoint(int index)
+        private void ApplyStartAndEndCaps()
         {
-            if (index <= 0 || index >= splinePoints.Count - 1)
-                return 0f;
+            if (pathNodes.Count == 0)
+            {
+                Debug.LogWarning("ApplyStartAndEndCaps: No nodes to process.");
+                return;
+            }
             
-            Vector3 directionIn = (splinePoints[index] - splinePoints[index - 1]).normalized;
-            Vector3 directionOut = (splinePoints[index + 1] - splinePoints[index]).normalized;
+            Debug.Log($"ApplyStartAndEndCaps: Processing {pathNodes.Count} nodes...");
             
-            return Vector3.Angle(directionIn, directionOut);
+            if (pathNodes.Count == 1)
+            {
+                Debug.Log("  Single node - setting to StartCap");
+                pathNodes[0].segmentType = SegmentType.StartCap;
+            }
+            else if (pathNodes.Count > 1)
+            {
+                Debug.Log($"  First node (was {pathNodes[0].segmentType}) -> StartCap");
+                pathNodes[0].segmentType = SegmentType.StartCap;
+                Debug.Log($"  Last node (was {pathNodes[pathNodes.Count - 1].segmentType}) -> EndCap");
+                pathNodes[pathNodes.Count - 1].segmentType = SegmentType.EndCap;
+            }
+        }
+        
+        public void ClearPath()
+        {
+            pathNodes.Clear();
+            ClearSegments();
         }
         
         public void ClearSegments()
@@ -144,49 +173,54 @@ namespace SplinePlacement
             placedSegments.Clear();
         }
         
-        public void AddSplinePoint(Vector3 worldPosition)
-        {
-            splinePoints.Add(transform.InverseTransformPoint(worldPosition));
-            if (autoUpdate)
-                RegenerateSegments();
-        }
-        
-        public void RemoveLastPoint()
-        {
-            if (splinePoints.Count > 0)
-            {
-                splinePoints.RemoveAt(splinePoints.Count - 1);
-                if (autoUpdate)
-                    RegenerateSegments();
-            }
-        }
-        
         private void OnDrawGizmos()
         {
-            if (!showGizmos || splinePoints.Count < 2)
+            if (!showGizmos)
                 return;
             
-            Gizmos.color = splineColor;
-            
-            for (int i = 0; i < splinePoints.Count - 1; i++)
+            if (snapToGrid)
             {
-                Vector3 start = transform.TransformPoint(splinePoints[i]);
-                Vector3 end = transform.TransformPoint(splinePoints[i + 1]);
-                Gizmos.DrawLine(start, end);
-                Gizmos.DrawWireSphere(start, 0.1f);
+                DrawGrid();
             }
             
-            if (splinePoints.Count > 0)
-            {
-                Vector3 lastPoint = transform.TransformPoint(splinePoints[splinePoints.Count - 1]);
-                Gizmos.DrawWireSphere(lastPoint, 0.1f);
-            }
+            DrawPath();
+        }
+        
+        private void DrawGrid()
+        {
+            Gizmos.color = gridColor * 0.3f;
+            Vector3 center = transform.position;
+            int gridCount = 20;
+            float halfSize = gridCount * gridSize * 0.5f;
             
-            if (closedLoop && splinePoints.Count > 2)
+            for (int i = -gridCount/2; i <= gridCount/2; i++)
             {
-                Vector3 start = transform.TransformPoint(splinePoints[splinePoints.Count - 1]);
-                Vector3 end = transform.TransformPoint(splinePoints[0]);
+                Vector3 start = center + new Vector3(i * gridSize, 0, -halfSize);
+                Vector3 end = center + new Vector3(i * gridSize, 0, halfSize);
                 Gizmos.DrawLine(start, end);
+                
+                start = center + new Vector3(-halfSize, 0, i * gridSize);
+                end = center + new Vector3(halfSize, 0, i * gridSize);
+                Gizmos.DrawLine(start, end);
+            }
+        }
+        
+        private void DrawPath()
+        {
+            if (pathNodes.Count == 0)
+                return;
+            
+            Gizmos.color = pathColor;
+            
+            for (int i = 0; i < pathNodes.Count; i++)
+            {
+                Vector3 pos = pathNodes[i].position;
+                Gizmos.DrawWireSphere(pos, 0.2f);
+                
+                if (i > 0)
+                {
+                    Gizmos.DrawLine(pathNodes[i - 1].position, pos);
+                }
             }
         }
     }

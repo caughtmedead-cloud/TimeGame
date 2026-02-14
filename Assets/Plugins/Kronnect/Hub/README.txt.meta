@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: a20c890d117af4931965af44590e18c9
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/README.txt
+  uploadId: 839450

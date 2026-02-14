@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SplineMesh : MonoBehaviour {
+public class CodeMonkeySplineMesh : MonoBehaviour {
 
     [SerializeField] private Spline spline;
     [SerializeField] private float meshWidth = 1.5f;

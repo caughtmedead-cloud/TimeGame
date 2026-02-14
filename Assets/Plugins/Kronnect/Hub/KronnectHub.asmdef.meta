@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 2748b981347ee48829019df11f287562
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/KronnectHub.asmdef
+  uploadId: 839450
