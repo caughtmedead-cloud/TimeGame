@@ -22,6 +22,9 @@ namespace TimeGame.Systems.Inventory.UI
 
         [Tooltip("Prefab for item visuals")]
         [SerializeField] private GameObject itemVisualPrefab;
+        
+        [Tooltip("Optional tile sprites for grid cells")]
+        [SerializeField] private InventoryTileSprites tileSprites;
 
         [Header("Appearance")]
         [Tooltip("Color for grid cell backgrounds")]
@@ -56,6 +59,7 @@ namespace TimeGame.Systems.Inventory.UI
         public int GridWidth => gridWidth;
         public int GridHeight => gridHeight;
         public float CellSize => cellSize;
+        public InventoryTileSprites TileSprites => tileSprites;
 
         #region Initialization
 
@@ -180,15 +184,28 @@ namespace TimeGame.Systems.Inventory.UI
             Image cellImage = cellObj.GetComponent<Image>();
             if (cellImage != null)
             {
-                cellImage.color = gridCellColor;
+                // Use tile sprite if available, otherwise use color
+                if (tileSprites != null && tileSprites.emptyTileSprite != null)
+                {
+                    cellImage.sprite = tileSprites.emptyTileSprite;
+                    cellImage.type = tileSprites.emptyTileSpriteType;
+                    cellImage.color = Color.white; // No tint, show sprite naturally
+                }
+                else
+                {
+                    cellImage.color = gridCellColor;
+                }
             }
 
-            // Add border (Outline component)
-            Outline outline = cellObj.GetComponent<Outline>();
-            if (outline != null)
+            // Add border (Outline component) - only if NOT using tile sprites
+            if (tileSprites == null || tileSprites.emptyTileSprite == null)
             {
-                outline.effectColor = gridBorderColor;
-                outline.effectDistance = new Vector2(borderThickness, borderThickness);
+                Outline outline = cellObj.GetComponent<Outline>();
+                if (outline != null)
+                {
+                    outline.effectColor = gridBorderColor;
+                    outline.effectDistance = new Vector2(borderThickness, borderThickness);
+                }
             }
 
             cellObj.name = $"Cell_{x}_{y}";

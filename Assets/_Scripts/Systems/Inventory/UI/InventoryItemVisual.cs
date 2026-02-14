@@ -20,6 +20,7 @@ namespace TimeGame.Systems.Inventory.UI
         private RectTransform rectTransform;
         private RectTransform visualTransform; // Child that actually rotates
         private Image image;
+        private Image backgroundImage;  // Optional background for drag preview
 
         /// <summary>
         /// The placed item this visual represents.
@@ -63,8 +64,34 @@ namespace TimeGame.Systems.Inventory.UI
             // This will rotate around its center (0.5, 0.5)
             visualTransform.pivot = new Vector2(0.5f, 0.5f);
             
-            // Add Image component
-            image = visualObj.AddComponent<Image>();
+            // Create BACKGROUND GameObject (white tile - renders BEHIND icon)
+            GameObject backgroundObj = new GameObject("Background");
+            backgroundObj.transform.SetParent(visualTransform, false);
+            
+            RectTransform backgroundRT = backgroundObj.AddComponent<RectTransform>();
+            backgroundRT.anchorMin = Vector2.zero;
+            backgroundRT.anchorMax = Vector2.one;
+            backgroundRT.sizeDelta = Vector2.zero;
+            backgroundRT.anchoredPosition = Vector2.zero;
+            backgroundRT.pivot = new Vector2(0.5f, 0.5f);
+            
+            backgroundImage = backgroundObj.AddComponent<Image>();
+            backgroundImage.enabled = false;  // Hidden by default
+            backgroundImage.raycastTarget = false; // Don't block raycasts
+            
+            // Create ICON GameObject (item sprite - renders ON TOP of background)
+            GameObject iconObj = new GameObject("Icon");
+            iconObj.transform.SetParent(visualTransform, false);
+            
+            RectTransform iconRT = iconObj.AddComponent<RectTransform>();
+            iconRT.anchorMin = Vector2.zero;
+            iconRT.anchorMax = Vector2.one;
+            iconRT.sizeDelta = Vector2.zero;
+            iconRT.anchoredPosition = Vector2.zero;
+            iconRT.pivot = new Vector2(0.5f, 0.5f);
+            
+            image = iconObj.AddComponent<Image>();
+            image.raycastTarget = false; // Don't block raycasts
         }
 
         /// <summary>
@@ -154,6 +181,40 @@ namespace TimeGame.Systems.Inventory.UI
         public void SetPosition(Vector2 localPosition)
         {
             rectTransform.anchoredPosition = localPosition;
+        }
+
+        /// <summary>
+        /// Enable white tile background for drag preview.
+        /// Call this when item is being dragged.
+        /// </summary>
+        public void EnableDragBackground(InventoryTileSprites tiles)
+        {
+            if (backgroundImage == null || tiles == null || tiles.ghostTileSprite == null)
+            {
+                return;
+            }
+            
+            backgroundImage.sprite = tiles.ghostTileSprite;
+            backgroundImage.type = tiles.ghostSpriteType;
+            
+            if (tiles.ghostSpriteType == Image.Type.Sliced)
+            {
+                backgroundImage.fillCenter = tiles.fillCenterTiled;
+            }
+            
+            backgroundImage.color = new Color(1f, 1f, 1f, 0.7f); // Semi-transparent white
+            backgroundImage.enabled = true;
+        }
+
+        /// <summary>
+        /// Disable drag background (for placed items).
+        /// </summary>
+        public void DisableDragBackground()
+        {
+            if (backgroundImage != null)
+            {
+                backgroundImage.enabled = false;
+            }
         }
 
         /// <summary>
