@@ -1,5 +1,49 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-4478629824932291418
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ef6d2d7bf3633e4baf72310f121f717, type: 3}
+  m_Name: ProPixelizerRenderFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  UseDepthTestingForIDOutlines: 1
+  DepthTestThreshold: 0.0001
+  UseNormalsForEdgeDetection: 1
+  NormalEdgeDetectionThreshold: 2
+  UseDepthTestingForEdgeOutlines: 1
+  DefaultLowResScale: 1
+  UsePixelExpansion: 1
+  PixelizedLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  EditorPixelExpansion: 1
+  GenerateWarnings: 1
+  PixelizationMapShaders:
+    PixelizationMap: {fileID: 4800000, guid: 8dd346b62451e76418dabc2355815f15, type: 3}
+  PixelizationShaders:
+    CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
+    CopyMainTexAndDepth: {fileID: 4800000, guid: 4fdd965c0d64e16468688f87fbca597d, type: 3}
+    ApplyPixelizationMap: {fileID: 4800000, guid: f47f4f650fb29834684600d9a95f41c7, type: 3}
+  OutlineShaders:
+    OutlineDetection: {fileID: 4800000, guid: c59878161c7e0ad40b0661b47620d0e5, type: 3}
+  DepthRecompositionShaders:
+    SceneRecomposition: {fileID: 4800000, guid: 1daf70343df19d34f9bdaf78a137fdd5, type: 3}
+  FinalRecompositionPassShaders:
+    CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
+    CopyMainTexAndDepth: {fileID: 4800000, guid: 4fdd965c0d64e16468688f87fbca597d, type: 3}
+  FullscreenColorGradingPassShaders:
+    FullScreenColorGrade: {fileID: 4800000, guid: d5205d08ab9a61a4fa1cdf7f0ab15dc2, type: 3}
+  RenderGraphUnredirectPassShaders:
+    CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
+  CopySubcameraDepthPassShaders:
+    CopyDepth: {fileID: 4800000, guid: 5854eec6cff8aa8449c5f14562cf9c11, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25,8 +69,8 @@ MonoBehaviour:
     probeSamplingDebugTexture: {fileID: 0}
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
-  - {fileID: 0}
-  m_RendererFeatureMap: 03683ee6364a6d91
+  - {fileID: -4478629824932291418}
+  m_RendererFeatureMap: a6dc702ce7b5d8c1
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
