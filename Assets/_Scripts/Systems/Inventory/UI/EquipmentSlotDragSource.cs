@@ -144,16 +144,8 @@ namespace TimeGame.Systems.Inventory.UI
             // This is the SAME technique grid drags use!
             visualObj.transform.SetParent(canvasRoot, worldPositionStays: true);
             
-            // Add Image for visual
-            Image image = visualObj.AddComponent<Image>();
-            if (itemDef.ItemIcon != null)
-            {
-                image.sprite = itemDef.ItemIcon;
-            }
-            else
-            {
-                image.color = GetColorForRarity(itemDef.Rarity);
-            }
+            // DON'T add Image here - InventoryItemVisual.Initialize() will create
+            // a visual child with the Image! Adding one here creates duplicates!
             
             // Add CanvasGroup
             CanvasGroup cg = visualObj.AddComponent<CanvasGroup>();
@@ -163,25 +155,13 @@ namespace TimeGame.Systems.Inventory.UI
             InventoryItemVisual visual = visualObj.AddComponent<InventoryItemVisual>();
             
             // Initialize with grid size (64px cells)
+            // This will create the visual child with the Image component!
             float cellSize = 64f;
             visual.Initialize(placedItem, itemDef, cellSize, null); // null = no grid
             
             Log($"Created drag visual: {itemDef.Width}x{itemDef.Height} at {cellSize}px cells");
             
             return visual;
-        }
-
-        private Color GetColorForRarity(ItemRarity rarity)
-        {
-            switch (rarity)
-            {
-                case ItemRarity.Common: return new Color(0.7f, 0.7f, 0.7f);
-                case ItemRarity.Uncommon: return new Color(0.3f, 0.8f, 0.3f);
-                case ItemRarity.Rare: return new Color(0.3f, 0.5f, 1f);
-                case ItemRarity.Epic: return new Color(0.8f, 0.3f, 0.8f);
-                case ItemRarity.Legendary: return new Color(1f, 0.6f, 0f);
-                default: return Color.white;
-            }
         }
 
         private void Log(string message)
