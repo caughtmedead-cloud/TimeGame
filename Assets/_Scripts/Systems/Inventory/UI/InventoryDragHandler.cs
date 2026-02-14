@@ -334,12 +334,9 @@ namespace TimeGame.Systems.Inventory.UI
                 {
                     dir = itemDef.GetNextRotation(dir);
                     
-                    // CRITICAL: Recenter item under cursor after rotation!
-                    // Item dimensions changed, so offset needs to update
-                    Vector2Int itemSize = new Vector2Int(itemDef.GetRotatedWidth(dir), itemDef.GetRotatedHeight(dir));
-                    mouseDragGridPositionOffset = new Vector2Int(itemSize.x / 2, itemSize.y / 2);
-                    
-                    Debug.Log($"[InventoryDragHandler] ROTATION CHANGED - New dir: {dir}, New offset: {mouseDragGridPositionOffset}");
+                    // DON'T recalculate offset - keep cursor relationship fixed!
+                    // The item rotates visually but the cursor stays in the same relative position
+                    Debug.Log($"[InventoryDragHandler] ROTATION CHANGED - New dir: {dir}, Offset unchanged: {mouseDragGridPositionOffset}");
                 }
             }
 
