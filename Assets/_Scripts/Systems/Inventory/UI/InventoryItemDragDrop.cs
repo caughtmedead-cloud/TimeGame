@@ -1,106 +1,76 @@
-using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
-    /// Handles drag and drop for inventory items.
-    /// Enables dragging items between grids and equipment slots.
-    /// Shows WhiteTile background during drag for preview.
+    /// Drag-drop component that goes on each item visual.
+    /// Uses Unity's Event System for robust drag detection.
+    /// Based on CodeMonkey's implementation pattern.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasGroup))]
     public class InventoryItemDragDrop : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
-        private InventoryGridVisual sourceGrid;
-        private Guid itemInstanceID;
-        private InventoryItemVisual itemVisual;
-        
         private RectTransform rectTransform;
         private CanvasGroup canvasGroup;
-        private Transform originalParent;
-        private int originalSiblingIndex;
-
+        private InventoryGridVisual gridVisual;
+        
+        // Item identity
+        private System.Guid itemInstanceID;
+        
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
             canvasGroup = GetComponent<CanvasGroup>();
-            itemVisual = GetComponent<InventoryItemVisual>();
         }
 
         /// <summary>
-        /// Setup the drag-drop handler with grid and item references.
+        /// Setup this drag-drop component with references.
         /// </summary>
-        public void Setup(InventoryGridVisual grid, Guid instanceID)
+        public void Setup(InventoryGridVisual gridVisual, System.Guid itemInstanceID)
         {
-            sourceGrid = grid;
-            itemInstanceID = instanceID;
+            this.gridVisual = gridVisual;
+            this.itemInstanceID = itemInstanceID;
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            if (sourceGrid == null) return;
-
-            // Store original position
-            originalParent = transform.parent;
-            originalSiblingIndex = transform.GetSiblingIndex();
-
-            // Make semi-transparent during drag
-            canvasGroup.alpha = 0.6f;
-            canvasGroup.blocksRaycasts = false; // Allow raycasts to pass through
-
-            // TASK 2: Enable white tile background for drag preview
-            if (itemVisual != null && sourceGrid.TileSprites != null)
+            if (gridVisual == null)
             {
-                itemVisual.EnableDragBackground(sourceGrid.TileSprites);
+                Debug.LogWarning("[InventoryItemDragDrop] GridVisual reference is null!");
+                return;
             }
 
-            // Move to top of hierarchy for rendering on top
-            transform.SetParent(sourceGrid.transform.parent);
-            transform.SetAsLastSibling();
+            // Make semi-transparent during drag
+            canvasGroup.alpha = 0.7f;
+            canvasGroup.blocksRaycasts = false; // Don't block raycasts
+
+            // Notify the drag handler system
+            InventoryDragHandler dragHandler = gridVisual.GetComponentInParent<InventoryDragHandler>();
+            if (dragHandler != null)
+            {
+                dragHandler.OnItemBeginDrag(itemInstanceID);
+            }
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (rectTransform == null) return;
-
-            // Follow mouse position
-            rectTransform.position = eventData.position;
+            // Drag logic handled by InventoryDragHandler
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            // Restore alpha and raycasts
+            // Restore opacity
             canvasGroup.alpha = 1f;
             canvasGroup.blocksRaycasts = true;
 
-            // TASK 2: Disable drag background
-            if (itemVisual != null)
+            // Notify the drag handler system
+            InventoryDragHandler dragHandler = gridVisual.GetComponentInParent<InventoryDragHandler>();
+            if (dragHandler != null)
             {
-                itemVisual.DisableDragBackground();
+                dragHandler.OnItemEndDrag(itemInstanceID);
             }
-
-            // Try to drop on target
-            bool dropped = TryDropOnTarget(eventData);
-
-            if (!dropped)
-            {
-                // Return to original position
-                transform.SetParent(originalParent);
-                transform.SetSiblingIndex(originalSiblingIndex);
-                rectTransform.anchoredPosition = Vector2.zero; // Reset position
-            }
-        }
-
-        private bool TryDropOnTarget(PointerEventData eventData)
-        {
-            // Placeholder for actual drop logic
-            // This would integrate with your existing drag-drop system
-            // to handle placement on different grids/slots
-            
-            // For now, items return to original position
-            return false;
         }
     }
 }
