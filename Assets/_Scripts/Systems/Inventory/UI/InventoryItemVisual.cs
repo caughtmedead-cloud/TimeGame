@@ -92,11 +92,14 @@ namespace TimeGame.Systems.Inventory.UI
             iconRT.pivot = new Vector2(0.5f, 0.5f);
             
             image = iconObj.AddComponent<Image>();
-            image.raycastTarget = false; // Don't block raycasts
-            // CRITICAL: Start with no sprite and disabled to prevent white square
+            // CRITICAL: raycastTarget must be TRUE for drag system to detect the item!
+            // Unity's EventSystem needs at least one Graphic with raycastTarget = true
+            image.raycastTarget = true;
+            // Start with no sprite and fully transparent color
             image.sprite = null;
             image.color = Color.clear;
-            image.enabled = false;
+            // Must stay ENABLED for EventSystem to work, but transparent so nothing shows
+            image.enabled = true;
         }
 
         /// <summary>
@@ -138,14 +141,14 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 image.sprite = itemDef.ItemIcon;
                 image.color = Color.white; // Proper white for sprite display
-                image.enabled = true; // Enable now that sprite is assigned
+                // Already enabled in CreateVisualChild()
             }
             else
             {
                 // Fallback: colored square
                 image.sprite = null;
                 image.color = GetColorForRarity(itemDef.Rarity);
-                image.enabled = true;
+                // Already enabled in CreateVisualChild()
             }
 
             // Add drag-drop component ONLY if we have a grid (grid items only)
