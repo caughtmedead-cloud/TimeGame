@@ -273,6 +273,7 @@ public class TimelineTransitionProtection : NetworkBehaviour
             Debug.Log($"[TransitionProtection] Protection period ended - player can move again");
     }
     
+#if UNITY_EDITOR
     // ===== DEBUG COMMANDS =====
     
     [ContextMenu("Force Enable Protection")]
@@ -294,4 +295,5 @@ public class TimelineTransitionProtection : NetworkBehaviour
             Debug.Log("[TransitionProtection] DEBUG: Force disabled protection");
         }
     }
+#endif
 }
