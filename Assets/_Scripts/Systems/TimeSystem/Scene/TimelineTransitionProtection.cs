@@ -27,7 +27,7 @@ public class TimelineTransitionProtection : NetworkBehaviour
     [SerializeField] private int safetyFrameCount = 3;
     
     [Tooltip("Enable verbose logging")]
-    [SerializeField] private bool verboseLogging = true;
+    [SerializeField] private bool verboseLogging = false;
     
     private TimelineManager timelineManager;
     private bool isProtected = false;
@@ -41,9 +41,6 @@ public class TimelineTransitionProtection : NetworkBehaviour
     // Store original settings
     private bool originalControllerEnabled;
     private bool originalIsKinematic;
-    
-    // Reference to movement script (if you want to disable it)
-    private MonoBehaviour movementScript;
     
     private void Awake()
     {
@@ -202,13 +199,6 @@ public class TimelineTransitionProtection : NetworkBehaviour
             if (verboseLogging)
                 Debug.Log($"[TransitionProtection] Rigidbody set to kinematic");
         }
-        
-        // Optional: Disable movement script
-        // Uncomment and adjust if you have a specific movement script
-        // if (movementScript != null)
-        // {
-        //     movementScript.enabled = false;
-        // }
     }
     
     private void Update()
@@ -278,12 +268,6 @@ public class TimelineTransitionProtection : NetworkBehaviour
             if (verboseLogging)
                 Debug.Log($"[TransitionProtection] Rigidbody physics restored");
         }
-        
-        // Optional: Re-enable movement script
-        // if (movementScript != null)
-        // {
-        //     movementScript.enabled = true;
-        // }
         
         if (verboseLogging)
             Debug.Log($"[TransitionProtection] Protection period ended - player can move again");

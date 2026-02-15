@@ -24,7 +24,7 @@ namespace TimeGame.Systems.Inventory.UI
         private PlacedItem draggedPlacedItem;
         
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = true;
+        [SerializeField] private bool verboseLogging = false;
 
         private void Awake()
         {

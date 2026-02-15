@@ -29,7 +29,7 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private Image slotBackgroundImage;
 
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = true;
+        [SerializeField] private bool verboseLogging = false;
 
         // State
         private InventoryItemSO equippedItem;

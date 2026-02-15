@@ -25,7 +25,7 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private EquipmentStorageMapping[] equipmentStorageMappings;
 
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = true;
+        [SerializeField] private bool verboseLogging = false;
 
         // Grid tracking
         private InventoryGridVisual pocketGrid;
