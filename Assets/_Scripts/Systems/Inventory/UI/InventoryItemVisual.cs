@@ -93,7 +93,6 @@ namespace TimeGame.Systems.Inventory.UI
             
             image = iconObj.AddComponent<Image>();
             // CRITICAL: raycastTarget must be TRUE for drag system to detect the item!
-            // Unity's EventSystem needs at least one Graphic with raycastTarget = true
             image.raycastTarget = true;
             // Start with no sprite and fully transparent color
             image.sprite = null;
@@ -194,7 +193,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Enable white tile background for drag preview.
-        /// Call this when item is being dragged.
+        /// Called by InventoryDragHandler when drag starts.
         /// </summary>
         public void EnableDragBackground(InventoryTileSprites tiles)
         {
@@ -217,6 +216,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Disable drag background (for placed items).
+        /// Called by InventoryDragHandler when drag ends.
         /// </summary>
         public void DisableDragBackground()
         {
