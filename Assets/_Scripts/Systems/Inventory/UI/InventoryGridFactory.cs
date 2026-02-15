@@ -19,9 +19,18 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private Color gridCellColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         [SerializeField] private Color gridBorderColor = new Color(0.4f, 0.4f, 0.4f, 0.8f);
         [SerializeField] private float borderThickness = 1f;
+        
+        [Header("Tile Sprites")]
+        [Tooltip("Optional: Tile sprites for grid visualization. If assigned, all created grids will use these sprites.")]
+        [SerializeField] private InventoryTileSprites tileSprites;
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = false;
+        
+        /// <summary>
+        /// Public accessor for tile sprites (used by drag handlers).
+        /// </summary>
+        public InventoryTileSprites TileSprites => tileSprites;
 
         /// <summary>
         /// Create a complete InventoryGridVisual GameObject with all components configured.
@@ -73,6 +82,19 @@ namespace TimeGame.Systems.Inventory.UI
             if (gridVisual == null)
             {
                 gridVisual = gridObj.AddComponent<InventoryGridVisual>();
+            }
+            
+            // CRITICAL: Set tile sprites on the grid visual using reflection
+            // This allows the factory to inject the tile sprites reference
+            if (tileSprites != null)
+            {
+                var field = typeof(InventoryGridVisual).GetField("tileSprites", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field != null)
+                {
+                    field.SetValue(gridVisual, tileSprites);
+                    Log($"Assigned tile sprites to grid '{gridName}'");
+                }
             }
 
             // Create InventorySystem
