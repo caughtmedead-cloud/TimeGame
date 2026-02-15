@@ -20,7 +20,7 @@ namespace TimeGame.Systems.Inventory.UI
         private RectTransform rectTransform;
         private RectTransform visualTransform; // Child that actually rotates
         private Image image;
-        private Image backgroundImage;  // Optional background for drag preview
+        private Image backgroundImage;  // White tile drag preview background
 
         /// <summary>
         /// The placed item this visual represents.
@@ -47,6 +47,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Create the child GameObject that holds the rotatable visual.
+        /// Creates hierarchy: Visual > DragPreview_Background + ItemSprite_Icon
         /// </summary>
         private void CreateVisualChild()
         {
@@ -65,7 +66,8 @@ namespace TimeGame.Systems.Inventory.UI
             visualTransform.pivot = new Vector2(0.5f, 0.5f);
             
             // Create BACKGROUND GameObject (white tile - renders BEHIND icon)
-            GameObject backgroundObj = new GameObject("Background");
+            // Only visible during drag
+            GameObject backgroundObj = new GameObject("DragPreview_Background");
             backgroundObj.transform.SetParent(visualTransform, false);
             
             RectTransform backgroundRT = backgroundObj.AddComponent<RectTransform>();
@@ -80,7 +82,7 @@ namespace TimeGame.Systems.Inventory.UI
             backgroundImage.raycastTarget = false; // Don't block raycasts
             
             // Create ICON GameObject (item sprite - renders ON TOP of background)
-            GameObject iconObj = new GameObject("Icon");
+            GameObject iconObj = new GameObject("ItemSprite_Icon");
             iconObj.transform.SetParent(visualTransform, false);
             
             RectTransform iconRT = iconObj.AddComponent<RectTransform>();
@@ -132,6 +134,7 @@ namespace TimeGame.Systems.Inventory.UI
             if (itemDef.ItemIcon != null)
             {
                 image.sprite = itemDef.ItemIcon;
+                image.color = Color.white; // CRITICAL: Set to white for proper sprite display
                 image.enabled = true;
             }
             else
