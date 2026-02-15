@@ -107,9 +107,22 @@ namespace TimeGame.Systems.GridPlacement
             placedItem = new PlacedItem(itemDefinition, anchorPosition, rotation);
 
             // Occupy all cells
+            if (EnableDebugLogging)
+            {
+                Log($"[PLACEMENT] Item {itemDefinition.ItemName} at {anchorPosition} rotation {rotation}");
+                Log($"[PLACEMENT]   OccupiedCells count: {placedItem.OccupiedCells.Count}");
+                Log($"[PLACEMENT]   OccupiedCells list: [{string.Join(", ", placedItem.OccupiedCells)}]");
+            }
+
             foreach (Vector2Int cellPos in placedItem.OccupiedCells)
             {
                 GridCell cell = grid.GetGridObject(cellPos.x, cellPos.y);
+
+                if (EnableDebugLogging)
+                {
+                    Log($"[PLACEMENT]     Occupying cell {cellPos} (was {(cell.IsAvailable ? "available" : "occupied")})");
+                }
+
                 cell.SetOccupyingItem(placedItem);
             }
 
@@ -122,6 +135,7 @@ namespace TimeGame.Systems.GridPlacement
             if (EnableDebugLogging)
             {
                 Log($"Placed {itemDefinition.ItemName} at {anchorPosition} facing {rotation} (ID: {placedItem.InstanceID})");
+                Log($"[PLACEMENT] Total items in grid now: {placedItems.Count}");
             }
 
             return true;
@@ -155,9 +169,22 @@ namespace TimeGame.Systems.GridPlacement
             placedItem = new PlacedItem(instanceID, itemDefinition, anchorPosition, rotation);
 
             // Occupy all cells
+            if (EnableDebugLogging)
+            {
+                Log($"[PLACEMENT] Item {itemDefinition.ItemName} at {anchorPosition} rotation {rotation}");
+                Log($"[PLACEMENT]   OccupiedCells count: {placedItem.OccupiedCells.Count}");
+                Log($"[PLACEMENT]   OccupiedCells list: [{string.Join(", ", placedItem.OccupiedCells)}]");
+            }
+
             foreach (Vector2Int cellPos in placedItem.OccupiedCells)
             {
                 GridCell cell = grid.GetGridObject(cellPos.x, cellPos.y);
+
+                if (EnableDebugLogging)
+                {
+                    Log($"[PLACEMENT]     Occupying cell {cellPos} (was {(cell.IsAvailable ? "available" : "occupied")})");
+                }
+
                 cell.SetOccupyingItem(placedItem);
             }
 
@@ -170,6 +197,7 @@ namespace TimeGame.Systems.GridPlacement
             if (EnableDebugLogging)
             {
                 Log($"Placed {itemDefinition.ItemName} at {anchorPosition} facing {rotation} (ID: {placedItem.InstanceID})");
+                Log($"[PLACEMENT] Total items in grid now: {placedItems.Count}");
             }
 
             return true;
@@ -181,10 +209,29 @@ namespace TimeGame.Systems.GridPlacement
         /// </summary>
         public bool CanPlaceItem(PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation)
         {
+            return CanPlaceItem(itemDefinition, anchorPosition, rotation, Guid.Empty);
+        }
+
+        /// <summary>
+        /// Check if an item can be placed at a position, optionally ignoring a specific item's cells.
+        /// Useful for same-grid drag operations where we want to check if we can move an item to a new position.
+        /// </summary>
+        /// <param name="itemDefinition">The item to place</param>
+        /// <param name="anchorPosition">Where to place it</param>
+        /// <param name="rotation">Rotation</param>
+        /// <param name="ignoreItemID">If not Guid.Empty, cells occupied by this item will be treated as available</param>
+        public bool CanPlaceItem(PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation, Guid ignoreItemID)
+        {
             if (itemDefinition == null) return false;
 
             // Get all cells this placement would occupy
             List<Vector2Int> requiredCells = itemDefinition.GetGridPositionList(anchorPosition, rotation);
+
+            if (EnableDebugLogging)
+            {
+                Log($"[CAN_PLACE] Checking {itemDefinition.ItemName} at {anchorPosition} rotation {rotation}");
+                Log($"[CAN_PLACE]   RequiredCells: [{string.Join(", ", requiredCells)}]");
+            }
 
             // Check each cell
             foreach (Vector2Int cellPos in requiredCells)
@@ -192,17 +239,46 @@ namespace TimeGame.Systems.GridPlacement
                 // Check bounds
                 if (!IsValidGridPosition(cellPos))
                 {
+                    if (EnableDebugLogging)
+                    {
+                        Log($"[CAN_PLACE]   Cell {cellPos} OUT OF BOUNDS");
+                    }
                     return false;
                 }
 
                 // Check availability
                 GridCell cell = grid.GetGridObject(cellPos.x, cellPos.y);
+
+                if (EnableDebugLogging)
+                {
+                    Log($"[CAN_PLACE]   Cell {cellPos}: {(cell.IsAvailable ? "AVAILABLE" : $"OCCUPIED by {cell.OccupyingItem?.ItemDefinition?.ItemName}")}");
+                }
+
+                // If cell is occupied, check if it's occupied by the item we're ignoring
                 if (!cell.IsAvailable)
                 {
-                    return false;
+                    // If we're ignoring an item and this cell is occupied by that item, treat it as available
+                    if (ignoreItemID != Guid.Empty && cell.OccupyingItem != null && cell.OccupyingItem.InstanceID == ignoreItemID)
+                    {
+                        if (EnableDebugLogging)
+                        {
+                            Log($"[CAN_PLACE]   Cell {cellPos}: Ignoring occupation by {ignoreItemID}");
+                        }
+                        continue; // This cell is OK - it's occupied by the item we're moving
+                    }
+
+                    if (EnableDebugLogging)
+                    {
+                        Log($"[CAN_PLACE]   BLOCKED at {cellPos}");
+                    }
+                    return false; // Cell is blocked by a different item
                 }
             }
 
+            if (EnableDebugLogging)
+            {
+                Log($"[CAN_PLACE] Result: TRUE");
+            }
             return true;
         }
 
@@ -384,6 +460,63 @@ namespace TimeGame.Systems.GridPlacement
         private void LogWarning(string message)
         {
             Debug.LogWarning($"[GridPlacementSystem] {message}");
+        }
+
+        /// <summary>
+        /// Dump complete grid state for debugging.
+        /// Shows all cells and what items occupy them.
+        /// </summary>
+        public void DumpGridState(string gridName)
+        {
+            Debug.Log($"====== GRID STATE DUMP: {gridName} ======");
+            Debug.Log($"Grid size: {Width}x{Height} ({Width * Height} total cells)");
+            Debug.Log($"Placed items count: {placedItems.Count}");
+
+            // Show all placed items
+            Debug.Log("--- Placed Items ---");
+            foreach (var kvp in placedItems)
+            {
+                PlacedItem item = kvp.Value;
+                Debug.Log($"  {item.ItemDefinition.ItemName} (ID: {item.InstanceID})");
+                Debug.Log($"    Position: {item.AnchorPosition}, Rotation: {item.Rotation}");
+                Debug.Log($"    OccupiedCells: {item.OccupiedCells.Count} cells: [{string.Join(", ", item.OccupiedCells)}]");
+            }
+
+            // Show cell-by-cell state
+            Debug.Log("--- Cell State (bottom-to-top, left-to-right) ---");
+            for (int y = 0; y < Height; y++)
+            {
+                string rowState = $"Row {y}: ";
+                for (int x = 0; x < Width; x++)
+                {
+                    GridCell cell = grid.GetGridObject(x, y);
+                    if (cell.IsAvailable)
+                    {
+                        rowState += "[  ] ";
+                    }
+                    else
+                    {
+                        rowState += "[XX] ";
+                    }
+                }
+                Debug.Log(rowState);
+            }
+
+            // Count occupied cells
+            int occupiedCount = 0;
+            for (int y = 0; y < Height; y++)
+            {
+                for (int x = 0; x < Width; x++)
+                {
+                    GridCell cell = grid.GetGridObject(x, y);
+                    if (!cell.IsAvailable)
+                    {
+                        occupiedCount++;
+                    }
+                }
+            }
+            Debug.Log($"Total cells occupied: {occupiedCount}/{Width * Height}");
+            Debug.Log($"============================================");
         }
 
         #endregion

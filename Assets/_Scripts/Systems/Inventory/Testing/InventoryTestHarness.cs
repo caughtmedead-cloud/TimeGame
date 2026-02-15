@@ -45,6 +45,11 @@ namespace TimeGame.Systems.Inventory.Testing
         [Tooltip("Show debug logs")]
         [SerializeField] private bool verboseLogging = true;
 
+        private void Start()
+        {
+            // Test harness ready
+        }
+
         private void Update()
         {
             // Press 1 to equip helmet
@@ -336,9 +341,11 @@ namespace TimeGame.Systems.Inventory.Testing
                 for (int x = 0; x <= width - itemWidth; x++)
                 {
                     Vector2Int pos = new Vector2Int(x, y);
-                    
-                    // Check if this position is valid (FIX: CanAddItem not CanPlaceItem)
-                    if (grid.InventorySystem.CanAddItem(item, pos, rotation))
+
+                    // Check if this position is valid
+                    bool canPlace = grid.InventorySystem.CanAddItem(item, pos, rotation);
+
+                    if (canPlace)
                     {
                         return pos;
                     }

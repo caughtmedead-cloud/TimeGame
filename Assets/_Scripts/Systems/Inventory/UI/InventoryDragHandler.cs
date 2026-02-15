@@ -42,6 +42,7 @@ namespace TimeGame.Systems.Inventory.UI
         private GridDirection dir;                             // Current rotation
         private Vector2Int lastTargetGridPosition;             // Where the visual is LERPING TO (for placement)
         private bool loggedRotation = false;                   // DEBUG: Track if we logged rotation this drag
+        private InventoryGridVisual lastGhostGrid;             // Track which grid is showing ghost preview
         
         // Original state for returning item if drop fails
         private InventoryGridVisual originalGrid;              // Null if dragged from equipment slot
@@ -308,13 +309,16 @@ namespace TimeGame.Systems.Inventory.UI
                 ReturnToOriginalPosition();
             }
 
+            // Clear ghost preview
+            ClearAllGhostPreviews();
+
             // Clear drag state
             Debug.Log($"[InventoryDragHandler] Clearing drag state...");
             draggingPlacedObject = null;
             currentGrid = null;
             originalSource = null;
             loggedRotation = false; // DEBUG: Reset for next drag
-            
+
             Debug.Log($"[InventoryDragHandler] >>> END OnItemEndDrag({itemInstanceID}) <<<");
         }
 
@@ -372,13 +376,13 @@ namespace TimeGame.Systems.Inventory.UI
                 null,
                 out Vector2 mouseLocalPos
             );
-            
+
             // Get item definition once
             InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
-            
+
             // Calculate where item will land
             Vector2Int mouseGridPos = currentGrid.LocalPositionToGridPosition(mouseLocalPos);
-            
+
             // FIX: When offset is (0,0) (dragging from equipment), center item under cursor
             Vector2Int dragOffset = mouseDragGridPositionOffset;
             if (dragOffset == Vector2Int.zero && itemDef != null)
@@ -387,14 +391,14 @@ namespace TimeGame.Systems.Inventory.UI
                 Vector2Int itemSize = new Vector2Int(itemDef.GetRotatedWidth(dir), itemDef.GetRotatedHeight(dir));
                 dragOffset = new Vector2Int(itemSize.x / 2, itemSize.y / 2);
             }
-            
+
             Vector2Int placementGridPos = mouseGridPos - dragOffset;
-            
+
             if (verboseLogging)
             {
                 Debug.Log($"[InventoryDragHandler] UPDATE VISUAL - mouseGridPos={mouseGridPos}, dragOffset={dragOffset}, visualPlacement={placementGridPos}");
             }
-            
+
             // Clamp to grid boundaries
             if (itemDef != null)
             {
@@ -402,10 +406,27 @@ namespace TimeGame.Systems.Inventory.UI
                 placementGridPos.x = Mathf.Clamp(placementGridPos.x, 0, currentGrid.InventorySystem.Width - itemSize.x);
                 placementGridPos.y = Mathf.Clamp(placementGridPos.y, 0, currentGrid.InventorySystem.Height - itemSize.y);
             }
-            
+
             // CRITICAL: Store this for placement! The visual lerps toward it, so reading visual position gives mid-lerp coords
             lastTargetGridPosition = placementGridPos;
-            
+
+            // Update ghost preview
+            if (itemDef != null)
+            {
+                int itemWidth = itemDef.GetRotatedWidth(dir);
+                int itemHeight = itemDef.GetRotatedHeight(dir);
+
+                // FIX: For same-grid movement, ignore the dragging item's current cells when checking placement
+                // Otherwise the item's current cells will block itself
+                bool isSameGrid = (currentGrid == originalGrid);
+                System.Guid ignoreItemID = (isSameGrid && originalPlacedItem != null) ? originalPlacedItem.InstanceID : System.Guid.Empty;
+
+                bool canPlace = currentGrid.CanAcceptItemAtGridPosition(itemDef, dir, placementGridPos, ignoreItemID);
+
+                currentGrid.ShowGhostPreview(placementGridPos, itemWidth, itemHeight, canPlace);
+                lastGhostGrid = currentGrid;
+            }
+
             // Convert to local position
             Vector2 targetPosition = currentGrid.GridPositionToLocalPosition(placementGridPos);
 
@@ -426,7 +447,7 @@ namespace TimeGame.Systems.Inventory.UI
         private void UpdateFreeFloatMode(Vector2 mouseScreenPos)
         {
             RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
-            
+
             // Transition from grid → free-float?
             if (currentGrid != null)
             {
@@ -434,6 +455,9 @@ namespace TimeGame.Systems.Inventory.UI
                 draggingPlacedObject.transform.SetParent(canvasRoot, worldPositionStays: true);
                 currentGrid = null;
             }
+
+            // Clear ghost preview when not over a grid
+            ClearAllGhostPreviews();
 
             // Position item using the ORIGINAL offset (set at drag start)
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -617,7 +641,7 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 if (target is InventoryGridVisual gridVisual)
                 {
-                    if (gridVisual.InventorySystem != null && 
+                    if (gridVisual.InventorySystem != null &&
                         gridVisual.InventorySystem.GetItemByID(itemID) != null)
                     {
                         return gridVisual;
@@ -626,6 +650,27 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Clear ghost previews on all registered grids.
+        /// </summary>
+        private void ClearAllGhostPreviews()
+        {
+            if (lastGhostGrid != null)
+            {
+                lastGhostGrid.ClearGhostPreview();
+                lastGhostGrid = null;
+            }
+
+            // Also clear on all registered grids to be safe
+            foreach (IInventoryDropTarget target in registeredTargets)
+            {
+                if (target is InventoryGridVisual gridVisual)
+                {
+                    gridVisual.ClearGhostPreview();
+                }
+            }
         }
 
         #endregion

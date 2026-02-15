@@ -47,8 +47,10 @@ namespace TimeGame.Systems.Inventory.UI
         // Visual tracking
         private Dictionary<Guid, InventoryItemVisual> itemVisuals = new Dictionary<Guid, InventoryItemVisual>();
         private GameObject[,] gridCells; // Track cell GameObjects for updating sprites
+        private GameObject ghostPreviewObject; // Single unified ghost preview (not tiled)
         private Transform gridCellContainer;
         private Transform itemContainer;
+        private Transform ghostContainer;
 
         // Grid dimensions (cached)
         private int gridWidth;
@@ -120,7 +122,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             GameObject container = new GameObject(containerName);
             RectTransform rt = container.AddComponent<RectTransform>();
-            
+
             rt.SetParent(transform, false);
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
@@ -128,6 +130,74 @@ namespace TimeGame.Systems.Inventory.UI
             rt.anchoredPosition = Vector2.zero;
 
             return container.transform;
+        }
+
+        /// <summary>
+        /// Show ghost tile preview for an item at a specific grid position.
+        /// Called during drag operations to show where the item will land.
+        /// Creates a single unified preview with border (not tiled per cell).
+        /// </summary>
+        public void ShowGhostPreview(Vector2Int anchorPosition, int width, int height, bool canPlace)
+        {
+            if (tileSprites == null || tileSprites.ghostTileSprite == null)
+                return; // No ghost sprite configured
+
+            // Create ghost container if needed
+            if (ghostContainer == null)
+            {
+                ghostContainer = CreateContainer("GhostPreview");
+                // Set higher sibling index to appear above grid cells but below items
+                ghostContainer.SetSiblingIndex(1);
+            }
+
+            // Clear previous ghost preview
+            ClearGhostPreview();
+
+            // Create single unified ghost preview spanning the entire item footprint
+            ghostPreviewObject = new GameObject("GhostPreview");
+            RectTransform ghostRT = ghostPreviewObject.AddComponent<RectTransform>();
+            Image ghostImage = ghostPreviewObject.AddComponent<Image>();
+
+            // Parent to ghost container
+            ghostRT.SetParent(ghostContainer, false);
+
+            // Calculate position and size
+            Vector2 position = GridPositionToLocalPosition(anchorPosition);
+            Vector2 size = new Vector2(width * cellSize, height * cellSize);
+
+            // Configure RectTransform
+            ghostRT.anchorMin = new Vector2(0, 0);
+            ghostRT.anchorMax = new Vector2(0, 0);
+            ghostRT.pivot = new Vector2(0, 0);
+            ghostRT.sizeDelta = size;
+            ghostRT.anchoredPosition = position;
+
+            // Apply ghost sprite with sliced type for border-only rendering
+            ghostImage.sprite = tileSprites.ghostTileSprite;
+            ghostImage.type = Image.Type.Sliced;
+            ghostImage.fillCenter = false; // CRITICAL: Don't fill center, only show border!
+
+            // Color tint: green if valid placement, red if invalid
+            ghostImage.color = canPlace
+                ? new Color(0f, 1f, 0f, 0.5f)  // Green with 50% alpha
+                : new Color(1f, 0f, 0f, 0.5f); // Red with 50% alpha
+
+            if (enableDebugLogging)
+            {
+                Debug.Log($"[InventoryGridVisual] Showing ghost preview at {anchorPosition}, size {width}×{height}, canPlace={canPlace}");
+            }
+        }
+
+        /// <summary>
+        /// Hide ghost tile preview.
+        /// </summary>
+        public void ClearGhostPreview()
+        {
+            if (ghostPreviewObject != null)
+            {
+                Destroy(ghostPreviewObject);
+                ghostPreviewObject = null;
+            }
         }
 
         #endregion
@@ -482,25 +552,49 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Convert mouse position to grid position
             Vector2Int gridPos = LocalPositionToGridPosition(mouseLocalPosition);
-            
+
+            // Use the overload that does the actual checking
+            return CanAcceptItemAtGridPosition(item, rotation, gridPos);
+        }
+
+        /// <summary>
+        /// Check if this grid can accept an item at a specific grid position.
+        /// Used by drag handler when it has already calculated the placement position.
+        /// </summary>
+        public bool CanAcceptItemAtGridPosition(InventoryItemSO item, GridDirection rotation, Vector2Int gridPos)
+        {
+            return CanAcceptItemAtGridPosition(item, rotation, gridPos, System.Guid.Empty);
+        }
+
+        /// <summary>
+        /// Check if this grid can accept an item at a specific grid position, optionally ignoring a specific item.
+        /// Used for same-grid drag operations.
+        /// </summary>
+        public bool CanAcceptItemAtGridPosition(InventoryItemSO item, GridDirection rotation, Vector2Int gridPos, System.Guid ignoreItemID)
+        {
+            if (inventorySystem == null)
+            {
+                return false;
+            }
+
             // FIX: Validate grid boundaries BEFORE checking inventory system
             // This prevents the ghost from showing green outside grid bounds
             if (gridPos.x < 0 || gridPos.x >= gridWidth || gridPos.y < 0 || gridPos.y >= gridHeight)
             {
                 return false; // Out of bounds
             }
-            
+
             // FIX: Also check if the ENTIRE item footprint fits within bounds
             int itemWidth = item.GetRotatedWidth(rotation);
             int itemHeight = item.GetRotatedHeight(rotation);
-            
+
             if (gridPos.x + itemWidth > gridWidth || gridPos.y + itemHeight > gridHeight)
             {
                 return false; // Item extends beyond grid
             }
 
             // Now check if the inventory system can place the item here
-            return inventorySystem.CanAddItem(item, gridPos, rotation);
+            return inventorySystem.CanAddItem(item, gridPos, rotation, ignoreItemID);
         }
 
         public bool TryPlaceItem(InventoryItemSO item, GridDirection rotation, Vector2 mouseLocalPosition, out PlacedItem placedItem)
@@ -550,6 +644,9 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void OnDestroy()
         {
+            // Clear ghost preview
+            ClearGhostPreview();
+
             // Unsubscribe from events
             if (inventorySystem != null)
             {

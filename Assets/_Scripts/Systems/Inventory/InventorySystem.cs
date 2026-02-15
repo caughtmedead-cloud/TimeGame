@@ -132,16 +132,41 @@ namespace TimeGame.Systems.Inventory
         /// </summary>
         public bool CanAddItem(InventoryItemSO item, Vector2Int position, GridDirection rotation)
         {
+            return CanAddItem(item, position, rotation, Guid.Empty);
+        }
+
+        /// <summary>
+        /// Check if an item can be added at a position, optionally ignoring a specific item's cells.
+        /// Useful for same-grid drag operations.
+        /// </summary>
+        public bool CanAddItem(InventoryItemSO item, Vector2Int position, GridDirection rotation, Guid ignoreItemID)
+        {
             if (item == null) return false;
 
-            // Check weight
-            if (UseWeightLimit && !CanAddWeight(item.Weight))
+            // Check weight (but account for items we're moving within the same grid)
+            if (UseWeightLimit)
             {
-                return false;
+                float weightToAdd = item.Weight;
+
+                // If we're moving an item that's already in this grid (ignoreItemID),
+                // we need to subtract its weight since it's already counted in GetCurrentWeight()
+                if (ignoreItemID != Guid.Empty)
+                {
+                    PlacedItem existingItem = gridSystem.GetItemByID(ignoreItemID);
+                    if (existingItem != null && existingItem.ItemDefinition is InventoryItemSO existingInventoryItem)
+                    {
+                        weightToAdd -= existingInventoryItem.Weight;
+                    }
+                }
+
+                if (!CanAddWeight(weightToAdd))
+                {
+                    return false;
+                }
             }
 
             // Check grid placement
-            return gridSystem.CanPlaceItem(item, position, rotation);
+            return gridSystem.CanPlaceItem(item, position, rotation, ignoreItemID);
         }
 
         /// <summary>
@@ -369,6 +394,7 @@ namespace TimeGame.Systems.Inventory
             if (EnableDebugLogging)
             {
                 Log($"Item added: {item.ItemDefinition.ItemName} | Weight: {GetCurrentWeight()}/{MaxWeight}");
+                Log($"  Anchor: {item.AnchorPosition}, Rotation: {item.Rotation}, OccupiedCells: {item.OccupiedCells.Count}");
             }
         }
 
