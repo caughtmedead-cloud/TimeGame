@@ -120,6 +120,7 @@ public class TemporalStability : NetworkBehaviour
         }
     }
     
+#if UNITY_EDITOR
     // ===== DEBUG COMMANDS =====
     
     [ContextMenu("Debug: Degrade Stability (10)")]
@@ -156,4 +157,5 @@ public class TemporalStability : NetworkBehaviour
         if (IsServerStarted)
             SetStability(maxStability);
     }
+#endif
 }

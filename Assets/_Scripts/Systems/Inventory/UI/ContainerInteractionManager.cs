@@ -14,7 +14,7 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private GameObject leftPanelRoot;
 
         [Header("Debug")]
-        [SerializeField] private bool verboseLogging = true;
+        [SerializeField] private bool verboseLogging = false;
 
         // Current open container
         private LootContainer currentContainer;

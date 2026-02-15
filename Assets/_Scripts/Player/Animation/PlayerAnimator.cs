@@ -166,11 +166,6 @@ public class PlayerAnimator : NetworkBehaviour
         }
     }
 
-    private void OnLanded()
-    {
-    }
-
-
     private string GetStateName(AnimatorStateInfo stateInfo)
     {
         if (stateInfo.IsName("Movement")) return "Movement";

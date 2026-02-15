@@ -215,18 +215,6 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Disable drag background (for placed items).
-        /// Called by InventoryDragHandler when drag ends.
-        /// </summary>
-        public void DisableDragBackground()
-        {
-            if (backgroundImage != null)
-            {
-                backgroundImage.enabled = false;
-            }
-        }
-
-        /// <summary>
         /// Get color for rarity (fallback when no icon).
         /// </summary>
         private Color GetColorForRarity(ItemRarity rarity)
