@@ -357,13 +357,14 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Create default item visual prefab if none provided.
+        /// CRITICAL: Do NOT add Image component to root - causes white background.
+        /// InventoryItemVisual creates its own visual hierarchy.
         /// </summary>
         private GameObject CreateDefaultItemVisualPrefab()
         {
             GameObject prefab = new GameObject("ItemVisual");
             
             RectTransform rt = prefab.AddComponent<RectTransform>();
-            Image image = prefab.AddComponent<Image>();
             InventoryItemVisual visual = prefab.AddComponent<InventoryItemVisual>();
 
             return prefab;
