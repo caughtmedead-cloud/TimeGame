@@ -46,6 +46,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         // Visual tracking
         private Dictionary<Guid, InventoryItemVisual> itemVisuals = new Dictionary<Guid, InventoryItemVisual>();
+        private GameObject[,] gridCells; // Track cell GameObjects for updating sprites
         private Transform gridCellContainer;
         private Transform itemContainer;
 
@@ -145,6 +146,9 @@ namespace TimeGame.Systems.Inventory.UI
                 Destroy(child.gameObject);
             }
 
+            // Initialize cell tracking array
+            gridCells = new GameObject[gridWidth, gridHeight];
+
             // Create cell prefab if not provided
             if (gridCellPrefab == null)
             {
@@ -156,7 +160,8 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 for (int y = 0; y < gridHeight; y++)
                 {
-                    SpawnGridCell(x, y);
+                    GameObject cell = SpawnGridCell(x, y);
+                    gridCells[x, y] = cell; // Store reference for later updates
                 }
             }
 
@@ -166,7 +171,7 @@ namespace TimeGame.Systems.Inventory.UI
             }
         }
 
-        private void SpawnGridCell(int x, int y)
+        private GameObject SpawnGridCell(int x, int y)
         {
             GameObject cellObj = Instantiate(gridCellPrefab, gridCellContainer);
             RectTransform cellRT = cellObj.GetComponent<RectTransform>();
@@ -209,6 +214,74 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             cellObj.name = $"Cell_{x}_{y}";
+            return cellObj;
+        }
+
+        /// <summary>
+        /// Update cell sprite based on occupancy state.
+        /// </summary>
+        private void UpdateCellSprite(int x, int y, bool occupied)
+        {
+            if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight)
+                return;
+
+            if (gridCells == null || gridCells[x, y] == null)
+                return;
+
+            if (tileSprites == null)
+                return; // No sprites configured, nothing to update
+
+            GameObject cellObj = gridCells[x, y];
+            Image cellImage = cellObj.GetComponent<Image>();
+            
+            if (cellImage == null)
+                return;
+
+            // Set appropriate sprite based on occupancy
+            if (occupied && tileSprites.occupiedTileSprite != null)
+            {
+                cellImage.sprite = tileSprites.occupiedTileSprite;
+                cellImage.type = tileSprites.occupiedTileSpriteType;
+            }
+            else if (!occupied && tileSprites.emptyTileSprite != null)
+            {
+                cellImage.sprite = tileSprites.emptyTileSprite;
+                cellImage.type = tileSprites.emptyTileSpriteType;
+            }
+            
+            cellImage.color = Color.white; // No tint
+        }
+
+        /// <summary>
+        /// Update all cells covered by an item's footprint.
+        /// </summary>
+        private void UpdateItemFootprint(PlacedItem item, bool occupied)
+        {
+            if (item == null || item.ItemDefinition == null)
+                return;
+
+            InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
+            if (itemDef == null)
+                return;
+
+            int width = itemDef.GetRotatedWidth(item.Rotation);
+            int height = itemDef.GetRotatedHeight(item.Rotation);
+            
+            Vector2Int anchor = item.AnchorPosition;
+
+            // Update all cells in item's footprint
+            for (int dx = 0; dx < width; dx++)
+            {
+                for (int dy = 0; dy < height; dy++)
+                {
+                    UpdateCellSprite(anchor.x + dx, anchor.y + dy, occupied);
+                }
+            }
+
+            if (enableDebugLogging)
+            {
+                Debug.Log($"[InventoryGridVisual] Updated footprint for {itemDef.ItemName} at {anchor}, occupied={occupied}");
+            }
         }
 
         /// <summary>
@@ -239,6 +312,7 @@ namespace TimeGame.Systems.Inventory.UI
         private void HandleItemAdded(PlacedItem item)
         {
             SpawnItemVisual(item);
+            UpdateItemFootprint(item, true); // Mark cells as occupied
         }
 
         /// <summary>
@@ -246,6 +320,7 @@ namespace TimeGame.Systems.Inventory.UI
         /// </summary>
         private void HandleItemRemoved(PlacedItem item)
         {
+            UpdateItemFootprint(item, false); // Mark cells as empty
             RemoveItemVisual(item.InstanceID);
         }
 
