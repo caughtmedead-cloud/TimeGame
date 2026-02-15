@@ -119,3 +119,5 @@ packages-lock.json
 [Aa]ssets/Harpia Games.meta
 [Aa]ssets/BakeryLightmaps/
 [Aa]ssets/BakeryLightmaps.meta
+# Claude Code worktrees
+.claude/
