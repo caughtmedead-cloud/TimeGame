@@ -22,9 +22,6 @@ namespace TimeGame.Systems.Inventory.UI
 
         [Tooltip("Prefab for item visuals")]
         [SerializeField] private GameObject itemVisualPrefab;
-        
-        [Tooltip("Optional tile sprites for grid cells")]
-        [SerializeField] private InventoryTileSprites tileSprites;
 
         [Header("Appearance")]
         [Tooltip("Color for grid cell backgrounds")]
@@ -43,6 +40,9 @@ namespace TimeGame.Systems.Inventory.UI
         // Internal references
         private RectTransform rectTransform;
         private InventorySystem inventorySystem;
+        
+        // CRITICAL: NOT serialized - InventoryGridFactory injects this via reflection
+        private InventoryTileSprites tileSprites;
 
         // Visual tracking
         private Dictionary<Guid, InventoryItemVisual> itemVisuals = new Dictionary<Guid, InventoryItemVisual>();
