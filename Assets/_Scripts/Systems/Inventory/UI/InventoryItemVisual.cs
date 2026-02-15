@@ -20,7 +20,7 @@ namespace TimeGame.Systems.Inventory.UI
         private RectTransform rectTransform;
         private RectTransform visualTransform; // Child that actually rotates
         private Image image;
-        private Image backgroundImage;  // White tile drag preview background
+        private Image backgroundImage;  // White tile drag preview
 
         /// <summary>
         /// The placed item this visual represents.
@@ -47,7 +47,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Create the child GameObject that holds the rotatable visual.
-        /// Creates hierarchy: Visual > DragPreview_Background + ItemSprite_Icon
+        /// Creates: Visual > DragPreview_Background + ItemSprite_Icon
         /// </summary>
         private void CreateVisualChild()
         {
@@ -65,8 +65,7 @@ namespace TimeGame.Systems.Inventory.UI
             // This will rotate around its center (0.5, 0.5)
             visualTransform.pivot = new Vector2(0.5f, 0.5f);
             
-            // Create BACKGROUND GameObject (white tile - renders BEHIND icon)
-            // Only visible during drag
+            // Create BACKGROUND GameObject (white tile - renders BEHIND icon, only visible during drag)
             GameObject backgroundObj = new GameObject("DragPreview_Background");
             backgroundObj.transform.SetParent(visualTransform, false);
             
@@ -94,6 +93,10 @@ namespace TimeGame.Systems.Inventory.UI
             
             image = iconObj.AddComponent<Image>();
             image.raycastTarget = false; // Don't block raycasts
+            // CRITICAL: Start with no sprite and disabled to prevent white square
+            image.sprite = null;
+            image.color = Color.clear;
+            image.enabled = false;
         }
 
         /// <summary>
@@ -134,8 +137,8 @@ namespace TimeGame.Systems.Inventory.UI
             if (itemDef.ItemIcon != null)
             {
                 image.sprite = itemDef.ItemIcon;
-                image.color = Color.white; // CRITICAL: Set to white for proper sprite display
-                image.enabled = true;
+                image.color = Color.white; // Proper white for sprite display
+                image.enabled = true; // Enable now that sprite is assigned
             }
             else
             {
