@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory.UI
@@ -9,7 +10,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// Uses a two-transform hierarchy for proper rotation:
     /// - Outer: Grid-aligned positioning (pivot 0,0)
     /// - Inner: Visual rotation (pivot 0.5,0.5 - center)
-    /// 
+    ///
     /// Can be used for:
     /// 1. Grid items (with drag-drop)
     /// 2. Standalone drag visuals (no drag-drop)
@@ -21,6 +22,8 @@ namespace TimeGame.Systems.Inventory.UI
         private RectTransform visualTransform; // Child that actually rotates
         private Image image;
         private Image backgroundImage;  // White tile drag preview
+        private TextMeshProUGUI stackCountText;  // Stack count display (bottom-right)
+        private TextMeshProUGUI usesCountText;   // Uses count display (bottom-left)
 
         /// <summary>
         /// The placed item this visual represents.
@@ -99,6 +102,55 @@ namespace TimeGame.Systems.Inventory.UI
             image.color = Color.clear;
             // Must stay ENABLED for EventSystem to work, but transparent so nothing shows
             image.enabled = true;
+
+            // Create stack count text (bottom-right corner)
+            GameObject stackCountObj = new GameObject("StackCount");
+            stackCountObj.transform.SetParent(visualTransform, false);
+
+            RectTransform stackCountRT = stackCountObj.AddComponent<RectTransform>();
+            stackCountRT.anchorMin = new Vector2(1, 0); // Bottom-right
+            stackCountRT.anchorMax = new Vector2(1, 0);
+            stackCountRT.pivot = new Vector2(1, 0);
+            stackCountRT.anchoredPosition = new Vector2(-2, 2); // Small padding from edge
+            stackCountRT.sizeDelta = new Vector2(40, 20);
+
+            stackCountText = stackCountObj.AddComponent<TextMeshProUGUI>();
+            stackCountText.fontSize = 14;
+            stackCountText.fontStyle = FontStyles.Bold;
+            stackCountText.color = Color.white;
+            stackCountText.alignment = TextAlignmentOptions.BottomRight;
+            stackCountText.raycastTarget = false;
+            stackCountText.enableWordWrapping = false;
+
+            // Add outline for readability
+            stackCountText.outlineWidth = 0.2f;
+            stackCountText.outlineColor = Color.black;
+
+            stackCountText.text = "";
+            stackCountText.enabled = false; // Hidden by default
+
+            // Create uses count text (bottom-left corner)
+            GameObject usesCountObj = new GameObject("UsesCount");
+            usesCountObj.transform.SetParent(visualTransform, false);
+
+            RectTransform usesCountRT = usesCountObj.AddComponent<RectTransform>();
+            usesCountRT.anchorMin = new Vector2(0, 0); // Bottom-left
+            usesCountRT.anchorMax = new Vector2(0, 0);
+            usesCountRT.pivot = new Vector2(0, 0);
+            usesCountRT.anchoredPosition = new Vector2(2, 2); // Small padding from edge
+            usesCountRT.sizeDelta = new Vector2(50, 20); // Slightly wider for "10/10" format
+
+            usesCountText = usesCountObj.AddComponent<TextMeshProUGUI>();
+            usesCountText.fontSize = 14;
+            usesCountText.fontStyle = FontStyles.Bold;
+            usesCountText.color = Color.white;
+            usesCountText.alignment = TextAlignmentOptions.BottomLeft;
+            usesCountText.raycastTarget = false;
+            usesCountText.enableWordWrapping = false;
+            usesCountText.outlineWidth = 0.2f;
+            usesCountText.outlineColor = Color.black;
+            usesCountText.text = "";
+            usesCountText.enabled = false; // Hidden by default
         }
 
         /// <summary>
@@ -149,6 +201,12 @@ namespace TimeGame.Systems.Inventory.UI
                 image.color = GetColorForRarity(itemDef.Rarity);
                 // Already enabled in CreateVisualChild()
             }
+
+            // Update stack count display
+            UpdateStackCount();
+
+            // Update uses count display
+            UpdateUsesCount();
 
             // Add drag-drop component ONLY if we have a grid (grid items only)
             // Standalone visuals (equipment drags, temporary visuals) don't need drag-drop
@@ -223,6 +281,64 @@ namespace TimeGame.Systems.Inventory.UI
             if (backgroundImage != null)
             {
                 backgroundImage.enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// Update the stack count display based on the current PlacedItem.
+        /// Shows count only if > 1 and item is stackable.
+        /// </summary>
+        public void UpdateStackCount()
+        {
+            if (stackCountText == null || PlacedItem == null || ItemDefinition == null)
+                return;
+
+            // Only show stack count if item is stackable and count > 1
+            if (ItemDefinition.IsStackable && PlacedItem.StackCount > 1)
+            {
+                stackCountText.text = PlacedItem.StackCount.ToString();
+                stackCountText.enabled = true;
+            }
+            else
+            {
+                stackCountText.text = "";
+                stackCountText.enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// Update the uses count display based on the current ItemInstance.
+        /// Shows "current/max" format only if item has limited uses.
+        /// </summary>
+        public void UpdateUsesCount()
+        {
+            if (usesCountText == null || PlacedItem == null || ItemDefinition == null)
+                return;
+
+            // Check if this is a tracked item with uses
+            if (PlacedItem.IsInstanceTracked &&
+                PlacedItem.ItemInstances != null &&
+                PlacedItem.ItemInstances.Count > 0)
+            {
+                // Get first item in stack (the one that would be used)
+                ItemInstance firstItem = PlacedItem.ItemInstances[0];
+
+                // Only show uses if item has limited uses (not -1)
+                if (firstItem.UsesRemaining >= 0 && ItemDefinition is InventoryItemSO itemSO && itemSO.HasLimitedUses)
+                {
+                    usesCountText.text = $"{firstItem.UsesRemaining}/{itemSO.MaxUses}";
+                    usesCountText.enabled = true;
+                }
+                else
+                {
+                    usesCountText.text = "";
+                    usesCountText.enabled = false;
+                }
+            }
+            else
+            {
+                usesCountText.text = "";
+                usesCountText.enabled = false;
             }
         }
 

@@ -82,7 +82,7 @@ namespace TimeGame.Systems.GridPlacement
         /// Try to place an item at the specified position.
         /// Returns true if placement succeeded, false if blocked.
         /// </summary>
-        public bool TryPlaceItem(PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation, out PlacedItem placedItem)
+        public bool TryPlaceItem(PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation, out PlacedItem placedItem, int stackCount = 1)
         {
             placedItem = null;
 
@@ -104,7 +104,7 @@ namespace TimeGame.Systems.GridPlacement
             }
 
             // Create placed item instance
-            placedItem = new PlacedItem(itemDefinition, anchorPosition, rotation);
+            placedItem = new PlacedItem(itemDefinition, anchorPosition, rotation, stackCount);
 
             // Occupy all cells
             if (EnableDebugLogging)
@@ -144,7 +144,7 @@ namespace TimeGame.Systems.GridPlacement
         /// <summary>
         /// Try to place an item with a specific instance ID (for network replication).
         /// </summary>
-        public bool TryPlaceItem(Guid instanceID, PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation, out PlacedItem placedItem)
+        public bool TryPlaceItem(Guid instanceID, PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation, out PlacedItem placedItem, int stackCount = 1)
         {
             placedItem = null;
 
@@ -166,7 +166,7 @@ namespace TimeGame.Systems.GridPlacement
             }
 
             // Create placed item instance with specific ID
-            placedItem = new PlacedItem(instanceID, itemDefinition, anchorPosition, rotation);
+            placedItem = new PlacedItem(instanceID, itemDefinition, anchorPosition, rotation, stackCount);
 
             // Occupy all cells
             if (EnableDebugLogging)

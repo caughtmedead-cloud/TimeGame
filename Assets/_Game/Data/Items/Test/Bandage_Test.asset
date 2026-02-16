@@ -18,11 +18,17 @@ MonoBehaviour:
   CanRotate: 1
   ItemIcon: {fileID: 21300000, guid: 8c34b9eb41a466c43bc99414cf84d7e1, type: 3}
   Description: 
-  IsStackable: 0
-  MaxStackSize: 1
-  EquipmentType: 1
-  Category: 0
+  IsStackable: 1
+  MaxStackSize: 4
+  TrackIndividualItems: 1
+  HasLimitedUses: 1
+  MaxUses: 4
+  EquipmentType: 14
+  Category: 4
   Rarity: 0
   Weight: 1
   Value: 1
+  ProvidesStorage: 0
+  StorageGridSize: {x: 6, y: 4}
+  StorageMaxWeight: 20
   WorldPrefab: {fileID: 6098753544466807593, guid: f712070419a6f394a9171ef061135324, type: 3}

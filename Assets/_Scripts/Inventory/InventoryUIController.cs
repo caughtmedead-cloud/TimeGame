@@ -18,6 +18,9 @@ namespace TimeGame.Inventory
         [Header("Player Input References")]
         [Tooltip("PlayerController component - auto-found if not assigned")]
         [SerializeField] private PlayerController playerController;
+
+        [Tooltip("PlayerInventoryManager component - auto-found if not assigned")]
+        [SerializeField] private TimeGame.Systems.Inventory.UI.PlayerInventoryManager playerInventoryManager;
         
         [Header("Input Settings")]
         [Tooltip("Enable debug logging for inventory UI actions")]
@@ -42,6 +45,16 @@ namespace TimeGame.Inventory
                 if (playerController == null)
                 {
                     Debug.LogError("[InventoryUIController] PlayerController not found! Please assign it in inspector.");
+                }
+            }
+
+            // Auto-find PlayerInventoryManager if not assigned
+            if (playerInventoryManager == null)
+            {
+                playerInventoryManager = GetComponentInChildren<TimeGame.Systems.Inventory.UI.PlayerInventoryManager>(true);
+                if (playerInventoryManager == null)
+                {
+                    Debug.LogWarning("[InventoryUIController] PlayerInventoryManager not found. Grid refresh on open will be skipped.");
                 }
             }
             
@@ -162,12 +175,18 @@ namespace TimeGame.Inventory
             {
                 inventoryCanvas.SetActive(true);
             }
-            
+
+            // Refresh all inventory grids to show items added while UI was closed
+            if (playerInventoryManager != null)
+            {
+                playerInventoryManager.RefreshAllGrids();
+            }
+
             // Unlock cursor for UI interaction
             cursorWasLocked = Cursor.lockState == CursorLockMode.Locked;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            
+
             // Disable player input (movement, look, jump, etc.)
             DisablePlayerInput();
             

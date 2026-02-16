@@ -471,6 +471,57 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
+        /// Create a standalone visual for an item (not tracked by this grid).
+        /// Used for drag operations with split stacks.
+        /// </summary>
+        public InventoryItemVisual CreateStandaloneVisual(PlacedItem placedItem, InventoryItemSO itemDef)
+        {
+            // Ensure we have a prefab
+            if (itemVisualPrefab == null)
+            {
+                itemVisualPrefab = CreateDefaultItemVisualPrefab();
+            }
+
+            // Instantiate visual (no parent - will be parented by caller)
+            GameObject visualObj = Instantiate(itemVisualPrefab);
+            InventoryItemVisual visual = visualObj.GetComponent<InventoryItemVisual>();
+
+            if (visual == null)
+            {
+                Debug.LogError($"[InventoryGridVisual] Item visual prefab missing InventoryItemVisual component!", this);
+                Destroy(visualObj);
+                return null;
+            }
+
+            // Initialize visual (pass null for gridVisual since this is standalone - no drag-drop component)
+            visual.Initialize(placedItem, itemDef, cellSize, null);
+
+            // Don't enable drag background - we want the same look as normal dragging
+            // visual.EnableDragBackground(tileSprites); // REMOVED
+
+            // Add CanvasGroup for drag opacity control
+            CanvasGroup canvasGroup = visualObj.GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = visualObj.AddComponent<CanvasGroup>();
+            }
+            canvasGroup.alpha = 0.7f; // Semi-transparent during drag
+
+            visualObj.name = $"DragVisual_{itemDef.ItemName}_{placedItem.InstanceID}";
+
+            // Force layout rebuild to ensure size is calculated
+            RectTransform rt = visualObj.GetComponent<RectTransform>();
+            UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+
+            if (enableDebugLogging)
+            {
+                Debug.Log($"[InventoryGridVisual] Created standalone visual for {itemDef.ItemName}, size: {rt.sizeDelta}");
+            }
+
+            return visual;
+        }
+
+        /// <summary>
         /// Refresh all item visuals (clear and respawn from InventorySystem).
         /// </summary>
         public void RefreshAllItemVisuals()

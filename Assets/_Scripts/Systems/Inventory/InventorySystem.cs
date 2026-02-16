@@ -72,7 +72,7 @@ namespace TimeGame.Systems.Inventory
         /// Try to add an item to the inventory.
         /// Returns true if successful, false if blocked or over weight limit.
         /// </summary>
-        public bool TryAddItem(InventoryItemSO item, Vector2Int position, GridDirection rotation, out PlacedItem placedItem)
+        public bool TryAddItem(InventoryItemSO item, Vector2Int position, GridDirection rotation, out PlacedItem placedItem, int stackCount = 1, bool allowAutoStack = true)
         {
             placedItem = null;
 
@@ -82,18 +82,42 @@ namespace TimeGame.Systems.Inventory
                 return false;
             }
 
+            // If item is stackable and auto-stacking is allowed, first try to add to existing stacks
+            if (allowAutoStack && item.IsStackable && stackCount > 0)
+            {
+                int remaining = TryAddToExistingStacks(item, stackCount);
+
+                // If all items were added to existing stacks, we're done
+                if (remaining == 0)
+                {
+                    // Find one of the stacks we added to (for the output parameter)
+                    foreach (PlacedItem existingItem in gridSystem.GetAllPlacedItems())
+                    {
+                        if (existingItem.ItemDefinition == item)
+                        {
+                            placedItem = existingItem;
+                            return true;
+                        }
+                    }
+                    return true;
+                }
+
+                // Update stackCount to remaining amount that needs a new stack
+                stackCount = remaining;
+            }
+
             // Check weight limit
-            if (UseWeightLimit && !CanAddWeight(item.Weight))
+            if (UseWeightLimit && !CanAddWeight(item.Weight * stackCount))
             {
                 if (EnableDebugLogging)
                 {
-                    LogWarning($"Cannot add {item.ItemName} - would exceed weight limit ({GetCurrentWeight()}/{MaxWeight})");
+                    LogWarning($"Cannot add {item.ItemName} x{stackCount} - would exceed weight limit ({GetCurrentWeight()}/{MaxWeight})");
                 }
                 return false;
             }
 
             // Try placement in grid system
-            bool success = gridSystem.TryPlaceItem(item, position, rotation, out placedItem);
+            bool success = gridSystem.TryPlaceItem(item, position, rotation, out placedItem, stackCount);
 
             return success;
         }
@@ -125,6 +149,89 @@ namespace TimeGame.Systems.Inventory
             bool success = gridSystem.TryPlaceItem(instanceID, item, position, rotation, out placedItem);
 
             return success;
+        }
+
+        /// <summary>
+        /// Try to add items to existing stacks of the same type.
+        /// Returns the number of items that couldn't be added to existing stacks.
+        ///
+        /// NOTE: This is the basic version for simple stacking.
+        /// For durability/modification support, override PlacedItem.CanMergeWith()
+        /// or use a more sophisticated stacking system.
+        /// </summary>
+        private int TryAddToExistingStacks(InventoryItemSO item, int count)
+        {
+            if (!item.IsStackable || count <= 0)
+                return count;
+
+            int remaining = count;
+
+            // Find all existing stacks of this item
+            foreach (PlacedItem existingItem in gridSystem.GetAllPlacedItems())
+            {
+                if (existingItem.ItemDefinition == item)
+                {
+                    // Calculate how many we can add to this stack
+                    int spaceInStack = item.MaxStackSize - existingItem.StackCount;
+                    if (spaceInStack > 0)
+                    {
+                        int toAdd = Mathf.Min(spaceInStack, remaining);
+                        existingItem.AddToStack(toAdd);
+                        remaining -= toAdd;
+
+                        if (EnableDebugLogging)
+                        {
+                            Log($"Added {toAdd} {item.ItemName} to existing stack (now {existingItem.StackCount}/{item.MaxStackSize})");
+                        }
+
+                        if (remaining == 0)
+                            break;
+                    }
+                }
+            }
+
+            return remaining;
+        }
+
+        /// <summary>
+        /// Advanced version: Try to add a specific PlacedItem (with data) to existing stacks.
+        /// Uses PlacedItem.CanMergeWith() to respect durability and modifications.
+        /// Returns true if fully merged, false if needs a new stack.
+        /// </summary>
+        public bool TryMergePlacedItem(PlacedItem itemToMerge, out int remainingCount)
+        {
+            remainingCount = itemToMerge.StackCount;
+            InventoryItemSO itemDef = itemToMerge.ItemDefinition as InventoryItemSO;
+
+            if (itemDef == null || !itemDef.IsStackable)
+            {
+                return false; // Can't merge non-stackable items
+            }
+
+            // Find compatible stacks
+            foreach (PlacedItem existingItem in gridSystem.GetAllPlacedItems())
+            {
+                if (existingItem.CanMergeWith(itemToMerge))
+                {
+                    int spaceInStack = itemDef.MaxStackSize - existingItem.StackCount;
+                    if (spaceInStack > 0)
+                    {
+                        int toAdd = Mathf.Min(spaceInStack, remainingCount);
+                        existingItem.AddToStack(toAdd);
+                        remainingCount -= toAdd;
+
+                        if (EnableDebugLogging)
+                        {
+                            Log($"Merged {toAdd} {itemDef.ItemName} into compatible stack (now {existingItem.StackCount}/{itemDef.MaxStackSize})");
+                        }
+
+                        if (remainingCount == 0)
+                            return true; // Fully merged
+                    }
+                }
+            }
+
+            return remainingCount == 0;
         }
 
         /// <summary>
@@ -198,7 +305,7 @@ namespace TimeGame.Systems.Inventory
         #region Weight Management
 
         /// <summary>
-        /// Get current total weight of all items.
+        /// Get current total weight of all items (accounting for stack counts).
         /// </summary>
         public float GetCurrentWeight()
         {
@@ -208,7 +315,7 @@ namespace TimeGame.Systems.Inventory
             {
                 if (placedItem.ItemDefinition is InventoryItemSO inventoryItem)
                 {
-                    totalWeight += inventoryItem.Weight;
+                    totalWeight += inventoryItem.Weight * placedItem.StackCount;
                 }
             }
 

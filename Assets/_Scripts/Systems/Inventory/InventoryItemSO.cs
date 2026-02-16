@@ -24,6 +24,21 @@ namespace TimeGame.Systems.Inventory
         [Tooltip("Maximum stack size (if stackable)")]
         public int MaxStackSize = 1;
 
+        [Tooltip("Track individual item instances in stack (durability, uses, etc.)\n" +
+                 "TRUE = Each item in stack has individual properties\n" +
+                 "FALSE = Items are identical homogeneous stack (just count them)\n\n" +
+                 "Use for: Medical supplies, tools, weapons with durability\n" +
+                 "Don't use for: Basic resources, ammo, generic consumables")]
+        public bool TrackIndividualItems = false;
+
+        [Header("Consumable Properties")]
+        [Tooltip("Does this item have limited uses?")]
+        public bool HasLimitedUses = false;
+
+        [Tooltip("Maximum number of uses this item has when pristine (1-128)")]
+        [Range(1, 128)]
+        public int MaxUses = 1;
+
         [Header("Item Type")]
         [Tooltip("Equipment slot type (for slot restrictions)")]
         public ItemType EquipmentType = ItemType.None;

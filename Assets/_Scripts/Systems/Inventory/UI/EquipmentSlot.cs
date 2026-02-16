@@ -270,22 +270,30 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (itemIconImage != null)
             {
+                // Check if we're trying to update visuals while parent hierarchy is inactive
+                if (!gameObject.activeInHierarchy)
+                {
+                    Debug.LogWarning($"[EquipmentSlot:{slotName}] UpdateVisuals called while slot is inactive! Visual update will be deferred until inventory opens.");
+                }
+
                 itemIconImage.gameObject.SetActive(true);
-                
+
                 if (itemIconCanvasGroup != null)
                 {
                     itemIconCanvasGroup.alpha = hasItem ? 1f : 0f;
                     itemIconCanvasGroup.blocksRaycasts = hasItem;
                     itemIconCanvasGroup.interactable = hasItem;
                 }
-                
+
                 if (hasItem && equippedItem.ItemIcon != null)
                 {
                     itemIconImage.sprite = equippedItem.ItemIcon;
+                    Log($"Updated icon to {equippedItem.ItemName} (activeInHierarchy: {gameObject.activeInHierarchy})");
                 }
                 else if (!hasItem)
                 {
                     itemIconImage.sprite = null;
+                    Log($"Cleared icon (activeInHierarchy: {gameObject.activeInHierarchy})");
                 }
             }
 

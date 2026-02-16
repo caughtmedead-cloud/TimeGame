@@ -41,7 +41,6 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2 mouseDragCanvasOffset;                 // Offset in canvas space (NEVER changes during drag!)
         private GridDirection dir;                             // Current rotation
         private Vector2Int lastTargetGridPosition;             // Where the visual is LERPING TO (for placement)
-        private bool loggedRotation = false;                   // DEBUG: Track if we logged rotation this drag
         private InventoryGridVisual lastGhostGrid;             // Track which grid is showing ghost preview
         
         // Original state for returning item if drop fails
@@ -50,6 +49,11 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2Int originalGridPosition;
         private GridDirection originalDir;
         private PlacedItem originalPlacedItem;
+
+        // Stack splitting state
+        private int draggedStackCount;                         // How many items are being dragged
+        private bool isStackSplit;                             // True if we're dragging a split stack
+        private System.Guid originalItemInstanceID;            // Original item's ID (for stack splits)
 
         public bool IsDragging => draggingPlacedObject != null;
 
@@ -105,7 +109,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             // Find which grid contains this item
             InventoryGridVisual sourceGrid = FindGridContainingItem(itemInstanceID);
-            
+
             if (sourceGrid == null)
             {
                 Debug.LogWarning($"[InventoryDragHandler] Could not find grid containing item {itemInstanceID}");
@@ -120,14 +124,29 @@ namespace TimeGame.Systems.Inventory.UI
                 return;
             }
 
-            // Get the visual component
-            InventoryItemVisual itemVisual = sourceGrid.transform.GetComponentsInChildren<InventoryItemVisual>()
-                .FirstOrDefault(v => v.PlacedItem.InstanceID == itemInstanceID);
-            
-            if (itemVisual == null)
+            // Determine stack split mode based on modifiers
+            InventoryItemSO itemDef = placedItem.ItemDefinition as InventoryItemSO;
+            isStackSplit = false;
+            draggedStackCount = placedItem.StackCount;
+            originalItemInstanceID = itemInstanceID; // Save original ID for restoration
+
+            if (itemDef != null && itemDef.IsStackable && placedItem.StackCount > 1)
             {
-                Debug.LogWarning($"[InventoryDragHandler] Could not find visual for item {itemInstanceID}");
-                return;
+                bool shiftHeld = Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+                bool ctrlHeld = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed;
+
+                if (shiftHeld)
+                {
+                    // Shift: Split half
+                    draggedStackCount = Mathf.CeilToInt(placedItem.StackCount / 2f);
+                    isStackSplit = true;
+                }
+                else if (ctrlHeld)
+                {
+                    // Ctrl: Take one
+                    draggedStackCount = 1;
+                    isStackSplit = true;
+                }
             }
 
             // Calculate mouse position in grid's local space
@@ -142,34 +161,134 @@ namespace TimeGame.Systems.Inventory.UI
 
             // CODE MONKEY: Calculate grid position offset
             mouseDragGridPositionOffset = mouseGridPosition - placedItem.AnchorPosition;
-            
-            Debug.Log($"[InventoryDragHandler] BEGIN DRAG - mouseGridPos={mouseGridPosition}, itemAnchor={placedItem.AnchorPosition}, CALCULATED OFFSET={mouseDragGridPositionOffset}");
 
-            // Calculate canvas offset - CRITICAL: work in the SAME coordinate system!
-            // Parent to canvas FIRST so we can use anchoredPosition directly
-            RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
-            itemRT.SetParent(canvasRoot, worldPositionStays: true);
-            
-            // NOW both mouse and item are in canvas anchored position space
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRoot,
-                mouseScreenPos,
-                null,
-                out Vector2 mouseCanvasPos
-            );
-            
-            // Get item's anchored position (same coordinate system as mouseCanvasPos)
-            Vector2 itemCanvasPos = itemRT.anchoredPosition;
-            
-            // This offset is set ONCE and never changes during the drag!
-            mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
+            InventoryItemVisual dragVisual;
+            PlacedItem dragPlacedItem;
+
+            // If we're splitting the stack, we need different logic
+            if (isStackSplit)
+            {
+                // STACK MASTER PATTERN: Handle tracked vs homogeneous stacks differently
+                List<ItemInstance> splitInstances = null;
+
+                if (placedItem.IsInstanceTracked)
+                {
+                    // TRACKED STACK: Remove specific instances from the original
+                    splitInstances = placedItem.RemoveInstances(draggedStackCount);
+                }
+                else
+                {
+                    // HOMOGENEOUS STACK: Just reduce the count
+                    int remainingCount = placedItem.StackCount - draggedStackCount;
+                    placedItem.SetStackCount(remainingCount);
+                }
+
+                // Refresh the grid to update the original visual's stack count
+                sourceGrid.RefreshAllItemVisuals();
+
+                // Create a NEW PlacedItem for the dragged portion (not in any grid yet)
+                dragPlacedItem = new PlacedItem(itemDef, placedItem.AnchorPosition, placedItem.Rotation, draggedStackCount);
+
+                // Track the split relationship for save/load and durability systems
+                dragPlacedItem.SplitFromInstanceID = placedItem.InstanceID;
+
+                // Transfer the split instances to the new PlacedItem
+                if (splitInstances != null && splitInstances.Count > 0)
+                {
+                    // Clear auto-generated instances and add the split ones
+                    dragPlacedItem.ItemInstances.Clear();
+                    dragPlacedItem.AddInstances(splitInstances);
+                }
+
+                // DEPRECATED: Clone item data if the original has any (for backward compatibility)
+                #pragma warning disable CS0618
+                if (placedItem.ItemData != null)
+                {
+                    dragPlacedItem.ItemData = placedItem.ItemData;
+                }
+                #pragma warning restore CS0618
+
+                // Get the original item's visual to copy its world position
+                InventoryItemVisual originalVisual = sourceGrid.transform.GetComponentsInChildren<InventoryItemVisual>()
+                    .FirstOrDefault(v => v.PlacedItem.InstanceID == itemInstanceID);
+
+                // Create a NEW visual for dragging
+                dragVisual = sourceGrid.CreateStandaloneVisual(dragPlacedItem, itemDef);
+                RectTransform dragRT = dragVisual.GetComponent<RectTransform>();
+
+                // FIXED APPROACH: Position the visual in the source grid first, THEN reparent to canvas
+                if (originalVisual != null)
+                {
+                    // Parent to source grid temporarily
+                    dragRT.SetParent(sourceGrid.GetRectTransform(), worldPositionStays: false);
+
+                    // Copy the original visual's exact position in grid space
+                    RectTransform originalRT = originalVisual.GetComponent<RectTransform>();
+                    dragRT.anchoredPosition = originalRT.anchoredPosition;
+
+                    // NOW reparent to canvas, maintaining the world position
+                    dragRT.SetParent(canvasRoot, worldPositionStays: true);
+                }
+                else
+                {
+                    // Fallback: position at mouse in canvas space
+                    dragRT.SetParent(canvasRoot, worldPositionStays: false);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        canvasRoot,
+                        mouseScreenPos,
+                        null,
+                        out Vector2 mouseCanvasPos
+                    );
+                    dragRT.anchoredPosition = mouseCanvasPos;
+                }
+
+                // Calculate mouse offset from the visual's current position
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    canvasRoot,
+                    mouseScreenPos,
+                    null,
+                    out Vector2 currentMouseCanvasPos
+                );
+                mouseDragCanvasOffset = currentMouseCanvasPos - dragRT.anchoredPosition;
+            }
+            else
+            {
+                // Normal drag: move the existing visual
+                InventoryItemVisual itemVisual = sourceGrid.transform.GetComponentsInChildren<InventoryItemVisual>()
+                    .FirstOrDefault(v => v.PlacedItem.InstanceID == itemInstanceID);
+
+                if (itemVisual == null)
+                {
+                    Debug.LogWarning($"[InventoryDragHandler] Could not find visual for item {itemInstanceID}");
+                    return;
+                }
+
+                dragVisual = itemVisual;
+                dragPlacedItem = placedItem;
+
+                // Calculate canvas offset - CRITICAL: work in the SAME coordinate system!
+                // Parent to canvas FIRST so we can use anchoredPosition directly
+                RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
+                itemRT.SetParent(canvasRoot, worldPositionStays: true);
+
+                // NOW both mouse and item are in canvas anchored position space
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    canvasRoot,
+                    mouseScreenPos,
+                    null,
+                    out Vector2 mouseCanvasPos
+                );
+
+                // Get item's anchored position (same coordinate system as mouseCanvasPos)
+                Vector2 itemCanvasPos = itemRT.anchoredPosition;
+
+                // This offset is set ONCE and never changes during the drag!
+                mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
+            }
 
             // CRITICAL: Visual is canvas-parented, so currentGrid = null
             // But preserve sourceGrid as originalGrid for return-to-original logic
-            StartDragInternal(itemVisual, placedItem, null, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
-            
-            // DEBUG: Check rotation state
-            Debug.Log($"[InventoryDragHandler] DRAG START - Visual child rotation: {itemVisual.VisualTransform.localRotation.eulerAngles}, PlacedItem.Rotation: {placedItem.Rotation}, dir: {dir}");
+            StartDragInternal(dragVisual, dragPlacedItem, null, sourceGrid, sourceGrid, placedItem.AnchorPosition, placedItem.Rotation);
         }
 
         /// <summary>
@@ -214,13 +333,13 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             // CRITICAL: Check if this is a duplicate call
-            if (draggingPlacedObject.PlacedItem.InstanceID != itemInstanceID)
+            // For split stacks, itemInstanceID is the dragged PlacedItem's ID (which is new)
+            // For normal drags, itemInstanceID comes from the drag-drop component (original ID)
+            if (!isStackSplit && draggingPlacedObject.PlacedItem.InstanceID != itemInstanceID)
             {
                 Debug.LogError($"[InventoryDragHandler] ID MISMATCH! Dragging {draggingPlacedObject.PlacedItem.InstanceID} but OnItemEndDrag called with {itemInstanceID}");
                 return;
             }
-
-            Debug.Log($"[InventoryDragHandler] >>> BEGIN OnItemEndDrag({itemInstanceID}) <<<");
 
             // Try to find a drop target under mouse
             Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
@@ -230,7 +349,6 @@ namespace TimeGame.Systems.Inventory.UI
 
             if (dropTarget != null)
             {
-                Debug.Log($"[InventoryDragHandler] Drop target found: {dropTarget.GetDisplayName()}");
                 
                 // Calculate local mouse position for this target
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(
@@ -244,14 +362,8 @@ namespace TimeGame.Systems.Inventory.UI
                 PlacedItem placedItem = null;
 
                 // CRITICAL FIX: Same-grid movement issue
-                // If moving within the same grid, remove item BEFORE checking placement
-                // Otherwise it will overlap with itself!
+                // If moving within the same grid, we may need to remove the item before placement
                 bool isSameGridMove = (dropTarget == originalGrid);
-                if (isSameGridMove && originalGrid != null)
-                {
-                    Debug.Log($"[InventoryDragHandler] Same-grid move detected - removing item before placement check");
-                    originalGrid.InventorySystem.RemoveItem(itemInstanceID);
-                }
 
                 // WYSIWYG - THE RIGHT WAY: Use the TARGET position, not the lerping visual!
                 // The visual is smoothly lerping toward the target, so reading its position gives mid-lerp coords
@@ -260,52 +372,339 @@ namespace TimeGame.Systems.Inventory.UI
                     // Use the last calculated target position (where visual is lerping TO)
                     // NOT the visual's current position (which is mid-lerp)
                     Vector2Int placementPos = lastTargetGridPosition;
-                    
-                    Debug.Log($"[InventoryDragHandler] PLACEMENT - Using target grid position: {placementPos}");
-                    
-                    // Call inventory system DIRECTLY with the target position
-                    dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placementPos, dir, out placedItem);
+
+                    // Check if we're dropping onto an existing stack of the same item at this EXACT position
+                    PlacedItem itemAtPosition = targetGrid.InventorySystem.GetItemAt(placementPos);
+                    bool isDroppingOnSameStack = false;
+
+                    if (itemAtPosition != null && itemDef.IsStackable)
+                    {
+                        // CRITICAL: Don't try to merge with ourselves!
+                        // If this is the same item we're dragging (same InstanceID), skip merging
+                        bool isSameItem = (itemAtPosition.InstanceID == itemInstanceID);
+
+                        // Check if it's the same item type and can merge (but NOT the same item!)
+                        if (itemAtPosition.ItemDefinition == itemDef && !isSameItem)
+                        {
+                            isDroppingOnSameStack = true;
+
+                            // STACK MASTER PATTERN: Merge tracked or homogeneous stacks
+                            int amountToAdd = draggedStackCount;
+                            int spaceInStack = itemDef.MaxStackSize - itemAtPosition.StackCount;
+                            int actualAdded = Mathf.Min(amountToAdd, spaceInStack);
+
+                            if (actualAdded > 0)
+                            {
+                                // TRACKED STACKS: Transfer specific instances
+                                if (itemAtPosition.IsInstanceTracked)
+                                {
+                                    // CRITICAL: For full stack moves, get instances from originalPlacedItem BEFORE removing it!
+                                    // For splits, get from drag visual (which already has the split instances)
+                                    List<ItemInstance> instancesToMerge = new List<ItemInstance>();
+
+                                    if (isStackSplit && draggingPlacedObject != null)
+                                    {
+                                        // SPLIT: Get from drag visual
+                                        InventoryItemVisual dragVisual = draggingPlacedObject.GetComponent<InventoryItemVisual>();
+                                        if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.ItemInstances != null)
+                                        {
+                                            // Take the instances from split stack
+                                            int instancesToTake = Mathf.Min(actualAdded, dragVisual.PlacedItem.ItemInstances.Count);
+                                            for (int i = 0; i < instancesToTake; i++)
+                                            {
+                                                instancesToMerge.Add(dragVisual.PlacedItem.ItemInstances[i]);
+                                            }
+                                        }
+                                    }
+                                    else if (!isStackSplit && originalGrid != null)
+                                    {
+                                        // FULL STACK MOVE: Get instances from originalPlacedItem (still in grid!)
+                                        PlacedItem originalItem = originalGrid.InventorySystem.GetItemByID(itemInstanceID);
+                                        if (originalItem != null && originalItem.ItemInstances != null)
+                                        {
+                                            // Take the instances we can fit from the original
+                                            int instancesToTake = Mathf.Min(actualAdded, originalItem.ItemInstances.Count);
+                                            for (int i = 0; i < instancesToTake; i++)
+                                            {
+                                                instancesToMerge.Add(originalItem.ItemInstances[i]);
+                                            }
+                                        }
+                                    }
+
+                                    // Now add the instances to the target
+                                    if (instancesToMerge.Count > 0)
+                                    {
+                                        itemAtPosition.AddInstances(instancesToMerge);
+                                    }
+                                    else
+                                    {
+                                        // Fallback: Just add count (creates new pristine instances)
+                                        itemAtPosition.AddToStack(actualAdded);
+                                        Debug.LogWarning($"[InventoryDragHandler] TRACKED MERGE (fallback): Created {actualAdded} new pristine instances");
+                                    }
+
+                                    // NOW remove the original item (after we've captured its instances)
+                                    if (!isStackSplit && originalGrid != null)
+                                    {
+                                        originalGrid.InventorySystem.RemoveItem(itemInstanceID);
+                                    }
+                                }
+                                else
+                                {
+                                    // HOMOGENEOUS STACKS: Just add count
+                                    itemAtPosition.AddToStack(actualAdded);
+                                }
+
+                                dropped = true;
+                                placedItem = itemAtPosition;
+
+                                // Check if there are leftover items that didn't fit
+                                int leftover = amountToAdd - actualAdded;
+                                if (leftover > 0)
+                                {
+
+                                    // STACK MASTER: Handle leftover instances
+                                    if (isStackSplit && originalGrid != null)
+                                    {
+                                        // For split stacks, add the leftover back to the original
+                                        PlacedItem originalItem = originalGrid.InventorySystem.GetItemByID(originalItemInstanceID);
+                                        if (originalItem != null)
+                                        {
+                                            if (originalItem.IsInstanceTracked && draggingPlacedObject != null)
+                                            {
+                                                // Return specific instances
+                                                InventoryItemVisual dragVisual = draggingPlacedObject.GetComponent<InventoryItemVisual>();
+                                                if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.ItemInstances != null)
+                                                {
+                                                    // Get remaining instances from drag visual
+                                                    List<ItemInstance> remainingInstances = new List<ItemInstance>();
+                                                    for (int i = actualAdded; i < dragVisual.PlacedItem.ItemInstances.Count; i++)
+                                                    {
+                                                        remainingInstances.Add(dragVisual.PlacedItem.ItemInstances[i]);
+                                                    }
+                                                    originalItem.AddInstances(remainingInstances);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // Homogeneous: Just add count
+                                                originalItem.AddToStack(leftover);
+                                            }
+                                        }
+                                    }
+                                    else if (!isStackSplit && originalGrid != null)
+                                    {
+                                        // For full stack moves, recreate the original item with leftover count
+                                        bool recreated = originalGrid.InventorySystem.TryAddItem(itemDef, originalGridPosition, originalDir, out PlacedItem leftoverItem, leftover, false);
+                                        if (!recreated)
+                                        {
+                                            Debug.LogError($"[InventoryDragHandler] CRITICAL: Failed to place {leftover} leftover items!");
+                                        }
+                                    }
+                                }
+
+                                // Refresh visuals to show updated count
+                                targetGrid.RefreshAllItemVisuals();
+
+                                // If we had original grid operations, refresh that too
+                                if (originalGrid != null && originalGrid != targetGrid)
+                                {
+                                    originalGrid.RefreshAllItemVisuals();
+                                }
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"[InventoryDragHandler] Stack is full - cannot merge");
+                                dropped = false;
+
+                                // CRITICAL: We removed the original item, but merge failed!
+                                // Need to restore it to the original grid with the SAME stack count AND instances
+                                if (!isStackSplit && originalGrid != null)
+                                {
+                                    // STACK MASTER: Get the instances from the drag visual
+                                    List<ItemInstance> draggedInstances = null;
+                                    if (draggingPlacedObject != null)
+                                    {
+                                        InventoryItemVisual dragVisual = draggingPlacedObject.GetComponent<InventoryItemVisual>();
+                                        if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.IsInstanceTracked)
+                                        {
+                                            // Get the instances we were dragging
+                                            draggedInstances = new List<ItemInstance>(dragVisual.PlacedItem.ItemInstances);
+                                        }
+                                    }
+
+                                    // Re-add the item we removed WITH its original stack count
+                                    bool restored = originalGrid.InventorySystem.TryAddItem(
+                                        itemInstanceID,
+                                        itemDef,
+                                        originalGridPosition,
+                                        originalDir,
+                                        out PlacedItem restoredItem
+                                    );
+
+                                    if (restored && restoredItem != null)
+                                    {
+                                        // CRITICAL: Restore the instances or stack count
+                                        if (draggedInstances != null && draggedInstances.Count > 0)
+                                        {
+                                            // TRACKED STACK: Restore the actual instances
+                                            restoredItem.ItemInstances.Clear();
+                                            restoredItem.AddInstances(draggedInstances);
+                                        }
+                                        else
+                                        {
+                                            // HOMOGENEOUS STACK: Just set the count
+                                            restoredItem.SetStackCount(draggedStackCount);
+                                        }
+
+                                        originalGrid.RefreshAllItemVisuals();
+                                    }
+                                    else
+                                    {
+                                        Debug.LogError($"[InventoryDragHandler] CRITICAL: Failed to restore item after failed merge!");
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // If we didn't merge, try normal placement (no auto-stacking)
+                    if (!isDroppingOnSameStack)
+                    {
+                        // STACK MASTER: Get instances from drag visual for tracked stacks (both splits and full moves)
+                        List<ItemInstance> draggedInstances = null;
+                        if (draggingPlacedObject != null)
+                        {
+                            InventoryItemVisual dragVisual = draggingPlacedObject.GetComponent<InventoryItemVisual>();
+                            if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.IsInstanceTracked)
+                            {
+                                draggedInstances = new List<ItemInstance>(dragVisual.PlacedItem.ItemInstances);
+                            }
+                        }
+
+                        // For same-grid moves (not merging), remove item BEFORE placement
+                        // Otherwise it will overlap with itself!
+                        if (!isStackSplit && isSameGridMove && originalGrid != null)
+                        {
+                            originalGrid.InventorySystem.RemoveItem(itemInstanceID);
+                        }
+
+                        // Call inventory system with the ORIGINAL InstanceID for same-grid moves to preserve identity
+                        // For cross-grid moves, let it create a new ID
+                        if (!isStackSplit && isSameGridMove)
+                        {
+                            // SAME GRID: Preserve InstanceID
+                            dropped = targetGrid.InventorySystem.TryAddItem(
+                                itemInstanceID,  // Preserve original ID
+                                itemDef,
+                                placementPos,
+                                dir,
+                                out placedItem
+                            );
+
+                            // Restore instances for tracked stacks
+                            if (dropped && placedItem != null && draggedInstances != null && draggedInstances.Count > 0)
+                            {
+                                placedItem.ItemInstances.Clear();
+                                placedItem.AddInstances(draggedInstances);
+                            }
+
+                            // CRITICAL FIX: Refresh visuals to update stack count display
+                            if (dropped)
+                            {
+                                targetGrid.RefreshAllItemVisuals();
+                            }
+                        }
+                        else
+                        {
+                            // CROSS GRID or SPLIT: Allow new ID
+                            dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placementPos, dir, out placedItem, draggedStackCount, false);
+
+                            // CRITICAL: Transfer instances from the drag visual for splits and tracked cross-grid moves
+                            if (dropped && placedItem != null && draggedInstances != null && draggedInstances.Count > 0)
+                            {
+                                placedItem.ItemInstances.Clear();
+                                placedItem.AddInstances(draggedInstances);
+                            }
+
+                            // Refresh visuals to show correct uses/stack counts
+                            if (dropped)
+                            {
+                                targetGrid.RefreshAllItemVisuals();
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     // Non-grid drop target (equipment slot, etc.) - use interface method
-                    dropped = dropTarget.TryPlaceItem(itemDef, dir, mouseLocalPos, out placedItem);
+                    // Equipment slots don't support stacking, so only allow if draggedStackCount == 1
+                    if (draggedStackCount == 1)
+                    {
+                        dropped = dropTarget.TryPlaceItem(itemDef, dir, mouseLocalPos, out placedItem);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[InventoryDragHandler] Cannot drop stack of {draggedStackCount} on non-grid target");
+                        dropped = false;
+                    }
                 }
 
                 if (dropped)
                 {
-                    Debug.Log($"[InventoryDragHandler] PLACEMENT SUCCESSFUL in {dropTarget.GetDisplayName()}");
-                    
-                    // SUCCESS: Remove from original grid (if not already removed)
-                    if (!isSameGridMove && originalGrid != null)
+                    // SUCCESS: Handle cleanup based on whether this was a split or full move
+                    if (!isStackSplit && !isSameGridMove && originalGrid != null)
                     {
-                        bool removed = originalGrid.InventorySystem.RemoveItem(itemInstanceID);
-                        Debug.Log($"[InventoryDragHandler] ✓ Removed from original grid {originalGrid.GetDisplayName()}: {removed}");
+                        // Full stack move from different grid - remove original
+                        originalGrid.InventorySystem.RemoveItem(itemInstanceID);
+
+                        // Refresh the original grid to remove the visual
+                        originalGrid.RefreshAllItemVisuals();
                     }
-                    else if (isSameGridMove)
+                    else if (isStackSplit)
                     {
-                        Debug.Log($"[InventoryDragHandler] ✓ Same-grid move - item already removed");
+                        // Original stack was already reduced when we started the drag
+                        // Just refresh the original grid's visuals to update stack count
+                        if (originalGrid != null)
+                        {
+                            originalGrid.RefreshAllItemVisuals();
+                        }
                     }
-                    else
-                    {
-                        Debug.Log($"[InventoryDragHandler] No original grid to remove from");
-                    }
-                    
-                    // Destroy the temp visual (target created its own)
-                    Debug.Log($"[InventoryDragHandler] Destroying drag visual...");
+
+                    // Destroy the temp visual (target created its own OR merged into existing)
                     Destroy(draggingPlacedObject.gameObject);
                 }
                 else
                 {
-                    // FAILED: Return to original (item never removed, so data is safe)
-                    Debug.Log($"[InventoryDragHandler] ✗ PLACEMENT FAILED in {dropTarget.GetDisplayName()} - returning to original");
+                    // FAILED: Return to original
+                    // If we split the stack, we need to restore it
+                    if (isStackSplit && originalGrid != null)
+                    {
+                        PlacedItem originalItem = originalGrid.InventorySystem.GetItemByID(originalItemInstanceID);
+                        if (originalItem != null)
+                        {
+                            originalItem.AddToStack(draggedStackCount);
+                            originalGrid.RefreshAllItemVisuals();
+                        }
+                    }
+
                     ReturnToOriginalPosition();
                 }
             }
             else
             {
                 // No target: Return to original
-                Debug.Log($"[InventoryDragHandler] ✗ NO DROP TARGET - returning to original");
+                // If we split the stack, we need to restore it
+                if (isStackSplit && originalGrid != null)
+                {
+                    PlacedItem originalItem = originalGrid.InventorySystem.GetItemByID(originalItemInstanceID);
+                    if (originalItem != null)
+                    {
+                        originalItem.AddToStack(draggedStackCount);
+                        originalGrid.RefreshAllItemVisuals();
+                    }
+                }
+
                 ReturnToOriginalPosition();
             }
 
@@ -313,13 +712,11 @@ namespace TimeGame.Systems.Inventory.UI
             ClearAllGhostPreviews();
 
             // Clear drag state
-            Debug.Log($"[InventoryDragHandler] Clearing drag state...");
             draggingPlacedObject = null;
             currentGrid = null;
             originalSource = null;
-            loggedRotation = false; // DEBUG: Reset for next drag
-
-            Debug.Log($"[InventoryDragHandler] >>> END OnItemEndDrag({itemInstanceID}) <<<");
+            isStackSplit = false; // Reset stack split flag
+            draggedStackCount = 0;
         }
 
         #endregion
@@ -330,6 +727,13 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (draggingPlacedObject == null) return;
 
+            // Check for mouse release (for split stacks that don't have drag-drop component)
+            if (isStackSplit && Mouse.current.leftButton.wasReleasedThisFrame)
+            {
+                OnItemEndDrag(draggingPlacedObject.PlacedItem.InstanceID);
+                return;
+            }
+
             // Handle rotation
             if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
             {
@@ -337,7 +741,6 @@ namespace TimeGame.Systems.Inventory.UI
                 if (itemDef != null && itemDef.CanRotate)
                 {
                     dir = itemDef.GetNextRotation(dir);
-                    Debug.Log($"[InventoryDragHandler] ROTATION CHANGED - New dir: {dir}");
                 }
             }
 
@@ -421,7 +824,24 @@ namespace TimeGame.Systems.Inventory.UI
                 bool isSameGrid = (currentGrid == originalGrid);
                 System.Guid ignoreItemID = (isSameGrid && originalPlacedItem != null) ? originalPlacedItem.InstanceID : System.Guid.Empty;
 
+                // Check if we can place normally OR if we're hovering over a compatible stack
                 bool canPlace = currentGrid.CanAcceptItemAtGridPosition(itemDef, dir, placementGridPos, ignoreItemID);
+
+                // SPECIAL CASE: If hovering over an existing stackable item of the same type, show green
+                if (!canPlace && itemDef.IsStackable)
+                {
+                    PlacedItem itemAtPosition = currentGrid.InventorySystem.GetItemAt(placementGridPos);
+                    if (itemAtPosition != null && itemAtPosition.ItemDefinition == itemDef)
+                    {
+                        // Check if there's space in the stack
+                        int spaceInStack = itemDef.MaxStackSize - itemAtPosition.StackCount;
+                        if (spaceInStack > 0)
+                        {
+                            canPlace = true; // Show green - we can merge!
+                            // Removed verbose logging for stack hover
+                        }
+                    }
+                }
 
                 currentGrid.ShowGhostPreview(placementGridPos, itemWidth, itemHeight, canPlace);
                 lastGhostGrid = currentGrid;
@@ -476,13 +896,6 @@ namespace TimeGame.Systems.Inventory.UI
             InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
             float rotationAngle = itemDef != null ? itemDef.GetRotationAngle(dir) : 0f;
             
-            // DEBUG: Log first frame of rotation
-            if (!loggedRotation)
-            {
-                Debug.Log($"[InventoryDragHandler] FIRST UPDATE ROTATION - Current: {draggingPlacedObject.VisualTransform.localRotation.eulerAngles}, Target angle: {rotationAngle}, Target Quaternion: {Quaternion.Euler(0, 0, -rotationAngle).eulerAngles}, dir: {dir}");
-                loggedRotation = true;
-            }
-            
             // CRITICAL: Rotate the VISUAL CHILD, not the root transform!
             // The root is grid-aligned (no rotation), the child holds the visual rotation
             draggingPlacedObject.VisualTransform.localRotation = Quaternion.Lerp(
@@ -525,24 +938,19 @@ namespace TimeGame.Systems.Inventory.UI
 
         private void ReturnToOriginalPosition()
         {
-            Debug.Log($"[InventoryDragHandler] >>> ReturnToOriginalPosition called <<<");
-            
             InventoryItemSO itemDef = originalPlacedItem.ItemDefinition as InventoryItemSO;
             
             if (originalGrid != null)
             {
-                Debug.Log($"[InventoryDragHandler] Returning to GRID: {originalGrid.GetDisplayName()}");
-                
                 // Check if item is still in the grid
                 PlacedItem stillThere = originalGrid.InventorySystem.GetItemByID(originalPlacedItem.InstanceID);
                 if (stillThere != null)
                 {
-                    Debug.Log($"[InventoryDragHandler] Item STILL IN GRID - just destroying visual");
+                    // Item still in grid - just destroy visual
                 }
                 else
                 {
                     // Item was removed (same-grid move) - need to add it back!
-                    Debug.Log($"[InventoryDragHandler] Item NOT IN GRID - re-adding at original position");
                     
                     // Re-add item at original position WITH SAME INSTANCE ID
                     bool readded = originalGrid.InventorySystem.TryAddItem(
@@ -567,23 +975,18 @@ namespace TimeGame.Systems.Inventory.UI
                 
                 // Item is still in original grid - destroy drag visual and regenerate
                 Destroy(draggingPlacedObject.gameObject);
-                Debug.Log($"[InventoryDragHandler] Destroyed drag visual, regenerating in {originalGrid.GetDisplayName()}");
                 
                 // CRITICAL FIX: Regenerate visuals for all items in grid
                 // The item data is still there, but we destroyed its visual
                 originalGrid.RefreshAllItemVisuals();
-                Debug.Log($"[InventoryDragHandler] Refreshed visuals - item should be visible again");
             }
             else if (originalSource != null)
             {
-                Debug.Log($"[InventoryDragHandler] Returning to EQUIPMENT: {originalSource.GetDisplayName()}");
-                
                 // Return to equipment slot (or other non-grid source)
                 originalSource.TryPlaceItem(itemDef, originalDir, Vector2.zero, out _);
                 
                 // Destroy temp visual since equipment slot will create its own
                 Destroy(draggingPlacedObject.gameObject);
-                Debug.Log($"[InventoryDragHandler] Re-equipped item in {originalSource.GetDisplayName()}");
             }
             else
             {
@@ -591,8 +994,6 @@ namespace TimeGame.Systems.Inventory.UI
                 Debug.LogError("[InventoryDragHandler] NO ORIGINAL SOURCE! Item data will be lost!");
                 Destroy(draggingPlacedObject.gameObject);
             }
-            
-            Debug.Log($"[InventoryDragHandler] >>> ReturnToOriginalPosition complete <<<");
         }
 
         private IInventoryDropTarget GetDropTargetUnderMouse(Vector2 screenPosition)

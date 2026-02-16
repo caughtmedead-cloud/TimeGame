@@ -1,16 +1,18 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory.UI
 {
     /// <summary>
     /// Drag-drop component that goes on each item visual.
     /// Uses Unity's Event System for robust drag detection.
+    /// Also handles right-click for context menu.
     /// Based on CodeMonkey's implementation pattern.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
     [RequireComponent(typeof(CanvasGroup))]
-    public class InventoryItemDragDrop : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class InventoryItemDragDrop : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
         private RectTransform rectTransform;
         private CanvasGroup canvasGroup;
@@ -70,6 +72,27 @@ namespace TimeGame.Systems.Inventory.UI
             if (dragHandler != null)
             {
                 dragHandler.OnItemEndDrag(itemInstanceID);
+            }
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            // Handle right-click for context menu
+            if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                if (gridVisual == null)
+                {
+                    Debug.LogWarning("[InventoryItemDragDrop] GridVisual reference is null!");
+                    return;
+                }
+
+                // Get the placed item from the inventory system
+                PlacedItem item = gridVisual.InventorySystem.GetItemByID(itemInstanceID);
+                if (item != null)
+                {
+                    // Show context menu at click position
+                    InventoryContextMenu.ShowMenu(eventData.position, item, gridVisual);
+                }
             }
         }
     }
