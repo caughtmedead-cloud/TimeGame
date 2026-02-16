@@ -24,6 +24,7 @@ namespace TimeGame.Systems.Inventory.UI
         private Image backgroundImage;  // White tile drag preview
         private TextMeshProUGUI stackCountText;  // Stack count display (bottom-right)
         private TextMeshProUGUI usesCountText;   // Uses count display (bottom-left)
+        private bool outlineApplied = false;     // Track if outline has been applied to TextMeshPro
 
         /// <summary>
         /// The placed item this visual represents.
@@ -34,7 +35,7 @@ namespace TimeGame.Systems.Inventory.UI
         /// The inventory item definition.
         /// </summary>
         public InventoryItemSO ItemDefinition { get; private set; }
-        
+
         /// <summary>
         /// The inner visual transform that holds rotation.
         /// </summary>
@@ -43,9 +44,23 @@ namespace TimeGame.Systems.Inventory.UI
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
-            
+
             // Create child for visual rotation
             CreateVisualChild();
+        }
+
+        private void OnEnable()
+        {
+            // Apply TextMeshPro outline if not already applied
+            // This handles cases where visuals are created while UI is inactive
+            if (!outlineApplied && stackCountText != null && usesCountText != null)
+            {
+                stackCountText.outlineWidth = 0.2f;
+                stackCountText.outlineColor = Color.black;
+                usesCountText.outlineWidth = 0.2f;
+                usesCountText.outlineColor = Color.black;
+                outlineApplied = true;
+            }
         }
 
         /// <summary>
@@ -104,8 +119,9 @@ namespace TimeGame.Systems.Inventory.UI
             image.enabled = true;
 
             // Create stack count text (bottom-right corner)
+            // CRITICAL: Parent to ROOT transform (not visualTransform) so it NEVER rotates
             GameObject stackCountObj = new GameObject("StackCount");
-            stackCountObj.transform.SetParent(visualTransform, false);
+            stackCountObj.transform.SetParent(transform, false); // <- PARENT TO ROOT!
 
             RectTransform stackCountRT = stackCountObj.AddComponent<RectTransform>();
             stackCountRT.anchorMin = new Vector2(1, 0); // Bottom-right
@@ -122,16 +138,21 @@ namespace TimeGame.Systems.Inventory.UI
             stackCountText.raycastTarget = false;
             stackCountText.enableWordWrapping = false;
 
-            // Add outline for readability
-            stackCountText.outlineWidth = 0.2f;
-            stackCountText.outlineColor = Color.black;
+            // Add outline for readability (only if GameObject is active, otherwise defer)
+            if (gameObject.activeInHierarchy)
+            {
+                stackCountText.outlineWidth = 0.2f;
+                stackCountText.outlineColor = Color.black;
+                outlineApplied = true; // Mark as applied
+            }
 
             stackCountText.text = "";
             stackCountText.enabled = false; // Hidden by default
 
             // Create uses count text (bottom-left corner)
+            // CRITICAL: Parent to ROOT transform (not visualTransform) so it NEVER rotates
             GameObject usesCountObj = new GameObject("UsesCount");
-            usesCountObj.transform.SetParent(visualTransform, false);
+            usesCountObj.transform.SetParent(transform, false); // <- PARENT TO ROOT!
 
             RectTransform usesCountRT = usesCountObj.AddComponent<RectTransform>();
             usesCountRT.anchorMin = new Vector2(0, 0); // Bottom-left
@@ -147,8 +168,15 @@ namespace TimeGame.Systems.Inventory.UI
             usesCountText.alignment = TextAlignmentOptions.BottomLeft;
             usesCountText.raycastTarget = false;
             usesCountText.enableWordWrapping = false;
-            usesCountText.outlineWidth = 0.2f;
-            usesCountText.outlineColor = Color.black;
+
+            // Add outline for readability (only if GameObject is active, otherwise defer)
+            if (gameObject.activeInHierarchy)
+            {
+                usesCountText.outlineWidth = 0.2f;
+                usesCountText.outlineColor = Color.black;
+                // outlineApplied already set above for stackCountText
+            }
+
             usesCountText.text = "";
             usesCountText.enabled = false; // Hidden by default
         }
@@ -162,7 +190,13 @@ namespace TimeGame.Systems.Inventory.UI
             PlacedItem = placedItem;
             ItemDefinition = itemDef;
 
-            // Ensure visual child exists
+            // Ensure rectTransform is set (Awake may not have been called if parent is inactive)
+            if (rectTransform == null)
+            {
+                rectTransform = GetComponent<RectTransform>();
+            }
+
+            // Ensure visual child exists (Awake may not have been called)
             if (visualTransform == null)
             {
                 CreateVisualChild();
@@ -184,6 +218,7 @@ namespace TimeGame.Systems.Inventory.UI
 
             // INNER TRANSFORM: Visual rotation (center pivot)
             // Set rotation on the visual child
+            // NOTE: Text elements are parented to root, so they won't rotate
             float angle = itemDef.GetRotationAngle(placedItem.Rotation);
             visualTransform.localRotation = Quaternion.Euler(0, 0, -angle);
 

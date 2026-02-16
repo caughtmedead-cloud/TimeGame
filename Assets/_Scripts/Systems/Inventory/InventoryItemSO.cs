@@ -67,11 +67,12 @@ namespace TimeGame.Systems.Inventory
         public float StorageMaxWeight = 20f;
 
         /// <summary>
-        /// Optional: Prefab for 3D world representation (dropped items, etc.)
+        /// Prefab for 3D world representation (dropped items, pickups, etc.)
+        /// Must have WorldItem component attached.
         /// </summary>
         [Header("World Representation")]
-        [Tooltip("Prefab to spawn when dropped in world (optional)")]
-        public GameObject WorldPrefab;
+        [Tooltip("Prefab to spawn when dropped in world (must have WorldItem component)")]
+        public GameObject WorldItemPrefab;
 
         /// <summary>
         /// Get display name for UI

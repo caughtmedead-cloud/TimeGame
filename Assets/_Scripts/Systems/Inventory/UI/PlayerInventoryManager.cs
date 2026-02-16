@@ -233,7 +233,60 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
+        /// Get all inventory grids (pockets + equipment storage).
+        /// Useful for finding space when picking up items.
+        /// </summary>
+        public System.Collections.Generic.IEnumerable<InventoryGridVisual> GetAllGrids()
+        {
+            System.Collections.Generic.List<InventoryGridVisual> allGrids = new System.Collections.Generic.List<InventoryGridVisual>();
+
+            // Add pocket grids
+            if (storagePanel != null)
+            {
+                allGrids.AddRange(storagePanel.GetAllGrids());
+            }
+
+            // Add equipment storage grids
+            allGrids.AddRange(equipmentGrids.Values);
+
+            return allGrids;
+        }
+
+        /// <summary>
+        /// Refresh only the item visuals on all existing grids.
+        /// Does NOT destroy/recreate grids - just updates the visual representation.
+        /// Use this when opening inventory UI to show items added while closed.
+        /// </summary>
+        public void RefreshAllGridVisuals()
+        {
+            // Refresh pocket grid visuals
+            if (storagePanel != null)
+            {
+                foreach (var grid in storagePanel.GetAllGrids())
+                {
+                    if (grid != null)
+                    {
+                        grid.RefreshAllItemVisuals();
+                    }
+                }
+            }
+
+            // Refresh equipment grid visuals
+            foreach (var grid in equipmentGrids.Values)
+            {
+                if (grid != null)
+                {
+                    grid.RefreshAllItemVisuals();
+                }
+            }
+
+            Log("Refreshed all grid visuals");
+        }
+
+        /// <summary>
         /// Manually refresh all grids (useful after loading save data)
+        /// WARNING: This destroys and recreates all grids!
+        /// For simple visual refresh, use RefreshAllGridVisuals() instead.
         /// </summary>
         public void RefreshAllGrids()
         {

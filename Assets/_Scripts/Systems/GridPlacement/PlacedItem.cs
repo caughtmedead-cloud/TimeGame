@@ -105,6 +105,17 @@ namespace TimeGame.Systems.GridPlacement
         /// </summary>
         public Guid? SplitFromInstanceID { get; set; }
 
+        /// <summary>
+        /// NESTED INVENTORY: Container inventory system for items that provide storage.
+        /// Null for non-container items.
+        /// When this item is a backpack/chest/container, this holds all items inside it.
+        /// This enables recursive nesting (backpacks within backpacks, etc.)
+        ///
+        /// NOTE: This is NOT serialized automatically - use ContainerItemData for serialization.
+        /// </summary>
+        [System.NonSerialized]
+        public Inventory.InventorySystem ContainerInventory;
+
         public PlacedItem(PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation, int stackCount = 1)
         {
             InstanceID = Guid.NewGuid();
@@ -143,17 +154,27 @@ namespace TimeGame.Systems.GridPlacement
         /// <summary>
         /// Initialize the stack based on item definition settings.
         /// Creates ItemInstances array if item tracks individual instances.
+        /// If count is 0, creates an empty tracked list but does NOT create instances.
+        /// This allows external systems to provide instances after construction.
         /// </summary>
         private void InitializeStack(int count)
         {
-            count = Mathf.Max(1, count);
-
             // Check if this item type tracks individual instances
             Inventory.InventoryItemSO inventoryItem = ItemDefinition as Inventory.InventoryItemSO;
             if (inventoryItem != null && inventoryItem.TrackIndividualItems)
             {
                 // TRACKED STACK: Create individual item instances
                 ItemInstances = new List<ItemInstance>();
+
+                // If count is 0, create empty list (instances will be provided externally)
+                if (count == 0)
+                {
+                    // Empty tracked list - caller will add instances
+                    return;
+                }
+
+                // Otherwise create pristine instances
+                count = Mathf.Max(1, count);
                 for (int i = 0; i < count; i++)
                 {
                     // Create instance with uses based on item definition
@@ -173,6 +194,7 @@ namespace TimeGame.Systems.GridPlacement
             {
                 // HOMOGENEOUS STACK: Just track count
                 ItemInstances = null;
+                count = Mathf.Max(1, count);
                 StackCount = count;
             }
         }

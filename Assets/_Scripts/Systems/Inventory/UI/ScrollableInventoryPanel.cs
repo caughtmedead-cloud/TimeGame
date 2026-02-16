@@ -336,6 +336,14 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
+        /// Get all spawned grids as a collection
+        /// </summary>
+        public IEnumerable<InventoryGridVisual> GetAllGrids()
+        {
+            return spawnedGrids.Values;
+        }
+
+        /// <summary>
         /// Check if a grid with the given name exists
         /// </summary>
         public bool HasGrid(string gridName)

@@ -176,10 +176,11 @@ namespace TimeGame.Inventory
                 inventoryCanvas.SetActive(true);
             }
 
-            // Refresh all inventory grids to show items added while UI was closed
+            // Refresh all inventory grid visuals to show items added while UI was closed
+            // NOTE: Use RefreshAllGridVisuals (not RefreshAllGrids) to avoid destroying/recreating grids
             if (playerInventoryManager != null)
             {
-                playerInventoryManager.RefreshAllGrids();
+                playerInventoryManager.RefreshAllGridVisuals();
             }
 
             // Unlock cursor for UI interaction

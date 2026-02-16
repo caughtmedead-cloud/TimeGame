@@ -90,8 +90,8 @@ namespace TimeGame.Systems.Inventory.UI
                 PlacedItem item = gridVisual.InventorySystem.GetItemByID(itemInstanceID);
                 if (item != null)
                 {
-                    // Show context menu at click position
-                    InventoryContextMenu.ShowMenu(eventData.position, item, gridVisual);
+                    // Show context menu at click position (inventory mode with cursor)
+                    InventoryContextMenu.ShowMenuInInventory(eventData.position, item, gridVisual);
                 }
             }
         }

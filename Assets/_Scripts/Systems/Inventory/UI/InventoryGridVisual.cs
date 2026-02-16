@@ -87,6 +87,24 @@ namespace TimeGame.Systems.Inventory.UI
                 return;
             }
 
+            // Ensure rectTransform is set (Awake may not have been called if parent is inactive)
+            if (rectTransform == null)
+            {
+                rectTransform = GetComponent<RectTransform>();
+                if (rectTransform == null)
+                {
+                    Debug.LogError("[InventoryGridVisual] No RectTransform found! This should never happen.", this);
+                    return;
+                }
+            }
+
+            // Ensure containers are created (Awake may not have been called)
+            if (gridCellContainer == null)
+            {
+                gridCellContainer = CreateContainer("GridCells");
+                itemContainer = CreateContainer("Items");
+            }
+
             // Unsubscribe from old system if any
             if (inventorySystem != null)
             {
@@ -101,7 +119,7 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Subscribe to events
             inventorySystem.OnItemAdded += HandleItemAdded;
-            inventorySystem.OnItemRemoved += HandleItemRemoved;
+            inventorySystem.OnItemRemoved -= HandleItemRemoved;
 
             // Set our size to match grid
             rectTransform.sizeDelta = new Vector2(gridWidth * cellSize, gridHeight * cellSize);
@@ -523,6 +541,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Refresh all item visuals (clear and respawn from InventorySystem).
+        /// Also refreshes cell footprints to match current item positions.
         /// </summary>
         public void RefreshAllItemVisuals()
         {
@@ -536,18 +555,41 @@ namespace TimeGame.Systems.Inventory.UI
             }
             itemVisuals.Clear();
 
+            // Reset all cell footprints to empty
+            RefreshAllCellFootprints();
+
             // Spawn visuals for all items in system
             if (inventorySystem != null)
             {
                 foreach (PlacedItem item in inventorySystem.GetAllItems())
                 {
                     SpawnItemVisual(item);
+                    UpdateItemFootprint(item, true); // Mark cells as occupied
                 }
             }
 
             if (enableDebugLogging)
             {
-                Debug.Log($"[InventoryGridVisual] Refreshed {itemVisuals.Count} item visuals");
+                Debug.Log($"[InventoryGridVisual] Refreshed {itemVisuals.Count} item visuals and cell footprints");
+            }
+        }
+
+        /// <summary>
+        /// Refresh all cell footprints based on current inventory state.
+        /// Clears all cells to empty, then marks occupied cells for each item.
+        /// </summary>
+        private void RefreshAllCellFootprints()
+        {
+            // Clear all cells to empty
+            if (gridCells != null && tileSprites != null)
+            {
+                for (int x = 0; x < gridWidth; x++)
+                {
+                    for (int y = 0; y < gridHeight; y++)
+                    {
+                        UpdateCellSprite(x, y, false);
+                    }
+                }
             }
         }
 
