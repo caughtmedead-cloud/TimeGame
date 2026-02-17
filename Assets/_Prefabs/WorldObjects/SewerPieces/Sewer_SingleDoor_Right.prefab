@@ -118,7 +118,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584320068607283071
+  _initializedTimestamp: -8584303505302574430
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -277,7 +277,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584320068607283071
+  _initializedTimestamp: -8584303505302574430
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -436,7 +436,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584320068607283071
+  _initializedTimestamp: -8584303505302574430
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -451,12 +451,12 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 72
+  <PrefabId>k__BackingField: 79
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 17579111694032481300
   SceneId: 0
   SerializedTransformProperties:
-    Position: {x: 9.506041, y: -0.00000023841858, z: -20.796066}
+    Position: {x: 0, y: 0, z: 0}
     Rotation: {x: -0, y: 1, z: -0, w: 0.00000058114523}
     Scale: {x: 1, y: 1, z: 1}
     IsValid: 1

@@ -49,10 +49,14 @@ namespace TimeGame.Systems.Inventory.UI
             canvasGroup.blocksRaycasts = false; // Don't block raycasts
 
             // Notify the drag handler system
-            InventoryDragHandler dragHandler = gridVisual.GetComponentInParent<InventoryDragHandler>();
+            InventoryDragHandler dragHandler = gridVisual.GetDragHandler();
             if (dragHandler != null)
             {
                 dragHandler.OnItemBeginDrag(itemInstanceID);
+            }
+            else
+            {
+                Debug.LogError("[InventoryItemDragDrop] Could not find InventoryDragHandler!");
             }
         }
 
@@ -68,7 +72,7 @@ namespace TimeGame.Systems.Inventory.UI
             canvasGroup.blocksRaycasts = true;
 
             // Notify the drag handler system
-            InventoryDragHandler dragHandler = gridVisual.GetComponentInParent<InventoryDragHandler>();
+            InventoryDragHandler dragHandler = gridVisual.GetDragHandler();
             if (dragHandler != null)
             {
                 dragHandler.OnItemEndDrag(itemInstanceID);

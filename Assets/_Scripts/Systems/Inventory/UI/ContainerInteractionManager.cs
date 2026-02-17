@@ -135,12 +135,16 @@ namespace TimeGame.Systems.Inventory.UI
 
                 if (grid != null)
                 {
-                    // Initialize with existing items if container has saved data
+                    // ITEM LINEAGE: Swap the grid's InventorySystem to the compartment's existing one directly.
+                    // Never copy items between systems — that would duplicate them if a floating window is open.
+                    // Items always live in exactly one InventorySystem object.
                     if (compartment.InventorySystem != null)
                     {
-                        // Grid already has its own InventorySystem, we need to swap it
-                        // This is a bit tricky - for now, let's just note this as a TODO
-                        // TODO: Support passing existing InventorySystem to factory
+                        grid.SwapInventorySystem(compartment.InventorySystem);
+                        grid.RefreshAllItemVisuals();
+
+                        int itemCount = compartment.InventorySystem.GetAllItems().Count;
+                        Log($"Restored {itemCount} items to {gridName} via system swap");
                     }
 
                     currentContainerGrids.Add(grid);
@@ -174,6 +178,17 @@ namespace TimeGame.Systems.Inventory.UI
         public string ContainerName => containerName;
 
         public List<ContainerCompartment> GetCompartments() => compartments;
+
+        /// <summary>
+        /// Add a compartment to this container
+        /// </summary>
+        public void AddCompartment(ContainerCompartment compartment)
+        {
+            if (compartment != null)
+            {
+                compartments.Add(compartment);
+            }
+        }
 
         /// <summary>
         /// Create a simple container with one compartment

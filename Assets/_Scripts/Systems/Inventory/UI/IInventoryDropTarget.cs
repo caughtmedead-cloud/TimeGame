@@ -30,6 +30,21 @@ namespace TimeGame.Systems.Inventory.UI
         bool TryPlaceItem(InventoryItemSO item, GridDirection rotation, Vector2 mouseLocalPosition, out PlacedItem placedItem);
 
         /// <summary>
+        /// Try to place an existing item (with instances and container data) in this target.
+        /// This preserves ItemInstances and ContainerInventory when dragging between targets.
+        /// </summary>
+        /// <param name="originalItem">The original placed item being moved (preserves instances/container data)</param>
+        /// <param name="rotation">The rotation to place it in</param>
+        /// <param name="mouseLocalPosition">Mouse position in target's local space</param>
+        /// <param name="placedItem">Output: The placed item data</param>
+        /// <returns>True if placement succeeded</returns>
+        bool TryPlaceExistingItem(PlacedItem originalItem, GridDirection rotation, Vector2 mouseLocalPosition, out PlacedItem placedItem)
+        {
+            // Default implementation: just call the basic method
+            return TryPlaceItem(originalItem.ItemDefinition as InventoryItemSO, rotation, mouseLocalPosition, out placedItem);
+        }
+
+        /// <summary>
         /// Get the RectTransform for mouse position testing.
         /// </summary>
         RectTransform GetRectTransform();

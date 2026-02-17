@@ -40,9 +40,15 @@ namespace TimeGame.Systems.Inventory.UI
         // Internal references
         private RectTransform rectTransform;
         private InventorySystem inventorySystem;
-        
+
         // CRITICAL: NOT serialized - InventoryGridFactory injects this via reflection
         private InventoryTileSprites tileSprites;
+
+        // Drag handler reference (for floating windows that aren't children of drag handler)
+        private InventoryDragHandler cachedDragHandler;
+
+        // The container item this grid belongs to (set for floating windows to prevent self-insertion)
+        private GridPlacement.PlacedItem ownerContainerItem;
 
         // Visual tracking
         private Dictionary<Guid, InventoryItemVisual> itemVisuals = new Dictionary<Guid, InventoryItemVisual>();
@@ -63,6 +69,73 @@ namespace TimeGame.Systems.Inventory.UI
         public int GridHeight => gridHeight;
         public float CellSize => cellSize;
         public InventoryTileSprites TileSprites => tileSprites;
+
+        /// <summary>
+        /// Get the drag handler for this grid (searches parent or uses cached reference)
+        /// </summary>
+        public InventoryDragHandler GetDragHandler()
+        {
+            if (cachedDragHandler != null)
+                return cachedDragHandler;
+
+            return GetComponentInParent<InventoryDragHandler>();
+        }
+
+        /// <summary>
+        /// Set the drag handler reference (for floating windows that aren't children of drag handler)
+        /// </summary>
+        public void SetDragHandler(InventoryDragHandler dragHandler)
+        {
+            cachedDragHandler = dragHandler;
+        }
+
+        /// <summary>
+        /// Set the owner container item (prevents an item being dropped into itself)
+        /// </summary>
+        public void SetOwnerContainerItem(GridPlacement.PlacedItem owner)
+        {
+            ownerContainerItem = owner;
+        }
+
+        /// <summary>
+        /// Check if placing 'item' into this grid would create a containment paradox.
+        /// Covers both direct self-insertion (A into A) and transitive cycles (A into B when B is already inside A).
+        /// Algorithm: walk item's entire ContainerInventory subtree — if ownerContainerItem appears anywhere, it's a cycle.
+        /// </summary>
+        public bool IsOwnerItem(GridPlacement.PlacedItem item)
+        {
+            if (ownerContainerItem == null || item == null) return false;
+
+            // Direct self-insertion: item IS the owner container
+            if (item.InstanceID == ownerContainerItem.InstanceID) return true;
+
+            // Transitive cycle: does item's subtree contain ownerContainerItem?
+            // e.g. A contains B, trying to put A into B's window → would create A→B→A cycle
+            return ContainsItemInSubtree(item, ownerContainerItem.InstanceID);
+        }
+
+        /// <summary>
+        /// Recursively checks whether 'root' or any container nested inside it contains an item
+        /// with the given targetInstanceID. Used to detect transitive containment cycles.
+        /// </summary>
+        private bool ContainsItemInSubtree(GridPlacement.PlacedItem root, System.Guid targetInstanceID)
+        {
+            if (root == null || root.ContainerInventory == null) return false;
+
+            foreach (GridPlacement.PlacedItem child in root.ContainerInventory.GetAllItems())
+            {
+                if (child == null) continue;
+
+                // Found the target somewhere inside root's subtree — cycle detected
+                if (child.InstanceID == targetInstanceID) return true;
+
+                // Recurse into nested containers
+                if (child.ContainerInventory != null && ContainsItemInSubtree(child, targetInstanceID))
+                    return true;
+            }
+
+            return false;
+        }
 
         #region Initialization
 
@@ -133,6 +206,48 @@ namespace TimeGame.Systems.Inventory.UI
             if (enableDebugLogging)
             {
                 Debug.Log($"[InventoryGridVisual] Initialized {gridWidth}×{gridHeight} grid, cell size {cellSize}px");
+            }
+        }
+
+        /// <summary>
+        /// Swap the underlying InventorySystem WITHOUT touching the factory-configured layout.
+        /// Use this instead of Initialize() when restoring a saved ContainerInventory into a
+        /// grid that was already correctly sized by the factory. Initialize() would clobber the
+        /// factory's cellSize and sizeDelta with whatever is stored in the system's CellSize field,
+        /// which may differ. This method keeps the visual layout intact and only rewires the data.
+        /// </summary>
+        public void SwapInventorySystem(InventorySystem system)
+        {
+            if (system == null)
+            {
+                Debug.LogError("[InventoryGridVisual] Cannot swap to null InventorySystem!", this);
+                return;
+            }
+
+            // Unsubscribe from old system
+            if (inventorySystem != null)
+            {
+                inventorySystem.OnItemAdded -= HandleItemAdded;
+                inventorySystem.OnItemRemoved -= HandleItemRemoved;
+            }
+
+            // Rewire data — preserve cellSize and sizeDelta from the factory
+            inventorySystem = system;
+            gridWidth = system.Width;
+            gridHeight = system.Height;
+            // NOTE: cellSize intentionally NOT updated — factory already sized the RectTransform correctly
+
+            // Subscribe to new system's events
+            inventorySystem.OnItemAdded += HandleItemAdded;
+            inventorySystem.OnItemRemoved += HandleItemRemoved;
+
+            // Redraw cells and item visuals with the new system's contents
+            DrawGridBackground();
+            RefreshAllItemVisuals();
+
+            if (enableDebugLogging)
+            {
+                Debug.Log($"[InventoryGridVisual] Swapped InventorySystem ({gridWidth}×{gridHeight}, layout preserved at {cellSize}px/cell)");
             }
         }
 
@@ -715,6 +830,37 @@ namespace TimeGame.Systems.Inventory.UI
                 else
                 {
                     Debug.Log($"[InventoryGridVisual] Failed to place {item.ItemName} at {gridPos}");
+                }
+            }
+
+            return success;
+        }
+
+        public bool TryPlaceExistingItem(GridPlacement.PlacedItem originalItem, GridDirection rotation, Vector2 mouseLocalPosition, out GridPlacement.PlacedItem placedItem)
+        {
+            placedItem = null;
+
+            // PARADOX PREVENTION: Block an item from being placed inside itself!
+            if (IsOwnerItem(originalItem))
+            {
+                Debug.LogWarning($"[InventoryGridVisual] Prevented '{originalItem.ItemDefinition?.name}' from being placed inside itself! A bag cannot contain itself.");
+                return false;
+            }
+
+            // Fall through to default: preserve lineage via TryPlaceItem
+            InventoryItemSO itemDef = originalItem.ItemDefinition as InventoryItemSO;
+            bool success = TryPlaceItem(itemDef, rotation, mouseLocalPosition, out placedItem);
+
+            // Transfer lineage data
+            if (success && placedItem != null)
+            {
+                if (originalItem.IsInstanceTracked && originalItem.ItemInstances != null && originalItem.ItemInstances.Count > 0)
+                {
+                    placedItem.AddInstances(new System.Collections.Generic.List<ItemInstance>(originalItem.ItemInstances));
+                }
+                if (originalItem.ContainerInventory != null)
+                {
+                    placedItem.ContainerInventory = originalItem.ContainerInventory;
                 }
             }
 

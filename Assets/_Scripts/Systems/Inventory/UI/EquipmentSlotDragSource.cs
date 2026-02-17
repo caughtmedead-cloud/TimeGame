@@ -57,15 +57,22 @@ namespace TimeGame.Systems.Inventory.UI
 
             draggedItem = equipmentSlot.EquippedItem;
             Log($"Beginning drag of {draggedItem.ItemName}");
-            
-            // Create PlacedItem data (for drag handler)
-            draggedPlacedItem = new PlacedItem(
-                equipmentSlot.GetEquippedItemID(),
-                draggedItem,
-                Vector2Int.zero,
-                GridDirection.Down
-            );
-            
+
+            // Get the full PlacedItem data (includes container inventory!)
+            draggedPlacedItem = equipmentSlot.GetEquippedPlacedItem();
+
+            if (draggedPlacedItem == null)
+            {
+                // Fallback: Create PlacedItem data if slot doesn't have one stored (shouldn't happen)
+                Debug.LogWarning("[EquipmentSlotDragSource] No PlacedItem found in equipment slot - creating new one (container data will be lost!)");
+                draggedPlacedItem = new PlacedItem(
+                    equipmentSlot.GetEquippedItemID(),
+                    draggedItem,
+                    Vector2Int.zero,
+                    GridDirection.Down
+                );
+            }
+
             // Unequip from slot (this hides the slot visual)
             equipmentSlot.UnequipItem();
             

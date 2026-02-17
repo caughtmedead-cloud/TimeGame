@@ -314,12 +314,14 @@ namespace TimeGame.Systems.Inventory
                         // Restore container inventory data if this is a container item
                         if (containerData != null && item.ProvidesStorage && placedItem != null)
                         {
-                            // Create inventory system for this container
+                            // Create inventory system for this container.
+                            // CRITICAL: Use 64f — must match UI cell size so grid renders correctly
+                            // when this system is swapped into a grid visual via Initialize().
                             InventorySystem containerInv = new InventorySystem(
                                 item.StorageGridSize.x,
                                 item.StorageGridSize.y,
-                                10f, // Cell size (doesn't matter for data storage)
-                                Vector3.zero, // Origin (doesn't matter for data storage)
+                                64f,
+                                Vector3.zero,
                                 item.StorageMaxWeight
                             );
 

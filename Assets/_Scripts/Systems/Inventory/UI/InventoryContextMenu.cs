@@ -58,6 +58,7 @@ namespace TimeGame.Systems.Inventory.UI
         private bool isWorldItemMode = false; // True = world item (no cursor), False = inventory item (cursor enabled)
 
         // Menu actions
+        public event Action<PlacedItem, InventoryGridVisual> OnOpenItem;
         public event Action<PlacedItem, InventoryGridVisual> OnUseItem;
         public event Action<PlacedItem, InventoryGridVisual> OnInspectItem;
         public event Action<PlacedItem, InventoryGridVisual> OnDropItem;
@@ -124,6 +125,12 @@ namespace TimeGame.Systems.Inventory.UI
             InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
             if (itemDef != null)
             {
+                // Open button - for container items (backpacks, chests, etc.)
+                if (itemDef.ProvidesStorage)
+                {
+                    AddMenuButton("Open", OnOpenButtonClicked);
+                }
+
                 // Use button - only for consumables with uses
                 if (item.IsInstanceTracked &&
                     item.ItemInstances != null &&
@@ -296,6 +303,11 @@ namespace TimeGame.Systems.Inventory.UI
             // Center the menu on screen (for world item mode with no cursor)
             // Uses worldMenuOffset which can be adjusted in the inspector
             menuRT.anchoredPosition = worldMenuOffset;
+        }
+
+        private void OnOpenButtonClicked()
+        {
+            OnOpenItem?.Invoke(currentItem, currentGrid);
         }
 
         private void OnUseButtonClicked()

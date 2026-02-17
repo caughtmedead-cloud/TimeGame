@@ -21,6 +21,9 @@ namespace TimeGame.Inventory
 
         [Tooltip("PlayerInventoryManager component - auto-found if not assigned")]
         [SerializeField] private TimeGame.Systems.Inventory.UI.PlayerInventoryManager playerInventoryManager;
+
+        [Tooltip("FloatingContainerWindowManager - auto-found if not assigned")]
+        [SerializeField] private TimeGame.Systems.Inventory.UI.FloatingContainerWindowManager floatingWindowManager;
         
         [Header("Input Settings")]
         [Tooltip("Enable debug logging for inventory UI actions")]
@@ -55,6 +58,16 @@ namespace TimeGame.Inventory
                 if (playerInventoryManager == null)
                 {
                     Debug.LogWarning("[InventoryUIController] PlayerInventoryManager not found. Grid refresh on open will be skipped.");
+                }
+            }
+
+            // Auto-find FloatingContainerWindowManager if not assigned
+            if (floatingWindowManager == null)
+            {
+                floatingWindowManager = FindObjectOfType<TimeGame.Systems.Inventory.UI.FloatingContainerWindowManager>();
+                if (floatingWindowManager == null)
+                {
+                    Debug.LogWarning("[InventoryUIController] FloatingContainerWindowManager not found. Floating windows won't auto-close with inventory.");
                 }
             }
             
@@ -206,7 +219,13 @@ namespace TimeGame.Inventory
             if (!IsOwner) return;
             
             isInventoryOpen = false;
-            
+
+            // Close all floating container windows when inventory closes
+            if (floatingWindowManager != null)
+            {
+                floatingWindowManager.CloseAllWindows();
+            }
+
             // Hide inventory UI
             if (inventoryCanvas != null)
             {

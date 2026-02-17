@@ -262,12 +262,14 @@ namespace TimeGame.Systems.Inventory
                 // Recursively load nested container data
                 if (ContainerData != null && ItemDefinition.ProvidesStorage)
                 {
-                    // Create inventory system for this container
+                    // Create inventory system for this container.
+                    // CRITICAL: Use 64f — must match UI cell size so grid renders correctly
+                    // when this system is swapped into a grid visual via Initialize().
                     InventorySystem containerInv = new InventorySystem(
                         ItemDefinition.StorageGridSize.x,
                         ItemDefinition.StorageGridSize.y,
-                        10f, // Cell size (doesn't matter for data storage)
-                        Vector3.zero, // Origin (doesn't matter for data storage)
+                        64f,
+                        Vector3.zero,
                         ItemDefinition.StorageMaxWeight
                     );
 

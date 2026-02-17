@@ -34,6 +34,7 @@ namespace TimeGame.Systems.Inventory.UI
         // State
         private InventoryItemSO equippedItem;
         private System.Guid equippedItemID;
+        private PlacedItem equippedPlacedItem; // NESTED INVENTORY: Store full item data including container inventory
         private RectTransform rectTransform;
         private CanvasGroup itemIconCanvasGroup;
         private InventoryDragHandler dragHandler;
@@ -123,6 +124,12 @@ namespace TimeGame.Systems.Inventory.UI
             return true;
         }
 
+        /// <summary>
+        /// DEPRECATED: Creates new PlacedItem from ItemSO, loses ItemInstances and ContainerInventory.
+        /// Use TryPlaceExistingItem() instead for drag/drop operations to preserve item lineage.
+        /// Only use this for initial spawns (loot generation, quest rewards).
+        /// </summary>
+        [System.Obsolete("Use TryPlaceExistingItem() for drag/drop to preserve item lineage. This method kills the item's soul!", false)]
         public bool TryPlaceItem(InventoryItemSO item, GridDirection rotation, Vector2 mouseLocalPosition, out PlacedItem placedItem)
         {
             placedItem = null;
@@ -144,8 +151,57 @@ namespace TimeGame.Systems.Inventory.UI
             );
 
             equippedItemID = placedItem.InstanceID;
+            equippedPlacedItem = placedItem; // Store the placed item
 
             Log($"✓ Equipped {item.ItemName} in {slotName}");
+            return true;
+        }
+
+        /// <summary>
+        /// Try to place an existing item (preserving instances and container inventory).
+        /// This is the preferred method for equipping items from inventory.
+        /// </summary>
+        public bool TryPlaceExistingItem(PlacedItem originalItem, GridDirection rotation, Vector2 mouseLocalPosition, out PlacedItem placedItem)
+        {
+            placedItem = null;
+
+            InventoryItemSO item = originalItem.ItemDefinition as InventoryItemSO;
+            if (item == null || !CanAcceptItem(item, rotation, mouseLocalPosition))
+            {
+                return false;
+            }
+
+            // CRITICAL: Create PlacedItem preserving original data BEFORE EquipItem()
+            // This ensures equippedPlacedItem is set when OnEquipped event fires!
+            // ITEM LINEAGE: Preserve the original InstanceID so systems that track by ID
+            // (floating windows, container references) can still find this item after equipping.
+            placedItem = new PlacedItem(
+                originalItem.InstanceID,
+                item,
+                Vector2Int.zero,
+                GridDirection.Down
+            );
+
+            // Transfer ItemInstances and ContainerInventory from original
+            if (originalItem.IsInstanceTracked && originalItem.ItemInstances != null && originalItem.ItemInstances.Count > 0)
+            {
+                // Copy instances from original item
+                System.Collections.Generic.List<ItemInstance> instancesCopy = new System.Collections.Generic.List<ItemInstance>(originalItem.ItemInstances);
+                placedItem.AddInstances(instancesCopy);
+            }
+
+            if (originalItem.ContainerInventory != null)
+            {
+                placedItem.ContainerInventory = originalItem.ContainerInventory;
+            }
+
+            equippedItemID = placedItem.InstanceID;
+            equippedPlacedItem = placedItem; // Store BEFORE EquipItem so event handlers can access it
+
+            // Now equip the item (this fires OnEquipped event)
+            EquipItem(item);
+
+            Log($"✓ Equipped {item.ItemName} in {slotName} (with {(originalItem.ContainerInventory != null ? "container data" : "no container")})");
             return true;
         }
 
@@ -208,11 +264,17 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             InventoryItemSO unequippedItem = equippedItem;
+
+            // CRITICAL: Fire event BEFORE clearing equippedPlacedItem
+            // This allows OnEquipmentUnequipped to save ContainerInventory
+            OnItemUnequipped?.Invoke(unequippedItem);
+
+            // Now clear the slot
             equippedItem = null;
             equippedItemID = System.Guid.Empty;
+            equippedPlacedItem = null; // Clear stored placed item
 
             UpdateVisuals();
-            OnItemUnequipped?.Invoke(unequippedItem);
 
             Log($"Unequipped {unequippedItem.ItemName}");
             return unequippedItem;
@@ -221,6 +283,15 @@ namespace TimeGame.Systems.Inventory.UI
         public System.Guid GetEquippedItemID()
         {
             return equippedItemID;
+        }
+
+        /// <summary>
+        /// Get the full PlacedItem data for the equipped item (includes container inventory).
+        /// Returns null if no item is equipped.
+        /// </summary>
+        public PlacedItem GetEquippedPlacedItem()
+        {
+            return equippedPlacedItem;
         }
 
         #endregion

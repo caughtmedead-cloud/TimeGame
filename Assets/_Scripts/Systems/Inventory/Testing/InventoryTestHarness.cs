@@ -98,6 +98,8 @@ namespace TimeGame.Systems.Inventory.Testing
         /// <summary>
         /// Test equipping an item into an equipment slot.
         /// Simulates what will happen when player picks up equipment.
+        /// ITEM LINEAGE: Creates a living PlacedItem and places it using TryPlaceExistingItem().
+        /// This serves as the baseline for auto-equip systems.
         /// </summary>
         private void TestEquipItem(InventoryItemSO item, EquipmentSlot slot, string slotName)
         {
@@ -122,18 +124,55 @@ namespace TimeGame.Systems.Inventory.Testing
                 return;
             }
 
-            // Try to equip
-            bool success = slot.TryEquipItem(item);
+            // ITEM LINEAGE: Create a living PlacedItem (simulates picking up from world/inventory)
+            // This preserves ItemInstances and ContainerInventory through all operations
+            PlacedItem placedItem = new PlacedItem(
+                System.Guid.NewGuid(),
+                item,
+                Vector2Int.zero,
+                GridDirection.Down
+            );
+
+            // If this is a container item, initialize its container inventory
+            if (item.ProvidesStorage)
+            {
+                placedItem.ContainerInventory = new InventorySystem(
+                    item.StorageGridSize.x,
+                    item.StorageGridSize.y,
+                    64f, // Must match UI cell size — read by InventoryGridVisual.Initialize() for sizing
+                    Vector3.zero,
+                    item.StorageMaxWeight
+                );
+                Log($"  → {item.ItemName} provides storage: {item.StorageGridSize.x}x{item.StorageGridSize.y}");
+            }
+
+            // If this is a tracked item, initialize with pristine instance
+            if (item.TrackIndividualItems)
+            {
+                // Create pristine instance
+                ItemInstance instance = new ItemInstance();
+                if (item.HasLimitedUses)
+                {
+                    instance.UsesRemaining = item.MaxUses;
+                }
+                else
+                {
+                    instance.UsesRemaining = -1;
+                }
+
+                placedItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
+                Log($"  → Created tracked item with {instance.UsesRemaining} uses");
+            }
+
+            // CRITICAL: Use TryPlaceExistingItem() to preserve the living item's lineage
+            // This is the PROPER way to equip items - never use TryPlaceItem() for existing items!
+            bool success = slot.TryPlaceExistingItem(placedItem, GridDirection.Down, Vector2.zero, out PlacedItem equippedItem);
 
             if (success)
             {
-                Log($"✓ Successfully equipped {item.ItemName} into {slotName}!");
-                
-                // If item provides storage, grid should spawn automatically via PlayerInventoryManager events
-                if (item.ProvidesStorage)
-                {
-                    Log($"  → {item.ItemName} provides storage: {item.StorageGridSize.x}x{item.StorageGridSize.y}");
-                }
+                Log($"✓ Successfully equipped {item.ItemName} into {slotName} with full lineage!");
+                Log($"  → PlacedItem stored in slot: {equippedItem != null}");
+                Log($"  → ContainerInventory preserved: {equippedItem?.ContainerInventory != null}");
             }
             else
             {

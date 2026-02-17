@@ -20,6 +20,9 @@ MonoBehaviour:
   Description: 
   IsStackable: 0
   MaxStackSize: 1
+  TrackIndividualItems: 0
+  HasLimitedUses: 0
+  MaxUses: 1
   EquipmentType: 7
   Category: 0
   Rarity: 0
@@ -28,4 +31,4 @@ MonoBehaviour:
   ProvidesStorage: 1
   StorageGridSize: {x: 6, y: 4}
   StorageMaxWeight: 50
-  WorldPrefab: {fileID: 0}
+  WorldItemPrefab: {fileID: 4787302808310513221, guid: f99360860366f1642b30d8a1ef4ddaaf, type: 3}

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory.UI
 {
@@ -111,7 +112,24 @@ namespace TimeGame.Systems.Inventory.UI
         private void OnEquipmentEquipped(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
             Log($"Equipment equipped: {item.ItemName} in {mapping.slot.name}");
-            
+
+            // ITEM LINEAGE: Ensure the slot has a PlacedItem stored
+            // If it doesn't (e.g., equipped via TryEquipItem instead of TryPlaceExistingItem),
+            // the container inventory won't persist through unequip/re-equip
+            PlacedItem placedItem = mapping.slot.GetEquippedPlacedItem();
+            if (placedItem == null)
+            {
+                Debug.LogWarning($"[PlayerInventoryManager] {item.ItemName} was equipped without a PlacedItem! Container data will not persist. Use TryPlaceExistingItem() instead of TryEquipItem().");
+            }
+
+            // Close any floating window that was open for this container item.
+            // The item is now equipped (becoming a sidebar grid), so the floating window is stale.
+            if (placedItem != null)
+            {
+                FloatingContainerWindowManager windowManager = FindObjectOfType<FloatingContainerWindowManager>();
+                windowManager?.CloseWindowForItem(placedItem);
+            }
+
             // Only spawn storage grid if item provides storage
             if (item.ProvidesStorage)
             {
@@ -126,10 +144,30 @@ namespace TimeGame.Systems.Inventory.UI
         private void OnEquipmentUnequipped(EquipmentStorageMapping mapping, InventoryItemSO item)
         {
             Log($"Equipment unequipped: {item.ItemName} from {mapping.slot.name}");
-            
-            // Only remove grid if item had storage
+
+            // ITEM LINEAGE: Save container contents back to the PlacedItem before removing grid
             if (item.ProvidesStorage)
             {
+                // Get the equipment slot's PlacedItem
+                PlacedItem equippedItem = mapping.slot.GetEquippedPlacedItem();
+
+                // Get the equipment storage grid's inventory
+                string gridName = mapping.gridName;
+                if (equipmentGrids.ContainsKey(gridName))
+                {
+                    InventoryGridVisual grid = equipmentGrids[gridName];
+                    if (grid != null && grid.InventorySystem != null && equippedItem != null)
+                    {
+                        // CRITICAL: Store the grid's inventory in the PlacedItem's ContainerInventory
+                        // This preserves all items inside the backpack!
+                        equippedItem.ContainerInventory = grid.InventorySystem;
+
+                        int itemCount = grid.InventorySystem.GetAllItems().Count;
+                        Log($"Saved {itemCount} items from {gridName} to {item.ItemName}.ContainerInventory");
+                    }
+                }
+
+                // Now safe to remove the grid
                 RemoveEquipmentGrid(mapping);
             }
         }
@@ -171,6 +209,24 @@ namespace TimeGame.Systems.Inventory.UI
             if (grid != null)
             {
                 equipmentGrids[gridName] = grid;
+
+                // ITEM LINEAGE: Restore items from PlacedItem's ContainerInventory.
+                // CRITICAL: We swap the grid's InventorySystem to be the ContainerInventory directly,
+                // exactly like FloatingContainerWindowManager does. This means items are NEVER copied —
+                // they always live in exactly one InventorySystem. Copying would cause duplication if a
+                // floating window is still open (both would display the same items from two systems).
+                PlacedItem equippedPlacedItem = mapping.slot.GetEquippedPlacedItem();
+                if (equippedPlacedItem != null && equippedPlacedItem.ContainerInventory != null)
+                {
+                    // Swap in the container's existing system WITHOUT touching the factory layout.
+                    // All items remain in the same system object — no duplication possible.
+                    grid.SwapInventorySystem(equippedPlacedItem.ContainerInventory);
+                    grid.RefreshAllItemVisuals();
+
+                    int itemCount = equippedPlacedItem.ContainerInventory.GetAllItems().Count;
+                    Log($"Restored {itemCount} items from {item.ItemName}.ContainerInventory to {gridName} (system swap, no copy)");
+                }
+
                 Log($"Spawned equipment storage grid: {gridName} ({gridSize.x}x{gridSize.y}, {maxWeight}kg capacity) from {item.ItemName}");
             }
         }
@@ -181,10 +237,8 @@ namespace TimeGame.Systems.Inventory.UI
 
             string gridName = mapping.gridName;
 
-            // TODO: Handle items in storage before removing
-            // Option A: Drop items on ground
-            // Option B: Try to move to pockets
-            // For now, items will be lost (warn in logs)
+            // Items should be saved to ContainerInventory BEFORE this method is called
+            // (handled in OnEquipmentUnequipped)
             if (equipmentGrids.ContainsKey(gridName))
             {
                 InventoryGridVisual grid = equipmentGrids[gridName];
@@ -193,7 +247,7 @@ namespace TimeGame.Systems.Inventory.UI
                     int itemCount = grid.InventorySystem.GetAllItems().Count;
                     if (itemCount > 0)
                     {
-                        Debug.LogWarning($"[PlayerInventoryManager] Removing {gridName} with {itemCount} items! Items will be lost. TODO: Implement item handling.");
+                        Log($"Removing {gridName} with {itemCount} items (items should already be saved to ContainerInventory)");
                     }
                 }
             }

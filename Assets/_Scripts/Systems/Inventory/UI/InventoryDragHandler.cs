@@ -98,6 +98,16 @@ namespace TimeGame.Systems.Inventory.UI
             }
         }
 
+        /// <summary>
+        /// Remove any destroyed/null targets from the registered list.
+        /// Called defensively before iterating the list, since floating windows
+        /// can be destroyed while still technically registered.
+        /// </summary>
+        private void PruneDestroyedTargets()
+        {
+            registeredTargets.RemoveAll(t => t == null || (t is MonoBehaviour mb && mb == null));
+        }
+
         #endregion
 
         #region Public Drag Methods
@@ -568,8 +578,16 @@ namespace TimeGame.Systems.Inventory.UI
                         }
                     }
 
+                    // PARADOX PREVENTION: Block container from being placed inside itself
+                    // Must check BEFORE the isDroppingOnSameStack block to get a proper early exit
+                    if (!isDroppingOnSameStack && originalPlacedItem != null && targetGrid.IsOwnerItem(originalPlacedItem))
+                    {
+                        Debug.LogWarning($"[InventoryDragHandler] Prevented '{itemDef.ItemName}' from being placed inside itself!");
+                        dropped = false;
+                        // Fall through to ReturnToOriginalPosition by leaving dropped = false and isDroppingOnSameStack = false
+                    }
                     // If we didn't merge, try normal placement (no auto-stacking)
-                    if (!isDroppingOnSameStack)
+                    else if (!isDroppingOnSameStack)
                     {
                         // STACK MASTER: Get instances from drag visual for tracked stacks (both splits and full moves)
                         List<ItemInstance> draggedInstances = null;
@@ -609,6 +627,12 @@ namespace TimeGame.Systems.Inventory.UI
                                 placedItem.AddInstances(draggedInstances);
                             }
 
+                            // NESTED INVENTORY: Transfer container inventory
+                            if (dropped && placedItem != null && originalPlacedItem != null && originalPlacedItem.ContainerInventory != null)
+                            {
+                                placedItem.ContainerInventory = originalPlacedItem.ContainerInventory;
+                            }
+
                             // CRITICAL FIX: Refresh visuals to update stack count display
                             if (dropped)
                             {
@@ -617,14 +641,29 @@ namespace TimeGame.Systems.Inventory.UI
                         }
                         else
                         {
-                            // CROSS GRID or SPLIT: Allow new ID
-                            dropped = targetGrid.InventorySystem.TryAddItem(itemDef, placementPos, dir, out placedItem, draggedStackCount, false);
+                            // CROSS GRID or SPLIT: Preserve InstanceID for item lineage
+                            dropped = targetGrid.InventorySystem.TryAddItem(
+                                originalPlacedItem?.InstanceID ?? System.Guid.NewGuid(),
+                                itemDef, placementPos, dir, out placedItem);
 
                             // CRITICAL: Transfer instances from the drag visual for splits and tracked cross-grid moves
                             if (dropped && placedItem != null && draggedInstances != null && draggedInstances.Count > 0)
                             {
                                 placedItem.ItemInstances.Clear();
                                 placedItem.AddInstances(draggedInstances);
+                            }
+
+                            // NESTED INVENTORY: Transfer container inventory for cross-grid moves
+                            if (dropped && placedItem != null && originalPlacedItem != null && originalPlacedItem.ContainerInventory != null)
+                            {
+                                placedItem.ContainerInventory = originalPlacedItem.ContainerInventory;
+
+                                // WINDOW SYNC: Update any open floating window for this container
+                                FloatingContainerWindowManager windowManager = FindObjectOfType<FloatingContainerWindowManager>();
+                                if (windowManager != null)
+                                {
+                                    windowManager.SyncContainerReference(placedItem);
+                                }
                             }
 
                             // Refresh visuals to show correct uses/stack counts
@@ -641,7 +680,18 @@ namespace TimeGame.Systems.Inventory.UI
                     // Equipment slots don't support stacking, so only allow if draggedStackCount == 1
                     if (draggedStackCount == 1)
                     {
-                        dropped = dropTarget.TryPlaceItem(itemDef, dir, mouseLocalPos, out placedItem);
+                        // ITEM LINEAGE: Always use TryPlaceExistingItem to preserve item identity
+                        if (originalPlacedItem != null)
+                        {
+                            dropped = dropTarget.TryPlaceExistingItem(originalPlacedItem, dir, mouseLocalPos, out placedItem);
+                        }
+                        else
+                        {
+                            // CRITICAL ERROR: originalPlacedItem should NEVER be null during drag operations
+                            // This would mean we're trying to resurrect a dead item - FORBIDDEN!
+                            Debug.LogError("[InventoryDragHandler] CRITICAL: originalPlacedItem is null! Cannot place item without lineage. This is a bug.");
+                            dropped = false;
+                        }
                     }
                     else
                     {
@@ -843,6 +893,13 @@ namespace TimeGame.Systems.Inventory.UI
                     }
                 }
 
+                // PARADOX PREVENTION: If dragging a container over its own floating window grid,
+                // force red ghost preview to signal the drop will be rejected
+                if (canPlace && originalPlacedItem != null && currentGrid.IsOwnerItem(originalPlacedItem))
+                {
+                    canPlace = false;
+                }
+
                 currentGrid.ShowGhostPreview(placementGridPos, itemWidth, itemHeight, canPlace);
                 lastGhostGrid = currentGrid;
             }
@@ -936,6 +993,54 @@ namespace TimeGame.Systems.Inventory.UI
             }
         }
 
+        /// <summary>
+        /// Forcibly cancel an in-progress drag and return the item to its origin.
+        /// Called when a floating window is closed mid-drag, or when the inventory closes.
+        /// Handles the case where originalGrid has been destroyed (e.g. the window it lived in
+        /// was closed), in which case the item is simply destroyed to avoid data loss.
+        /// </summary>
+        public void CancelDrag()
+        {
+            if (draggingPlacedObject == null) return;
+
+            // If the original grid was destroyed (window closed mid-drag), we can't return there.
+            // The item data is still live in originalPlacedItem — just destroy the visual.
+            // The item remains in whatever InventorySystem it was registered to.
+            bool originalGridDestroyed = originalGrid != null && (originalGrid as MonoBehaviour) == null;
+
+            if (originalGridDestroyed)
+            {
+                // Grid is gone — just clean up the visual. Item data survives in its system.
+                ClearAllGhostPreviews();
+                if (draggingPlacedObject != null)
+                    Destroy(draggingPlacedObject.gameObject);
+            }
+            else
+            {
+                // Grid still alive — do a normal return
+                if (isStackSplit && originalGrid != null)
+                {
+                    PlacedItem originalItem = originalGrid.InventorySystem.GetItemByID(originalItemInstanceID);
+                    if (originalItem != null)
+                    {
+                        originalItem.AddToStack(draggedStackCount);
+                        originalGrid.RefreshAllItemVisuals();
+                    }
+                }
+
+                ClearAllGhostPreviews();
+                ReturnToOriginalPosition();
+            }
+
+            // Clear all drag state
+            draggingPlacedObject = null;
+            currentGrid = null;
+            originalGrid = null;
+            originalSource = null;
+            isStackSplit = false;
+            draggedStackCount = 0;
+        }
+
         private void ReturnToOriginalPosition()
         {
             InventoryItemSO itemDef = originalPlacedItem.ItemDefinition as InventoryItemSO;
@@ -983,8 +1088,18 @@ namespace TimeGame.Systems.Inventory.UI
             else if (originalSource != null)
             {
                 // Return to equipment slot (or other non-grid source)
-                originalSource.TryPlaceItem(itemDef, originalDir, Vector2.zero, out _);
-                
+                // ITEM LINEAGE: Use TryPlaceExistingItem to preserve item soul!
+                if (originalPlacedItem != null)
+                {
+                    originalSource.TryPlaceExistingItem(originalPlacedItem, originalDir, Vector2.zero, out _);
+                }
+                else
+                {
+                    // Fallback for items that don't have PlacedItem data
+                    Debug.LogWarning("[InventoryDragHandler] Returning item without PlacedItem data - container contents may be lost");
+                    originalSource.TryPlaceItem(itemDef, originalDir, Vector2.zero, out _);
+                }
+
                 // Destroy temp visual since equipment slot will create its own
                 Destroy(draggingPlacedObject.gameObject);
             }
@@ -1006,6 +1121,9 @@ namespace TimeGame.Systems.Inventory.UI
             List<RaycastResult> results = new List<RaycastResult>();
             EventSystem.current.RaycastAll(pointerData, results);
 
+            // Remove any targets whose GameObjects were destroyed (e.g. closed floating windows)
+            PruneDestroyedTargets();
+
             // Check all registered drop targets
             foreach (RaycastResult result in results)
             {
@@ -1016,7 +1134,7 @@ namespace TimeGame.Systems.Inventory.UI
                 foreach (IInventoryDropTarget target in registeredTargets)
                 {
                     // Check if this GameObject is part of the target
-                    if (target is MonoBehaviour targetMono)
+                    if (target is MonoBehaviour targetMono && targetMono != null)
                     {
                         if (result.gameObject == targetMono.gameObject ||
                             result.gameObject.transform.IsChildOf(targetMono.transform))
@@ -1040,7 +1158,7 @@ namespace TimeGame.Systems.Inventory.UI
         {
             foreach (IInventoryDropTarget target in registeredTargets)
             {
-                if (target is InventoryGridVisual gridVisual)
+                if (target is InventoryGridVisual gridVisual && gridVisual != null)
                 {
                     if (gridVisual.InventorySystem != null &&
                         gridVisual.InventorySystem.GetItemByID(itemID) != null)

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 namespace TimeGame.Systems.Inventory.UI
 {
@@ -27,9 +28,26 @@ namespace TimeGame.Systems.Inventory.UI
         [Tooltip("Default interaction hint")]
         [SerializeField] private string defaultHint = "[F] Pick Up  |  [RMB] Options";
 
+        [Header("Animation Settings")]
+        [Tooltip("Minimum scale for the crosshair pulse animation")]
+        [SerializeField] private float minScale = 0.8f;
+
+        [Tooltip("Maximum scale for the crosshair pulse animation")]
+        [SerializeField] private float maxScale = 1.2f;
+
+        [Tooltip("Duration for one pulse cycle (scale down and back up)")]
+        [SerializeField] private float pulseDuration = 0.6f;
+
+        [Tooltip("Easing function for the pulse animation")]
+        [SerializeField] private Ease pulseEase = Ease.InOutSine;
+
+        [Tooltip("Enable debug logging for animation")]
+        [SerializeField] private bool debugAnimation = false;
+
+        private Tween scaleTween;
+
         private void Awake()
         {
-            // Setup default visuals
             if (crosshairImage != null)
             {
                 crosshairImage.color = crosshairColor;
@@ -39,6 +57,16 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 interactionHintText.text = defaultHint;
             }
+        }
+
+        private void OnEnable()
+        {
+            StartPulseAnimation();
+        }
+
+        private void OnDisable()
+        {
+            StopPulseAnimation();
         }
 
         /// <summary>
@@ -63,6 +91,57 @@ namespace TimeGame.Systems.Inventory.UI
                     displayText += $" x{item.Quantity}";
                 }
                 itemNameText.text = displayText;
+            }
+        }
+
+        private void StartPulseAnimation()
+        {
+            if (crosshairImage == null)
+            {
+                if (debugAnimation)
+                {
+                    Debug.LogWarning("[InteractionCrosshair] Cannot start animation - crosshairImage is null!");
+                }
+                return;
+            }
+
+            StopPulseAnimation();
+
+            if (debugAnimation)
+            {
+                Debug.Log($"[InteractionCrosshair] Starting pulse animation (min: {minScale}, max: {maxScale}, duration: {pulseDuration})");
+            }
+
+            crosshairImage.transform.localScale = Vector3.one * maxScale;
+
+            Sequence pulseSequence = DOTween.Sequence();
+            pulseSequence.Append(crosshairImage.transform.DOScale(minScale, pulseDuration / 2f).SetEase(pulseEase));
+            pulseSequence.Append(crosshairImage.transform.DOScale(maxScale, pulseDuration / 2f).SetEase(pulseEase));
+            pulseSequence.SetLoops(-1);
+
+            scaleTween = pulseSequence;
+
+            if (debugAnimation)
+            {
+                Debug.Log($"[InteractionCrosshair] Animation started. Tween active: {scaleTween.IsActive()}");
+            }
+        }
+
+        private void StopPulseAnimation()
+        {
+            if (scaleTween != null && scaleTween.IsActive())
+            {
+                scaleTween.Kill();
+                
+                if (debugAnimation)
+                {
+                    Debug.Log("[InteractionCrosshair] Pulse animation stopped");
+                }
+            }
+
+            if (crosshairImage != null)
+            {
+                crosshairImage.transform.localScale = Vector3.one;
             }
         }
 

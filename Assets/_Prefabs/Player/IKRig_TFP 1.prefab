@@ -284,7 +284,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9388dd56073c98a4fb4e4f1ef3a71620, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TemporalStabilityUI
-  _componentIndexCache: 13
+  _componentIndexCache: 11
   _addedNetworkObject: {fileID: -8147693711007459752}
   _networkObjectCache: {fileID: -8147693711007459752}
   playerStability: {fileID: -845346503486197219}
@@ -484,7 +484,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3dc97a8b9e628044e83004c93095c14d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Prediction.NetworkTrigger
-  _componentIndexCache: 14
+  _componentIndexCache: 12
   _addedNetworkObject: {fileID: -8147693711007459752}
   _networkObjectCache: {fileID: -8147693711007459752}
   MaximumSimultaneousHits: 16
@@ -3587,8 +3587,6 @@ MonoBehaviour:
   - {fileID: 74732551349139366}
   - {fileID: 3166874489748539819}
   - {fileID: 8817975478013292757}
-  - {fileID: 0}
-  - {fileID: 0}
   - {fileID: 4836224069964464589}
   - {fileID: 9114039164303258155}
   InitializedParentNetworkBehaviour: {fileID: 0}
@@ -3601,7 +3599,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584320589489181277
+  _initializedTimestamp: -8584303505302574430
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -3616,7 +3614,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 16
+  <PrefabId>k__BackingField: 74
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 17157784613060901144
   SceneId: 0

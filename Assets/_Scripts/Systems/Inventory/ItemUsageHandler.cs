@@ -99,10 +99,11 @@ namespace TimeGame.Systems.Inventory
                 }
             }
 
-            // Subscribe to context menu use event
+            // Subscribe to context menu events
             InventoryContextMenu contextMenu = FindObjectOfType<InventoryContextMenu>();
             if (contextMenu != null)
             {
+                contextMenu.OnOpenItem += HandleOpenItem;
                 contextMenu.OnUseItem += HandleUseItem;
                 contextMenu.OnInspectItem += HandleInspectItem;
                 contextMenu.OnDropItem += HandleDropAllItems;
@@ -113,6 +114,38 @@ namespace TimeGame.Systems.Inventory
             {
                 Debug.LogWarning("[ItemUsageHandler] Could not find InventoryContextMenu in scene!");
             }
+        }
+
+        private void HandleOpenItem(PlacedItem item, InventoryGridVisual grid)
+        {
+            if (item == null) return;
+
+            InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
+            if (itemDef == null || !itemDef.ProvidesStorage)
+            {
+                Debug.LogWarning("[ItemUsageHandler] Cannot open - item doesn't provide storage!");
+                return;
+            }
+
+            // Open in floating window (for nested inventory containers)
+            FloatingContainerWindowManager windowManager = FindObjectOfType<FloatingContainerWindowManager>();
+            if (windowManager != null)
+            {
+                windowManager.OpenContainer(item);
+                Debug.Log($"[ItemUsageHandler] Opened {itemDef.ItemName} in floating window");
+                return;
+            }
+
+            // Fallback: Try world container system (for loot containers in world)
+            ContainerInteractionManager containerManager = FindObjectOfType<ContainerInteractionManager>();
+            if (containerManager != null)
+            {
+                ContainerHelper.OpenContainer(item, containerManager);
+                Debug.Log($"[ItemUsageHandler] Opened {itemDef.ItemName} using ContainerInteractionManager (world container)");
+                return;
+            }
+
+            Debug.LogError("[ItemUsageHandler] Cannot open container - No FloatingContainerWindowManager or ContainerInteractionManager found in scene!");
         }
 
         private void HandleUseItem(PlacedItem item, InventoryGridVisual grid)
@@ -332,37 +365,44 @@ namespace TimeGame.Systems.Inventory
                 }
                 else
                 {
-                    // Partial drop: reduce stack count
-                    int remainingCount = item.StackCount - itemsSpawned;
-                    var remainingInstances = item.IsInstanceTracked ? new System.Collections.Generic.List<ItemInstance>(item.ItemInstances) : null;
+                    // ITEM LINEAGE: Partial drop - item is still alive, just modified
+                    // The instances were already removed at line 349 via RemoveRange()
+                    // For tracked items, StackCount is derived from ItemInstances.Count, so it's already correct
+                    // For homogeneous items, we need to manually reduce the stack count
 
-                    Vector2Int position = item.AnchorPosition;
-                    GridPlacement.GridDirection direction = item.Rotation;
-
-                    grid.InventorySystem.RemoveItem(item.InstanceID);
-
-                    // Re-add with reduced count
-                    // CRITICAL: For tracked items, pass 0 to prevent creating pristine instances
-                    int stackCountToCreate = (remainingInstances != null) ? 0 : remainingCount;
-
-                    bool success = grid.InventorySystem.TryAddItem(
-                        itemDef,
-                        position,
-                        direction,
-                        out GridPlacement.PlacedItem newItem,
-                        stackCountToCreate,
-                        allowAutoStack: false
-                    );
-
-                    if (success && remainingInstances != null && newItem != null)
+                    if (!item.IsInstanceTracked)
                     {
-                        // Add the real instances (no need to clear - stackCountToCreate was 0)
-                        newItem.AddInstances(remainingInstances);
+                        // Homogeneous items: reduce stack count manually
+                        // This is safe because we're not using instances
+                        int newStackCount = originalStackCount - itemsSpawned;
+
+                        // Unfortunately PlacedItem doesn't have a SetStackCount method
+                        // We need to use the internal StackCount property
+                        // The instances were already removed, so for tracked items this is automatic
+                        // For non-tracked, we need to handle this differently
+
+                        // Since we can't directly modify StackCount for homogeneous items,
+                        // we'll need to remove and recreate ONLY for homogeneous items
+                        Vector2Int position = item.AnchorPosition;
+                        GridPlacement.GridDirection direction = item.Rotation;
+
+                        grid.InventorySystem.RemoveItem(item.InstanceID);
+
+                        bool success = grid.InventorySystem.TryAddItem(
+                            itemDef,
+                            position,
+                            direction,
+                            out GridPlacement.PlacedItem newItem,
+                            newStackCount,
+                            allowAutoStack: false
+                        );
+
+                        if (!success)
+                        {
+                            Debug.LogError($"[ItemUsageHandler] Failed to re-add homogeneous item after partial drop!");
+                        }
                     }
-                    else if (!success)
-                    {
-                        Debug.LogError($"[ItemUsageHandler] Failed to re-add item after partial drop! Remaining items lost!");
-                    }
+                    // For tracked items, no action needed - RemoveRange already modified StackCount
                 }
 
                 grid.RefreshAllItemVisuals();
