@@ -57,12 +57,20 @@ namespace TimeGame.Systems.Inventory.UI
         // Context mode
         private bool isWorldItemMode = false; // True = world item (no cursor), False = inventory item (cursor enabled)
 
-        // Menu actions
+        // Menu actions - inventory grid items
         public event Action<PlacedItem, InventoryGridVisual> OnOpenItem;
         public event Action<PlacedItem, InventoryGridVisual> OnUseItem;
         public event Action<PlacedItem, InventoryGridVisual> OnInspectItem;
         public event Action<PlacedItem, InventoryGridVisual> OnDropItem;
         public event Action<PlacedItem, InventoryGridVisual> OnDropOneItem;
+        public event Action<PlacedItem, InventoryGridVisual, EquipmentSlot> OnEquipItem;
+
+        // Menu actions - equipment slot items
+        public event Action<EquipmentSlot> OnEquipmentSlotUnequip;
+        public event Action<EquipmentSlot> OnEquipmentSlotInspect;
+
+        // Context for equipment slot menus
+        private EquipmentSlot currentEquipmentSlot;
 
         private void Awake()
         {
@@ -106,6 +114,15 @@ namespace TimeGame.Systems.Inventory.UI
             instance.ShowMenuInWorldInternal(screenPosition, options);
         }
 
+        /// <summary>
+        /// Show context menu for a populated equipment slot (Inspect, Unequip)
+        /// </summary>
+        public static void ShowMenuForEquipmentSlot(Vector2 screenPosition, EquipmentSlot slot)
+        {
+            if (instance == null) return;
+            instance.ShowMenuForEquipmentSlotInternal(screenPosition, slot);
+        }
+
         public static void HideMenu()
         {
             if (instance == null) return;
@@ -117,6 +134,7 @@ namespace TimeGame.Systems.Inventory.UI
             isWorldItemMode = false;
             currentItem = item;
             currentGrid = grid;
+            currentEquipmentSlot = null;
 
             // Clear existing buttons
             ClearButtons();
@@ -138,6 +156,18 @@ namespace TimeGame.Systems.Inventory.UI
                     item.ItemInstances[0].UsesRemaining >= 0)
                 {
                     AddMenuButton("Use", OnUseButtonClicked);
+                }
+
+                // Equip button - if the item has an equipment type, find a compatible empty slot
+                if (itemDef.EquipmentType != ItemType.None)
+                {
+                    EquipmentSlot targetSlot = FindEmptyCompatibleSlot(itemDef);
+                    if (targetSlot != null)
+                    {
+                        // Capture slot reference for the lambda
+                        EquipmentSlot slotToEquipTo = targetSlot;
+                        AddMenuButton("Equip", () => OnEquipButtonClicked(slotToEquipTo));
+                    }
                 }
 
                 // Inspect button - always available
@@ -168,6 +198,49 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             menuPanel.SetActive(true);
+        }
+
+        private void ShowMenuForEquipmentSlotInternal(Vector2 screenPosition, EquipmentSlot slot)
+        {
+            if (slot == null || !slot.IsOccupied) return;
+
+            isWorldItemMode = false;
+            currentItem = null;
+            currentGrid = null;
+            currentEquipmentSlot = slot;
+
+            ClearButtons();
+
+            // Inspect - always available
+            AddMenuButton("Inspect", OnEquipmentSlotInspectButtonClicked);
+
+            // Unequip - always available when slot is occupied
+            AddMenuButton("Unequip", OnEquipmentSlotUnequipButtonClicked);
+
+            PositionMenu(screenPosition);
+
+            selectedButtonIndex = 0;
+            if (selectionIndicator != null)
+                selectionIndicator.SetActive(false);
+
+            menuPanel.SetActive(true);
+        }
+
+        /// <summary>
+        /// Find the first empty equipment slot that accepts the given item type.
+        /// Used to determine whether to show the Equip button on grid items.
+        /// </summary>
+        private EquipmentSlot FindEmptyCompatibleSlot(InventoryItemSO itemDef)
+        {
+            // includeInactive: true — equipment slots may be on inactive GameObjects
+            // (e.g. inventory panel hidden, or slot is part of a disabled panel)
+            EquipmentSlot[] allSlots = FindObjectsOfType<EquipmentSlot>(true);
+            foreach (EquipmentSlot slot in allSlots)
+            {
+                if (!slot.IsOccupied && slot.CanAcceptItem(itemDef, GridDirection.Down, Vector2.zero))
+                    return slot;
+            }
+            return null;
         }
 
         private void ShowMenuInWorldInternal(Vector2 screenPosition, List<ContextMenuOption> options)
@@ -303,6 +376,21 @@ namespace TimeGame.Systems.Inventory.UI
             // Center the menu on screen (for world item mode with no cursor)
             // Uses worldMenuOffset which can be adjusted in the inspector
             menuRT.anchoredPosition = worldMenuOffset;
+        }
+
+        private void OnEquipButtonClicked(EquipmentSlot targetSlot)
+        {
+            OnEquipItem?.Invoke(currentItem, currentGrid, targetSlot);
+        }
+
+        private void OnEquipmentSlotUnequipButtonClicked()
+        {
+            OnEquipmentSlotUnequip?.Invoke(currentEquipmentSlot);
+        }
+
+        private void OnEquipmentSlotInspectButtonClicked()
+        {
+            OnEquipmentSlotInspect?.Invoke(currentEquipmentSlot);
         }
 
         private void OnOpenButtonClicked()

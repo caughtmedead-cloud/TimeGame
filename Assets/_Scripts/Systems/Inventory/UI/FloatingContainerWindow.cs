@@ -20,8 +20,24 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private RectTransform gridContainer;
         [SerializeField] private CanvasGroup canvasGroup;
 
+        [Header("Weight UI")]
+        [Tooltip("Sprite shown as the weight icon in the weight row. Assigned at runtime by FloatingContainerWindowManager.")]
+        [SerializeField] private Sprite weightIconSprite;
+
         [Header("Settings")]
         [SerializeField] private bool verboseLogging = true;
+
+        // Staged sprites — set by the manager before Initialize() runs
+        private Sprite stagedCloseButtonSprite;
+
+        /// <summary>Called by FloatingContainerWindowManager before Initialize to pass through the weight icon sprite.</summary>
+        public void SetWeightIconSprite(Sprite sprite) => weightIconSprite = sprite;
+
+        /// <summary>
+        /// Called by FloatingContainerWindowManager before Initialize to apply a custom close button icon.
+        /// Replaces the Image.sprite on the close Button so all windows share the same icon from the config.
+        /// </summary>
+        public void SetCloseButtonSprite(Sprite sprite) => stagedCloseButtonSprite = sprite;
 
         // The container item this window displays
         private GridPlacement.PlacedItem containerItem;
@@ -70,6 +86,19 @@ namespace TimeGame.Systems.Inventory.UI
                 titleText.text = displayName;
             }
 
+            // Apply custom close button sprite if one was staged by the manager.
+            // We swap the Image.sprite on the Button's target graphic so the prefab's
+            // layout, size, and ColorBlock are all preserved — only the icon changes.
+            if (stagedCloseButtonSprite != null && closeButton != null)
+            {
+                Image closeBtnImage = closeButton.targetGraphic as Image;
+                if (closeBtnImage != null)
+                {
+                    closeBtnImage.sprite        = stagedCloseButtonSprite;
+                    closeBtnImage.preserveAspect = true;
+                }
+            }
+
             // Parent the grid to our container
             if (gridContainer != null)
             {
@@ -79,33 +108,33 @@ namespace TimeGame.Systems.Inventory.UI
                 RectTransform gridRect = grid.GetComponent<RectTransform>();
                 if (gridRect != null && windowRect != null)
                 {
-                    // Grid keeps its size (determined by factory based on cell count)
-                    // Window resizes to fit the grid plus padding for top bar
-
-                    Vector2 gridSize = gridRect.sizeDelta;
+                    Vector2 gridSize   = gridRect.sizeDelta;
                     float topBarHeight = topBar != null ? topBar.rect.height : 30f;
-                    float padding = 10f; // Padding around grid
+                    float padding      = 10f;
 
-                    // Resize window to fit grid + top bar + padding
+                    // Reserve space for weight row when a limit exists
+                    bool hasWeightLimit = grid.InventorySystem != null && grid.InventorySystem.UseWeightLimit;
+                    float weightRowHeight = hasWeightLimit ? 24f : 0f;
+
+                    // Resize window to fit grid + top bar + optional weight row + padding
                     windowRect.sizeDelta = new Vector2(
                         gridSize.x + (padding * 2),
-                        gridSize.y + topBarHeight + (padding * 2)
+                        gridSize.y + topBarHeight + weightRowHeight + (padding * 2)
                     );
 
-                    // CRITICAL: DO NOT change pivot! Grid MUST have pivot at (0,0) for coordinate system
-                    // The factory already set up the correct pivot (bottom-left)
-
-                    // Position grid: anchored to top-left so it aligns properly
-                    // With bottom-left pivot, the grid's bottom-left corner will be at anchor point
-                    gridRect.anchorMin = new Vector2(0f, 1f); // Top-left anchor
+                    // Position grid: anchored to top-left, pivot (0,0) at bottom-left
+                    gridRect.anchorMin = new Vector2(0f, 1f);
                     gridRect.anchorMax = new Vector2(0f, 1f);
-                    // DON'T CHANGE PIVOT - keep factory's (0, 0) pivot!
-
-                    // Offset: padding from left, and down by grid height
-                    // This places the grid in the container with proper padding
                     gridRect.anchoredPosition = new Vector2(padding, -gridSize.y);
 
-                    Log($"Window sized to fit grid: {gridSize.x}x{gridSize.y}px (maintaining bottom-left pivot for coordinates)");
+                    // Add weight row below the grid (inside gridContainer)
+                    if (hasWeightLimit)
+                    {
+                        AddWeightRow(gridContainer, grid.InventorySystem, gridSize, padding);
+                    }
+
+                    Log($"Window sized to fit grid: {gridSize.x}x{gridSize.y}px" +
+                        (hasWeightLimit ? " + weight row" : ""));
                 }
             }
 
@@ -123,6 +152,63 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             Log($"Initialized floating window for {displayName}");
+        }
+
+        /// <summary>
+        /// Build a small weight row below the grid inside gridContainer.
+        /// Positioned just below the grid's bottom edge using manual anchoring.
+        /// </summary>
+        private void AddWeightRow(RectTransform container, InventorySystem system, Vector2 gridSize, float padding)
+        {
+            // Row sits just below the grid (grid bottom-left is at anchoredPos (padding, -gridSize.y)
+            // so the row bottom is at y = -(gridSize.y + rowHeight) relative to container top)
+            const float rowHeight = 22f;
+
+            GameObject rowObj = new GameObject("WeightRow");
+            rowObj.transform.SetParent(container, false);
+
+            RectTransform rowRT = rowObj.AddComponent<RectTransform>();
+            rowRT.anchorMin = new Vector2(0f, 1f);
+            rowRT.anchorMax = new Vector2(0f, 1f);
+            rowRT.pivot     = new Vector2(0f, 1f);
+            rowRT.sizeDelta = new Vector2(gridSize.x, rowHeight);
+            // Place row just below the grid
+            rowRT.anchoredPosition = new Vector2(padding, -(gridSize.y + 4f));
+
+            HorizontalLayoutGroup hLayout = rowObj.AddComponent<HorizontalLayoutGroup>();
+            hLayout.childAlignment       = TextAnchor.MiddleLeft;
+            hLayout.spacing              = 5f;
+            hLayout.childControlWidth    = false;
+            hLayout.childControlHeight   = false;
+            hLayout.childForceExpandWidth  = false;
+            hLayout.childForceExpandHeight = false;
+
+            // Icon (small square)
+            GameObject iconObj = new GameObject("WeightIcon");
+            iconObj.transform.SetParent(rowObj.transform, false);
+            RectTransform iconRT  = iconObj.AddComponent<RectTransform>();
+            iconRT.sizeDelta      = new Vector2(14f, 14f);
+            Image iconImg         = iconObj.AddComponent<Image>();
+            if (weightIconSprite != null)
+                iconImg.sprite = weightIconSprite;
+            iconImg.color         = Color.white;
+            iconImg.raycastTarget = false;
+
+            // Text
+            GameObject textObj = new GameObject("WeightText");
+            textObj.transform.SetParent(rowObj.transform, false);
+            RectTransform textRT  = textObj.AddComponent<RectTransform>();
+            textRT.sizeDelta      = new Vector2(gridSize.x - 24f, rowHeight);
+            TextMeshProUGUI tmp   = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.fontSize          = 13;
+            tmp.alignment         = TextAlignmentOptions.MidlineLeft;
+            tmp.color             = Color.white;
+            tmp.raycastTarget     = false;
+
+            // Wire up live component
+            InventoryWeightBar bar = rowObj.AddComponent<InventoryWeightBar>();
+            bar.SetReferences(iconImg, tmp);
+            bar.Initialize(system);
         }
 
         /// <summary>
@@ -158,7 +244,7 @@ namespace TimeGame.Systems.Inventory.UI
                 canvasGroup.DOFade(0f, 0.15f).OnComplete(() =>
                 {
                     // Notify manager
-                    FloatingContainerWindowManager manager = FindObjectOfType<FloatingContainerWindowManager>();
+                    FloatingContainerWindowManager manager = FloatingContainerWindowManager.Instance;
                     if (manager != null)
                     {
                         manager.UnregisterWindow(this);
@@ -170,7 +256,7 @@ namespace TimeGame.Systems.Inventory.UI
             else
             {
                 // Notify manager
-                FloatingContainerWindowManager manager = FindObjectOfType<FloatingContainerWindowManager>();
+                FloatingContainerWindowManager manager = FloatingContainerWindowManager.Instance;
                 if (manager != null)
                 {
                     manager.UnregisterWindow(this);

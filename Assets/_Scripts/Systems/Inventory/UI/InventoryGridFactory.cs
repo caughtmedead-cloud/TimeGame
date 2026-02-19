@@ -20,17 +20,29 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private Color gridBorderColor = new Color(0.4f, 0.4f, 0.4f, 0.8f);
         [SerializeField] private float borderThickness = 1f;
         
+        [Header("Font")]
+        [Tooltip("Font used for all procedurally generated labels. Leave empty to use TMP default.")]
+        [SerializeField] private TMPro.TMP_FontAsset uiFont;
+
         [Header("Tile Sprites")]
         [Tooltip("Optional: Tile sprites for grid visualization. If assigned, all created grids will use these sprites.")]
         [SerializeField] private InventoryTileSprites tileSprites;
 
+        [Header("Weight UI")]
+        [Tooltip("Sprite used as the weight icon next to each grid's weight readout. Any small icon works — scale, feather, etc. Leave empty for a plain colored square.")]
+        [SerializeField] private Sprite weightIconSprite;
+
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = false;
         
-        /// <summary>
-        /// Public accessor for tile sprites (used by drag handlers).
-        /// </summary>
+        /// <summary>Public accessor for tile sprites (used by drag handlers).</summary>
         public InventoryTileSprites TileSprites => tileSprites;
+
+        /// <summary>Public accessor for the weight icon sprite (used by FloatingContainerWindowManager).</summary>
+        public Sprite WeightIconSprite => weightIconSprite;
+
+        /// <summary>Public accessor for the shared UI font (used by ItemInspectPanel).</summary>
+        public TMPro.TMP_FontAsset UIFont => uiFont;
 
         /// <summary>
         /// Create a complete InventoryGridVisual GameObject with all components configured.
@@ -84,16 +96,27 @@ namespace TimeGame.Systems.Inventory.UI
                 gridVisual = gridObj.AddComponent<InventoryGridVisual>();
             }
             
-            // CRITICAL: Set tile sprites on the grid visual using reflection
-            // This allows the factory to inject the tile sprites reference
+            // CRITICAL: Inject private fields via reflection — these are not serialized on
+            // InventoryGridVisual because the factory owns them, not the grid itself.
+            var bindingFlags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+
             if (tileSprites != null)
             {
-                var field = typeof(InventoryGridVisual).GetField("tileSprites", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var field = typeof(InventoryGridVisual).GetField("tileSprites", bindingFlags);
                 if (field != null)
                 {
                     field.SetValue(gridVisual, tileSprites);
                     Log($"Assigned tile sprites to grid '{gridName}'");
+                }
+            }
+
+            if (uiFont != null)
+            {
+                var field = typeof(InventoryGridVisual).GetField("uiFont", bindingFlags);
+                if (field != null)
+                {
+                    field.SetValue(gridVisual, uiFont);
+                    Log($"Assigned font to grid '{gridName}'");
                 }
             }
 
@@ -161,7 +184,11 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Create a labeled grid with a title above it.
+        /// Create a labeled grid with a title above it and a weight row below it.
+        /// Layout (top → bottom):
+        ///   [Label]
+        ///   [Grid]
+        ///   [⚖ icon]  [current / max kg]   ← only when maxWeight > 0
         /// </summary>
         public GameObject CreateLabeledGrid(
             string gridName,
@@ -174,23 +201,23 @@ namespace TimeGame.Systems.Inventory.UI
         {
             // Create container
             GameObject container = new GameObject($"{gridName}_Container");
-            
+
             if (parent != null)
             {
                 container.transform.SetParent(parent, false);
             }
 
             RectTransform containerRect = container.AddComponent<RectTransform>();
-            
+
             // Configure container
             containerRect.anchorMin = new Vector2(0.5f, 1f);
             containerRect.anchorMax = new Vector2(0.5f, 1f);
             containerRect.pivot = new Vector2(0.5f, 1f);
 
-            // Add VerticalLayoutGroup to stack label + grid
+            // Add VerticalLayoutGroup to stack label + grid + weight row
             VerticalLayoutGroup layout = container.AddComponent<VerticalLayoutGroup>();
             layout.childAlignment = TextAnchor.UpperCenter;
-            layout.spacing = 5f;
+            layout.spacing = 6f;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
             layout.childForceExpandWidth = false;
@@ -200,20 +227,21 @@ namespace TimeGame.Systems.Inventory.UI
             ContentSizeFitter fitter = container.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            // Create label
+            // ── Label ────────────────────────────────────────────────────
             GameObject labelObj = new GameObject("Label");
             labelObj.transform.SetParent(container.transform, false);
-            
+
             TMPro.TextMeshProUGUI label = labelObj.AddComponent<TMPro.TextMeshProUGUI>();
             label.text = labelText;
             label.fontSize = 18;
             label.alignment = TMPro.TextAlignmentOptions.Center;
             label.color = Color.white;
+            if (uiFont != null) label.font = uiFont;
 
             RectTransform labelRect = labelObj.GetComponent<RectTransform>();
-            labelRect.sizeDelta = new Vector2(200, 30);
+            labelRect.sizeDelta = new Vector2(200, 28);
 
-            // Create grid as child of container
+            // ── Grid ─────────────────────────────────────────────────────
             InventoryGridVisual grid = CreateGrid(
                 gridName,
                 width,
@@ -223,9 +251,71 @@ namespace TimeGame.Systems.Inventory.UI
                 cellSize
             );
 
-            Log($"Created labeled grid container: {gridName} with label '{labelText}'");
+            // ── Weight row (below grid, only when a limit exists) ─────────
+            if (maxWeight > 0f && grid != null)
+            {
+                CreateWeightRow(container.transform, grid.InventorySystem);
+            }
+
+            Log($"Created labeled grid container: {gridName} with label '{labelText}'" +
+                (maxWeight > 0f ? $" (weight bar: 0/{maxWeight} kg)" : " (no weight limit)"));
 
             return container;
+        }
+
+        /// <summary>
+        /// Build the weight row: horizontal group containing a scale icon and weight text.
+        /// Attaches an InventoryWeightBar that keeps the text live via events.
+        /// </summary>
+        private void CreateWeightRow(Transform parent, InventorySystem system)
+        {
+            // Root object carries the InventoryWeightBar component
+            GameObject rowObj = new GameObject("WeightRow");
+            rowObj.transform.SetParent(parent, false);
+
+            RectTransform rowRT = rowObj.AddComponent<RectTransform>();
+            rowRT.sizeDelta = new Vector2(200, 22);
+
+            HorizontalLayoutGroup hLayout = rowObj.AddComponent<HorizontalLayoutGroup>();
+            hLayout.childAlignment = TextAnchor.MiddleCenter;
+            hLayout.spacing = 5f;
+            hLayout.childControlWidth = false;
+            hLayout.childControlHeight = false;
+            hLayout.childForceExpandWidth = false;
+            hLayout.childForceExpandHeight = false;
+            hLayout.padding = new RectOffset(0, 0, 0, 0);
+
+            // ── Scale / weight icon ───────────────────────────────────
+            GameObject iconObj = new GameObject("WeightIcon");
+            iconObj.transform.SetParent(rowObj.transform, false);
+
+            RectTransform iconRT = iconObj.AddComponent<RectTransform>();
+            iconRT.sizeDelta = new Vector2(16, 16);
+
+            Image iconImage = iconObj.AddComponent<Image>();
+            if (weightIconSprite != null)
+                iconImage.sprite = weightIconSprite;
+            iconImage.color = Color.white;
+            iconImage.raycastTarget = false;
+
+            // ── Weight text ───────────────────────────────────────────
+            GameObject textObj = new GameObject("WeightText");
+            textObj.transform.SetParent(rowObj.transform, false);
+
+            RectTransform textRT = textObj.AddComponent<RectTransform>();
+            textRT.sizeDelta = new Vector2(130, 22);
+
+            TMPro.TextMeshProUGUI text = textObj.AddComponent<TMPro.TextMeshProUGUI>();
+            text.fontSize = 14;
+            text.alignment = TMPro.TextAlignmentOptions.MidlineLeft;
+            text.color = Color.white;
+            text.raycastTarget = false;
+            if (uiFont != null) text.font = uiFont;
+
+            // ── Wire up the live component ────────────────────────────
+            InventoryWeightBar bar = rowObj.AddComponent<InventoryWeightBar>();
+            bar.SetReferences(iconImage, text);
+            bar.Initialize(system);
         }
 
         private void Log(string message)

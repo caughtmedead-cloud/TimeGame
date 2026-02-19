@@ -70,16 +70,31 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
+        /// Set a world loot container being looked at.
+        /// Shows the container name and a container-specific interaction hint.
+        /// </summary>
+        public void SetLootContainer(WorldLootContainer container)
+        {
+            if (container == null)
+            {
+                if (itemNameText != null) itemNameText.text = "";
+                return;
+            }
+
+            if (itemNameText != null)
+                itemNameText.text = container.DisplayName;
+
+            SetInteractionHint("[F] Open  |  [MMB] Options");
+        }
+
+        /// <summary>
         /// Set the item being looked at.
         /// </summary>
         public void SetItem(WorldItem item)
         {
             if (item == null)
             {
-                if (itemNameText != null)
-                {
-                    itemNameText.text = "";
-                }
+                if (itemNameText != null) itemNameText.text = "";
                 return;
             }
 
@@ -87,11 +102,12 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 string displayText = item.ItemDefinition.ItemName;
                 if (item.Quantity > 1)
-                {
                     displayText += $" x{item.Quantity}";
-                }
                 itemNameText.text = displayText;
             }
+
+            // Always reset to default item hint (in case we were just looking at a container)
+            ResetInteractionHint();
         }
 
         private void StartPulseAnimation()

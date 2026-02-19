@@ -13,12 +13,5 @@ MonoBehaviour:
   m_Name: PerfectShot - Photos Profile
   m_EditorClassIdentifier: 
   photos:
-  - {fileID: 2800000, guid: 8f291b2cc08bcc6459188310b23aa9a0, type: 3}
-  - {fileID: 2800000, guid: 8c34b9eb41a466c43bc99414cf84d7e1, type: 3}
-  - {fileID: 2800000, guid: 360c614a633b781429c499a5d7dbedd8, type: 3}
-  - {fileID: 2800000, guid: f41fa9a352e2f1f4ab6abc37e01c112e, type: 3}
-  - {fileID: 2800000, guid: f42fd3f09547ecf43aa2bf01c9216e3c, type: 3}
-  - {fileID: 2800000, guid: 602b5abfdb05c93448190e012cba4445, type: 3}
-  - {fileID: 2800000, guid: d78e4df8b1a7df845b56f58a0fe2cd34, type: 3}
-  - {fileID: 2800000, guid: aa3aa0f40a44ad744b5cee4be95e191d, type: 3}
-  counter: 8
+  - {fileID: 2800000, guid: bfcb59d43af45e146a2156fefbf12962, type: 3}
+  counter: 10

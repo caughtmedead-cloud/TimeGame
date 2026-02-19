@@ -22,8 +22,25 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private float cellSize = 64f; // Cell size for container grids
         [SerializeField] private bool verboseLogging = true;
 
+        // Singleton — O(1) access, avoids FindObjectOfType at runtime
+        public static FloatingContainerWindowManager Instance { get; private set; }
+
         // Track all open windows
         private List<FloatingContainerWindow> openWindows = new List<FloatingContainerWindow>();
+
+        // Cached config — loaded once from Resources on first window open
+        private ItemInspectPanelConfig uiConfig;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("[FloatingContainerWindowManager] Duplicate instance detected — destroying self.");
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         /// <summary>
         /// Open a container in a floating window
@@ -92,6 +109,22 @@ namespace TimeGame.Systems.Inventory.UI
                 return null;
             }
 
+            // Load shared UI config on first use (Resources.Load is cached after the first call)
+            if (uiConfig == null)
+                uiConfig = Resources.Load<ItemInspectPanelConfig>("ItemInspectPanelConfig");
+
+            // Push shared sprites into the window before Initialize so they're ready on first show.
+            // Weight icon: config takes priority over the factory field; fall back to factory if not set.
+            Sprite weightIcon = (uiConfig != null && uiConfig.weightIconSprite != null)
+                ? uiConfig.weightIconSprite
+                : (gridFactory != null ? gridFactory.WeightIconSprite : null);
+            if (weightIcon != null)
+                window.SetWeightIconSprite(weightIcon);
+
+            // Close button: from config only (no factory equivalent)
+            if (uiConfig != null && uiConfig.closeButtonSprite != null)
+                window.SetCloseButtonSprite(uiConfig.closeButtonSprite);
+
             // Initialize window
             window.Initialize(containerItem, gridVisual, itemDef.ItemName);
 
@@ -141,7 +174,7 @@ namespace TimeGame.Systems.Inventory.UI
             gridVisual.SwapInventorySystem(containerItem.ContainerInventory);
 
             // CRITICAL: Register grid with drag handler so it can be dragged to/from!
-            InventoryDragHandler dragHandler = FindObjectOfType<InventoryDragHandler>();
+            InventoryDragHandler dragHandler = InventoryDragHandler.Instance;
             if (dragHandler != null)
             {
                 dragHandler.RegisterDropTarget(gridVisual);
@@ -204,7 +237,7 @@ namespace TimeGame.Systems.Inventory.UI
                 // Unregister grid from drag handler
                 if (window.GridVisual != null)
                 {
-                    InventoryDragHandler dragHandler = FindObjectOfType<InventoryDragHandler>();
+                    InventoryDragHandler dragHandler = InventoryDragHandler.Instance;
                     if (dragHandler != null)
                     {
                         dragHandler.UnregisterDropTarget(window.GridVisual);
@@ -244,7 +277,29 @@ namespace TimeGame.Systems.Inventory.UI
         public void CloseWindowForItem(GridPlacement.PlacedItem containerItem)
         {
             if (containerItem == null) return;
+
+            // If the panel is inactive (e.g. equipping from the world while inventory is closed)
+            // there is no drag in progress, so we can close immediately without deferring.
+            if (!gameObject.activeInHierarchy)
+            {
+                CloseWindowForItemImmediate(containerItem.InstanceID);
+                return;
+            }
+
+            // Defer one frame so we don't close mid-drag (equip from inventory fires inside drag handler)
             StartCoroutine(CloseWindowForItemNextFrame(containerItem.InstanceID));
+        }
+
+        private void CloseWindowForItemImmediate(System.Guid instanceID)
+        {
+            FloatingContainerWindow window = openWindows.FirstOrDefault(w =>
+                w.ContainerItem != null && w.ContainerItem.InstanceID == instanceID);
+
+            if (window != null)
+            {
+                Log($"Closing window for equipped item (immediate)");
+                window.Close();
+            }
         }
 
         private IEnumerator CloseWindowForItemNextFrame(System.Guid instanceID)

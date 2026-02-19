@@ -106,6 +106,14 @@ namespace TimeGame.Systems.GridPlacement
         public Guid? SplitFromInstanceID { get; set; }
 
         /// <summary>
+        /// Fired when ContainerInventory is assigned or replaced.
+        /// InventorySystem subscribes to this so it can re-wire the nested
+        /// OnWeightChanged bubble whenever a container item's inventory is swapped in.
+        /// (old system, new system) — either may be null.
+        /// </summary>
+        public event Action<Inventory.InventorySystem, Inventory.InventorySystem> OnContainerInventoryChanged;
+
+        /// <summary>
         /// NESTED INVENTORY: Container inventory system for items that provide storage.
         /// Null for non-container items.
         /// When this item is a backpack/chest/container, this holds all items inside it.
@@ -114,7 +122,19 @@ namespace TimeGame.Systems.GridPlacement
         /// NOTE: This is NOT serialized automatically - use ContainerItemData for serialization.
         /// </summary>
         [System.NonSerialized]
-        public Inventory.InventorySystem ContainerInventory;
+        private Inventory.InventorySystem containerInventory;
+
+        public Inventory.InventorySystem ContainerInventory
+        {
+            get => containerInventory;
+            set
+            {
+                Inventory.InventorySystem old = containerInventory;
+                containerInventory = value;
+                if (old != value)
+                    OnContainerInventoryChanged?.Invoke(old, value);
+            }
+        }
 
         public PlacedItem(PlacableItemSO itemDefinition, Vector2Int anchorPosition, GridDirection rotation, int stackCount = 1)
         {

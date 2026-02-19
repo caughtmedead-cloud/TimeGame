@@ -21,6 +21,7 @@ namespace TimeGame.Systems.Inventory.UI
         private RectTransform rectTransform;
         private RectTransform visualTransform; // Child that actually rotates
         private Image image;
+        private AspectRatioFitter iconAspectFitter; // Scales icon to fill cell while preserving aspect ratio
         private Image backgroundImage;  // White tile drag preview
         private TextMeshProUGUI stackCountText;  // Stack count display (bottom-right)
         private TextMeshProUGUI usesCountText;   // Uses count display (bottom-left)
@@ -95,8 +96,11 @@ namespace TimeGame.Systems.Inventory.UI
             backgroundRT.pivot = new Vector2(0.5f, 0.5f);
             
             backgroundImage = backgroundObj.AddComponent<Image>();
-            backgroundImage.enabled = false;  // Hidden by default
-            backgroundImage.raycastTarget = false; // Don't block raycasts
+            // Always enabled and transparent — this is the ACTUAL raycast hit area for drag.
+            // Kept cell-sized so clicks outside the cell footprint are never detected.
+            backgroundImage.color = Color.clear;
+            backgroundImage.raycastTarget = true;
+            backgroundImage.enabled = true;
             
             // Create ICON GameObject (item sprite - renders ON TOP of background)
             GameObject iconObj = new GameObject("ItemSprite_Icon");
@@ -110,31 +114,40 @@ namespace TimeGame.Systems.Inventory.UI
             iconRT.pivot = new Vector2(0.5f, 0.5f);
             
             image = iconObj.AddComponent<Image>();
-            // CRITICAL: raycastTarget must be TRUE for drag system to detect the item!
-            image.raycastTarget = true;
+            // Raycast handled by DragPreview_Background (always cell-sized) — icon can overflow safely
+            image.raycastTarget = false;
+            // Do NOT use preserveAspect — AspectRatioFitter below handles this better
+            image.preserveAspect = false;
             // Start with no sprite and fully transparent color
             image.sprite = null;
             image.color = Color.clear;
             // Must stay ENABLED for EventSystem to work, but transparent so nothing shows
             image.enabled = true;
 
-            // Create stack count text (bottom-right corner)
+            // AspectRatioFitter: scales icon to fill the cell footprint as much as possible
+            // while preserving the sprite's native aspect ratio.
+            // EnvelopeParent = fill/cover (may overflow slightly, clipped by parent mask if present)
+            // FitInParent    = letterbox/pillarbox (always fully visible, may have gaps)
+            iconAspectFitter = iconObj.AddComponent<AspectRatioFitter>();
+            iconAspectFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+
+            // Create stack count text (top-right corner)
             // CRITICAL: Parent to ROOT transform (not visualTransform) so it NEVER rotates
             GameObject stackCountObj = new GameObject("StackCount");
             stackCountObj.transform.SetParent(transform, false); // <- PARENT TO ROOT!
 
             RectTransform stackCountRT = stackCountObj.AddComponent<RectTransform>();
-            stackCountRT.anchorMin = new Vector2(1, 0); // Bottom-right
-            stackCountRT.anchorMax = new Vector2(1, 0);
-            stackCountRT.pivot = new Vector2(1, 0);
-            stackCountRT.anchoredPosition = new Vector2(-2, 2); // Small padding from edge
+            stackCountRT.anchorMin = new Vector2(1, 1); // Top-right
+            stackCountRT.anchorMax = new Vector2(1, 1);
+            stackCountRT.pivot = new Vector2(1, 1);
+            stackCountRT.anchoredPosition = new Vector2(-2, -2); // Small padding from edge
             stackCountRT.sizeDelta = new Vector2(40, 20);
 
             stackCountText = stackCountObj.AddComponent<TextMeshProUGUI>();
             stackCountText.fontSize = 14;
             stackCountText.fontStyle = FontStyles.Bold;
             stackCountText.color = Color.white;
-            stackCountText.alignment = TextAlignmentOptions.BottomRight;
+            stackCountText.alignment = TextAlignmentOptions.TopRight;
             stackCountText.raycastTarget = false;
             stackCountText.enableWordWrapping = false;
 
@@ -185,10 +198,17 @@ namespace TimeGame.Systems.Inventory.UI
         /// Initialize this visual with item data.
         /// gridVisual: null for standalone visuals, non-null for grid items
         /// </summary>
-        public void Initialize(PlacedItem placedItem, InventoryItemSO itemDef, float cellSize, InventoryGridVisual gridVisual)
+        public void Initialize(PlacedItem placedItem, InventoryItemSO itemDef, float cellSize, InventoryGridVisual gridVisual, TMPro.TMP_FontAsset font = null)
         {
             PlacedItem = placedItem;
             ItemDefinition = itemDef;
+
+            // Apply font to text components if provided
+            if (font != null)
+            {
+                if (stackCountText != null) stackCountText.font = font;
+                if (usesCountText != null) usesCountText.font = font;
+            }
 
             // Ensure rectTransform is set (Awake may not have been called if parent is inactive)
             if (rectTransform == null)
@@ -227,6 +247,9 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 image.sprite = itemDef.ItemIcon;
                 image.color = Color.white; // Proper white for sprite display
+                // Tell the AspectRatioFitter the sprite's native pixel ratio
+                if (iconAspectFitter != null && itemDef.ItemIcon.rect.height > 0)
+                    iconAspectFitter.aspectRatio = itemDef.ItemIcon.rect.width / itemDef.ItemIcon.rect.height;
                 // Already enabled in CreateVisualChild()
             }
             else
@@ -277,6 +300,21 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
+        /// Resize the outer RectTransform to match new rotated item dimensions.
+        /// Called by InventoryDragHandler when the player rotates during drag.
+        /// </summary>
+        public void ResizeForRotation(InventoryItemSO itemDef, GridPlacement.GridDirection rotation, float cellSize)
+        {
+            if (rectTransform == null || itemDef == null) return;
+            int w = itemDef.GetRotatedWidth(rotation);
+            int h = itemDef.GetRotatedHeight(rotation);
+            rectTransform.sizeDelta = new Vector2(w * cellSize, h * cellSize);
+            // Update aspect fitter ratio to match the new bounding box orientation
+            if (iconAspectFitter != null && image != null && image.sprite != null)
+                iconAspectFitter.aspectRatio = image.sprite.rect.width / image.sprite.rect.height;
+        }
+
+        /// <summary>
         /// Set the visual position (in local space).
         /// </summary>
         public void SetPosition(Vector2 localPosition)
@@ -294,28 +332,31 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 return;
             }
-            
+
             backgroundImage.sprite = tiles.ghostTileSprite;
             backgroundImage.type = tiles.ghostSpriteType;
-            
+
             if (tiles.ghostSpriteType == Image.Type.Sliced)
             {
                 backgroundImage.fillCenter = tiles.fillCenterTiled;
             }
-            
+
             backgroundImage.color = new Color(1f, 1f, 1f, 0.7f); // Semi-transparent white
-            backgroundImage.enabled = true;
+            // enabled stays true — background is always on for raycasting
         }
 
         /// <summary>
-        /// Disable drag background (for placed items).
+        /// Disable drag background visual (for placed items).
+        /// Does NOT disable the Image component — it must stay enabled for raycasting.
         /// Called by InventoryDragHandler when drag ends.
         /// </summary>
         public void DisableDragBackground()
         {
             if (backgroundImage != null)
             {
-                backgroundImage.enabled = false;
+                // Clear sprite and make transparent — keeps raycastTarget active
+                backgroundImage.sprite = null;
+                backgroundImage.color = Color.clear;
             }
         }
 

@@ -602,7 +602,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9388dd56073c98a4fb4e4f1ef3a71620, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TemporalStabilityUI
-  _componentIndexCache: 13
+  _componentIndexCache: 12
   _addedNetworkObject: {fileID: -8147693711007459752}
   _networkObjectCache: {fileID: -8147693711007459752}
   playerStability: {fileID: -845346503486197219}
@@ -1665,7 +1665,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3dc97a8b9e628044e83004c93095c14d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Prediction.NetworkTrigger
-  _componentIndexCache: 14
+  _componentIndexCache: 13
   _addedNetworkObject: {fileID: -8147693711007459752}
   _networkObjectCache: {fileID: -8147693711007459752}
   MaximumSimultaneousHits: 16
@@ -3053,7 +3053,6 @@ MonoBehaviour:
   - {fileID: 3166874489748539819}
   - {fileID: 8817975478013292757}
   - {fileID: -6580369775363461953}
-  - {fileID: 0}
   - {fileID: 4836224069964464589}
   - {fileID: 9114039164303258155}
   InitializedParentNetworkBehaviour: {fileID: 0}
@@ -3067,7 +3066,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584320589489181277
+  _initializedTimestamp: -8584301943562995110
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -3082,7 +3081,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 8
+  <PrefabId>k__BackingField: 17
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 4536005225511503790
   SceneId: 0
@@ -4833,7 +4832,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4455491220146318131, guid: fda1f34365bcb0d48b2e6f1018ef4eb9, type: 3}
       propertyPath: _initializedTimestamp
-      value: -8584320589489181277
+      value: -8584301943562995110
       objectReference: {fileID: 0}
     - target: {fileID: 4455491220146318131, guid: fda1f34365bcb0d48b2e6f1018ef4eb9, type: 3}
       propertyPath: <IsNested>k__BackingField

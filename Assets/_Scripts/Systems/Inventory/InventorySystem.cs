@@ -123,9 +123,10 @@ namespace TimeGame.Systems.Inventory
         }
 
         /// <summary>
-        /// Try to add an item with a specific instance ID (for network replication).
+        /// Try to add an item with a specific instance ID (for network replication / drag-drop lineage).
+        /// stackCount defaults to 1 but must be passed explicitly when dragging stacks cross-grid.
         /// </summary>
-        public bool TryAddItem(Guid instanceID, InventoryItemSO item, Vector2Int position, GridDirection rotation, out PlacedItem placedItem)
+        public bool TryAddItem(Guid instanceID, InventoryItemSO item, Vector2Int position, GridDirection rotation, out PlacedItem placedItem, int stackCount = 1)
         {
             placedItem = null;
 
@@ -135,18 +136,18 @@ namespace TimeGame.Systems.Inventory
                 return false;
             }
 
-            // Check weight limit
-            if (UseWeightLimit && !CanAddWeight(item.Weight))
+            // Check weight limit (use full stack weight)
+            if (UseWeightLimit && !CanAddWeight(item.Weight * Mathf.Max(1, stackCount)))
             {
                 if (EnableDebugLogging)
                 {
-                    LogWarning($"Cannot add {item.ItemName} - would exceed weight limit ({GetCurrentWeight()}/{MaxWeight})");
+                    LogWarning($"Cannot add {item.ItemName} x{stackCount} - would exceed weight limit ({GetCurrentWeight()}/{MaxWeight})");
                 }
                 return false;
             }
 
-            // Try placement in grid system with specific ID
-            bool success = gridSystem.TryPlaceItem(instanceID, item, position, rotation, out placedItem);
+            // Try placement in grid system with specific ID and stack count
+            bool success = gridSystem.TryPlaceItem(instanceID, item, position, rotation, out placedItem, stackCount);
 
             return success;
         }
@@ -178,6 +179,9 @@ namespace TimeGame.Systems.Inventory
                         int toAdd = Mathf.Min(spaceInStack, remaining);
                         existingItem.AddToStack(toAdd);
                         remaining -= toAdd;
+
+                        // Notify weight bar — AddToStack bypasses the grid event pipeline
+                        OnWeightChanged?.Invoke(GetCurrentWeight());
 
                         if (EnableDebugLogging)
                         {
@@ -219,6 +223,9 @@ namespace TimeGame.Systems.Inventory
                         int toAdd = Mathf.Min(spaceInStack, remainingCount);
                         existingItem.AddToStack(toAdd);
                         remainingCount -= toAdd;
+
+                        // Notify weight bar — AddToStack bypasses the grid event pipeline
+                        OnWeightChanged?.Invoke(GetCurrentWeight());
 
                         if (EnableDebugLogging)
                         {
@@ -305,7 +312,8 @@ namespace TimeGame.Systems.Inventory
         #region Weight Management
 
         /// <summary>
-        /// Get current total weight of all items (accounting for stack counts).
+        /// Get current total weight of all items, including contents of any nested
+        /// containers (bags inside bags, etc.), recursively.
         /// </summary>
         public float GetCurrentWeight()
         {
@@ -313,10 +321,8 @@ namespace TimeGame.Systems.Inventory
 
             foreach (PlacedItem placedItem in gridSystem.GetAllPlacedItems())
             {
-                if (placedItem.ItemDefinition is InventoryItemSO inventoryItem)
-                {
-                    totalWeight += inventoryItem.Weight * placedItem.StackCount;
-                }
+                // ContainerHelper.GetTotalWeight handles recursion into nested containers
+                totalWeight += ContainerHelper.GetTotalWeight(placedItem);
             }
 
             return totalWeight;
@@ -496,6 +502,11 @@ namespace TimeGame.Systems.Inventory
         private void HandleItemPlaced(PlacedItem item)
         {
             OnItemAdded?.Invoke(item);
+
+            // If the placed item is a container, bubble its weight changes up to us
+            // so our weight bar stays accurate when items are added/removed inside it.
+            SubscribeToContainerWeight(item);
+
             OnWeightChanged?.Invoke(GetCurrentWeight());
 
             if (EnableDebugLogging)
@@ -507,6 +518,9 @@ namespace TimeGame.Systems.Inventory
 
         private void HandleItemRemoved(PlacedItem item)
         {
+            // Stop listening to the removed container's weight changes
+            UnsubscribeFromContainerWeight(item);
+
             OnItemRemoved?.Invoke(item);
             OnWeightChanged?.Invoke(GetCurrentWeight());
 
@@ -514,6 +528,65 @@ namespace TimeGame.Systems.Inventory
             {
                 Log($"Item removed: {item.ItemDefinition.ItemName} | Weight: {GetCurrentWeight()}/{MaxWeight}");
             }
+        }
+
+        /// <summary>
+        /// Subscribe to a placed item's ContainerInventory weight changes AND to its
+        /// OnContainerInventoryChanged event so we re-wire automatically whenever the
+        /// ContainerInventory property is swapped (cross-grid drag, equip/unequip, etc.).
+        /// </summary>
+        private void SubscribeToContainerWeight(PlacedItem item)
+        {
+            if (item == null) return;
+
+            // Listen for future ContainerInventory swaps on this item
+            item.OnContainerInventoryChanged -= OnItemContainerInventoryChanged;
+            item.OnContainerInventoryChanged += OnItemContainerInventoryChanged;
+
+            // Wire up the current ContainerInventory if one is already assigned
+            if (item.ContainerInventory != null)
+            {
+                item.ContainerInventory.OnWeightChanged -= OnNestedWeightChanged;
+                item.ContainerInventory.OnWeightChanged += OnNestedWeightChanged;
+            }
+        }
+
+        private void UnsubscribeFromContainerWeight(PlacedItem item)
+        {
+            if (item == null) return;
+
+            item.OnContainerInventoryChanged -= OnItemContainerInventoryChanged;
+
+            if (item.ContainerInventory != null)
+                item.ContainerInventory.OnWeightChanged -= OnNestedWeightChanged;
+        }
+
+        /// <summary>
+        /// Called when a held item's ContainerInventory property is reassigned.
+        /// Unsubscribes from the old system and subscribes to the new one.
+        /// </summary>
+        private void OnItemContainerInventoryChanged(InventorySystem oldSystem, InventorySystem newSystem)
+        {
+            if (oldSystem != null)
+                oldSystem.OnWeightChanged -= OnNestedWeightChanged;
+
+            if (newSystem != null)
+            {
+                newSystem.OnWeightChanged -= OnNestedWeightChanged;
+                newSystem.OnWeightChanged += OnNestedWeightChanged;
+            }
+
+            // Refresh our own weight bar since the nested total just changed
+            OnWeightChanged?.Invoke(GetCurrentWeight());
+        }
+
+        /// <summary>
+        /// Fired when any directly-held container's contents change weight.
+        /// Re-broadcasts this system's total (which now includes the nested change).
+        /// </summary>
+        private void OnNestedWeightChanged(float _)
+        {
+            OnWeightChanged?.Invoke(GetCurrentWeight());
         }
 
         #endregion

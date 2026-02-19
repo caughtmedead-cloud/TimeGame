@@ -37,8 +37,6 @@ namespace TimeGame.Systems.Inventory.UI
         // Drag state
         private InventoryGridVisual currentGrid;               // Which grid the item is currently in (null if free-floating)
         private InventoryItemVisual draggingPlacedObject;      // The actual visual we're dragging
-        private Vector2Int mouseDragGridPositionOffset;        // Grid offset (for grid mode)
-        private Vector2 mouseDragCanvasOffset;                 // Offset in canvas space (NEVER changes during drag!)
         private GridDirection dir;                             // Current rotation
         private Vector2Int lastTargetGridPosition;             // Where the visual is LERPING TO (for placement)
         private InventoryGridVisual lastGhostGrid;             // Track which grid is showing ghost preview
@@ -57,8 +55,19 @@ namespace TimeGame.Systems.Inventory.UI
 
         public bool IsDragging => draggingPlacedObject != null;
 
+        // Singleton — O(1) access, avoids FindObjectOfType at runtime
+        public static InventoryDragHandler Instance { get; private set; }
+
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("[InventoryDragHandler] Duplicate instance detected — destroying self.");
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+
             // Find canvas root if not assigned
             if (canvasRoot == null)
             {
@@ -169,9 +178,6 @@ namespace TimeGame.Systems.Inventory.UI
             );
             Vector2Int mouseGridPosition = sourceGrid.LocalPositionToGridPosition(mouseGridLocalPos);
 
-            // CODE MONKEY: Calculate grid position offset
-            mouseDragGridPositionOffset = mouseGridPosition - placedItem.AnchorPosition;
-
             InventoryItemVisual dragVisual;
             PlacedItem dragPlacedItem;
 
@@ -237,29 +243,29 @@ namespace TimeGame.Systems.Inventory.UI
                     dragRT.anchoredPosition = originalRT.anchoredPosition;
 
                     // NOW reparent to canvas, maintaining the world position
-                    dragRT.SetParent(canvasRoot, worldPositionStays: true);
+                    Vector2 worldPos = dragRT.position;
+                    dragRT.SetParent(canvasRoot, worldPositionStays: false);
+                    // Normalize anchors to canvas center so free-float coordinate math is correct
+                    dragRT.anchorMin = new Vector2(0.5f, 0.5f);
+                    dragRT.anchorMax = new Vector2(0.5f, 0.5f);
+                    dragRT.position = worldPos;
                 }
                 else
                 {
                     // Fallback: position at mouse in canvas space
                     dragRT.SetParent(canvasRoot, worldPositionStays: false);
+                    // Normalize anchors to canvas center so free-float coordinate math is correct
+                    dragRT.anchorMin = new Vector2(0.5f, 0.5f);
+                    dragRT.anchorMax = new Vector2(0.5f, 0.5f);
                     RectTransformUtility.ScreenPointToLocalPointInRectangle(
                         canvasRoot,
                         mouseScreenPos,
                         null,
                         out Vector2 mouseCanvasPos
                     );
-                    dragRT.anchoredPosition = mouseCanvasPos;
+                    // Center item on cursor immediately
+                    dragRT.anchoredPosition = mouseCanvasPos - dragRT.sizeDelta * 0.5f;
                 }
-
-                // Calculate mouse offset from the visual's current position
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    canvasRoot,
-                    mouseScreenPos,
-                    null,
-                    out Vector2 currentMouseCanvasPos
-                );
-                mouseDragCanvasOffset = currentMouseCanvasPos - dragRT.anchoredPosition;
             }
             else
             {
@@ -276,24 +282,14 @@ namespace TimeGame.Systems.Inventory.UI
                 dragVisual = itemVisual;
                 dragPlacedItem = placedItem;
 
-                // Calculate canvas offset - CRITICAL: work in the SAME coordinate system!
-                // Parent to canvas FIRST so we can use anchoredPosition directly
+                // Parent to canvas so the visual floats freely during drag
                 RectTransform itemRT = itemVisual.GetComponent<RectTransform>();
-                itemRT.SetParent(canvasRoot, worldPositionStays: true);
-
-                // NOW both mouse and item are in canvas anchored position space
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    canvasRoot,
-                    mouseScreenPos,
-                    null,
-                    out Vector2 mouseCanvasPos
-                );
-
-                // Get item's anchored position (same coordinate system as mouseCanvasPos)
-                Vector2 itemCanvasPos = itemRT.anchoredPosition;
-
-                // This offset is set ONCE and never changes during the drag!
-                mouseDragCanvasOffset = mouseCanvasPos - itemCanvasPos;
+                Vector2 worldPos = itemRT.position;
+                itemRT.SetParent(canvasRoot, worldPositionStays: false);
+                // Normalize anchors to canvas center so free-float coordinate math is correct
+                itemRT.anchorMin = new Vector2(0.5f, 0.5f);
+                itemRT.anchorMax = new Vector2(0.5f, 0.5f);
+                itemRT.position = worldPos; // Restore world position after anchor change
             }
 
             // CRITICAL: Visual is canvas-parented, so currentGrid = null
@@ -316,13 +312,7 @@ namespace TimeGame.Systems.Inventory.UI
                 return;
             }
 
-            // Store click offset - this NEVER changes during the drag!
-            mouseDragCanvasOffset = clickOffsetInCanvasSpace;
-            
-            // Grid offset is zero (equipment slots don't have grid positions)
-            mouseDragGridPositionOffset = Vector2Int.zero;
-
-            // Equipment slots: no grids involved
+            // Equipment slots: no grids involved — item is always centered on cursor during drag
             StartDragInternal(visual, placedItem, null, null, sourceTarget, Vector2Int.zero, placedItem.Rotation);
             
             // NOTE: Visual should ALREADY have correct rotation from when it was equipped
@@ -549,7 +539,8 @@ namespace TimeGame.Systems.Inventory.UI
                                         itemDef,
                                         originalGridPosition,
                                         originalDir,
-                                        out PlacedItem restoredItem
+                                        out PlacedItem restoredItem,
+                                        draggedStackCount
                                     );
 
                                     if (restored && restoredItem != null)
@@ -611,13 +602,14 @@ namespace TimeGame.Systems.Inventory.UI
                         // For cross-grid moves, let it create a new ID
                         if (!isStackSplit && isSameGridMove)
                         {
-                            // SAME GRID: Preserve InstanceID
+                            // SAME GRID: Preserve InstanceID and stack count
                             dropped = targetGrid.InventorySystem.TryAddItem(
                                 itemInstanceID,  // Preserve original ID
                                 itemDef,
                                 placementPos,
                                 dir,
-                                out placedItem
+                                out placedItem,
+                                draggedStackCount
                             );
 
                             // Restore instances for tracked stacks
@@ -641,10 +633,11 @@ namespace TimeGame.Systems.Inventory.UI
                         }
                         else
                         {
-                            // CROSS GRID or SPLIT: Preserve InstanceID for item lineage
+                            // CROSS GRID or SPLIT: Preserve InstanceID for item lineage, carry over stack count
                             dropped = targetGrid.InventorySystem.TryAddItem(
                                 originalPlacedItem?.InstanceID ?? System.Guid.NewGuid(),
-                                itemDef, placementPos, dir, out placedItem);
+                                itemDef, placementPos, dir, out placedItem,
+                                draggedStackCount);
 
                             // CRITICAL: Transfer instances from the drag visual for splits and tracked cross-grid moves
                             if (dropped && placedItem != null && draggedInstances != null && draggedInstances.Count > 0)
@@ -659,7 +652,7 @@ namespace TimeGame.Systems.Inventory.UI
                                 placedItem.ContainerInventory = originalPlacedItem.ContainerInventory;
 
                                 // WINDOW SYNC: Update any open floating window for this container
-                                FloatingContainerWindowManager windowManager = FindObjectOfType<FloatingContainerWindowManager>();
+                                FloatingContainerWindowManager windowManager = FloatingContainerWindowManager.Instance;
                                 if (windowManager != null)
                                 {
                                     windowManager.SyncContainerReference(placedItem);
@@ -765,7 +758,7 @@ namespace TimeGame.Systems.Inventory.UI
             draggingPlacedObject = null;
             currentGrid = null;
             originalSource = null;
-            isStackSplit = false; // Reset stack split flag
+            isStackSplit = false;
             draggedStackCount = 0;
         }
 
@@ -790,7 +783,9 @@ namespace TimeGame.Systems.Inventory.UI
                 InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
                 if (itemDef != null && itemDef.CanRotate)
                 {
+                    float cellSize = originalGrid != null ? originalGrid.CellSize : 60f;
                     dir = itemDef.GetNextRotation(dir);
+                    draggingPlacedObject.ResizeForRotation(itemDef, dir, cellSize);
                 }
             }
 
@@ -818,7 +813,15 @@ namespace TimeGame.Systems.Inventory.UI
             // Transition from free-float → grid OR switching grids?
             if (currentGrid != targetGrid)
             {
-                draggingPlacedObject.transform.SetParent(targetGrid.GetRectTransform(), worldPositionStays: true);
+                RectTransform transitionRT = draggingPlacedObject.GetComponent<RectTransform>();
+                Vector2 worldPos = transitionRT.position;
+                draggingPlacedObject.transform.SetParent(targetGrid.GetRectTransform(), worldPositionStays: false);
+                // CRITICAL: Reset anchors to (0,0) so anchoredPosition = offset from grid bottom-left,
+                // which is what GridPositionToLocalPosition returns and what ScreenPointToLocalPoint
+                // for the grid RectTransform measures from.
+                transitionRT.anchorMin = Vector2.zero;
+                transitionRT.anchorMax = Vector2.zero;
+                transitionRT.position = worldPos;
                 currentGrid = targetGrid;
             }
 
@@ -833,31 +836,44 @@ namespace TimeGame.Systems.Inventory.UI
             // Get item definition once
             InventoryItemSO itemDef = draggingPlacedObject.PlacedItem.ItemDefinition as InventoryItemSO;
 
-            // Calculate where item will land
-            Vector2Int mouseGridPos = currentGrid.LocalPositionToGridPosition(mouseLocalPos);
-
-            // FIX: When offset is (0,0) (dragging from equipment), center item under cursor
-            Vector2Int dragOffset = mouseDragGridPositionOffset;
-            if (dragOffset == Vector2Int.zero && itemDef != null)
+            // Snap in float cell-space so both odd and even item sizes feel correct:
+            //   mouseCellF  = mouse position in fractional cell units
+            //   anchorCellF = mouseCellF - itemSize/2  (float, so a 2-wide item gets -1.0, not -1)
+            //   placementGridPos = Round(anchorCellF)
+            //
+            // For odd sizes  (1x1, 1x3 …) the half offset is e.g. 0.5, so the snap point
+            //   is exactly in the middle of whichever cell the mouse is in — snaps only on
+            //   cell-centre crossings, identical feel to before.
+            // For even sizes (2x2, 2x4 …) the half offset is a whole number (e.g. 1.0), so
+            //   the snap point sits on a cell boundary and switches when the mouse crosses
+            //   the midpoint between two cells — the item moves one column/row at a time and
+            //   the visual centre tracks the cursor symmetrically.
+            float cellSize = currentGrid.CellSize;
+            Vector2 mouseCellF  = mouseLocalPos / cellSize;
+            Vector2Int placementGridPos = Vector2Int.zero;
+            if (itemDef != null)
             {
-                // Center the item: offset = itemSize / 2
                 Vector2Int itemSize = new Vector2Int(itemDef.GetRotatedWidth(dir), itemDef.GetRotatedHeight(dir));
-                dragOffset = new Vector2Int(itemSize.x / 2, itemSize.y / 2);
+                Vector2 anchorCellF = mouseCellF - new Vector2(itemSize.x * 0.5f, itemSize.y * 0.5f);
+                placementGridPos = new Vector2Int(Mathf.RoundToInt(anchorCellF.x), Mathf.RoundToInt(anchorCellF.y));
             }
-
-            Vector2Int placementGridPos = mouseGridPos - dragOffset;
+            else
+            {
+                placementGridPos = new Vector2Int(Mathf.FloorToInt(mouseCellF.x), Mathf.FloorToInt(mouseCellF.y));
+            }
 
             if (verboseLogging)
             {
-                Debug.Log($"[InventoryDragHandler] UPDATE VISUAL - mouseGridPos={mouseGridPos}, dragOffset={dragOffset}, visualPlacement={placementGridPos}");
+                Debug.Log($"[InventoryDragHandler] UPDATE VISUAL - mouseCellF={mouseCellF}, visualPlacement={placementGridPos}");
             }
 
             // Clamp to grid boundaries
             if (itemDef != null)
             {
-                Vector2Int itemSize = new Vector2Int(itemDef.GetRotatedWidth(dir), itemDef.GetRotatedHeight(dir));
-                placementGridPos.x = Mathf.Clamp(placementGridPos.x, 0, currentGrid.InventorySystem.Width - itemSize.x);
-                placementGridPos.y = Mathf.Clamp(placementGridPos.y, 0, currentGrid.InventorySystem.Height - itemSize.y);
+                int itemW = itemDef.GetRotatedWidth(dir);
+                int itemH = itemDef.GetRotatedHeight(dir);
+                placementGridPos.x = Mathf.Clamp(placementGridPos.x, 0, currentGrid.InventorySystem.Width - itemW);
+                placementGridPos.y = Mathf.Clamp(placementGridPos.y, 0, currentGrid.InventorySystem.Height - itemH);
             }
 
             // CRITICAL: Store this for placement! The visual lerps toward it, so reading visual position gives mid-lerp coords
@@ -916,9 +932,10 @@ namespace TimeGame.Systems.Inventory.UI
             //     targetPosition += new Vector2(rotationOffset.x, rotationOffset.y) * currentGrid.CellSize;
             // }
 
-            // Smooth lerp to target
+            // Smooth lerp to target — use a high factor so the item snaps quickly
+            // and the cursor visually sits at the center rather than lagging noticeably.
             RectTransform itemRT = draggingPlacedObject.GetComponent<RectTransform>();
-            itemRT.anchoredPosition = Vector2.Lerp(itemRT.anchoredPosition, targetPosition, Time.deltaTime * 20f);
+            itemRT.anchoredPosition = Vector2.Lerp(itemRT.anchoredPosition, targetPosition, Time.deltaTime * 30f);
         }
 
         private void UpdateFreeFloatMode(Vector2 mouseScreenPos)
@@ -930,13 +947,27 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 // Reparent to canvas maintaining world position
                 draggingPlacedObject.transform.SetParent(canvasRoot, worldPositionStays: true);
+
+                // CRITICAL: Normalize anchors to canvas center (0.5, 0.5) so that anchoredPosition
+                // uses the same coordinate origin as ScreenPointToLocalPointInRectangle(canvasRoot).
+                // Without this, anchorMin=(0,0) means positions are relative to canvas bottom-left,
+                // but ScreenPointToLocalPoint returns coords relative to the canvas pivot (center),
+                // causing the item to teleport to the bottom-left corner of the screen.
+                Vector2 worldPos = itemRT.position;
+                itemRT.anchorMin = new Vector2(0.5f, 0.5f);
+                itemRT.anchorMax = new Vector2(0.5f, 0.5f);
+                // Re-apply world position after anchor change so item doesn't jump
+                itemRT.position = worldPos;
+
                 currentGrid = null;
             }
 
             // Clear ghost preview when not over a grid
             ClearAllGhostPreviews();
 
-            // Position item using the ORIGINAL offset (set at drag start)
+            // Center the item on the cursor in canvas space.
+            // ScreenPointToLocalPointInRectangle with canvasRoot returns coords relative to the
+            // canvas pivot — matching the anchor (0.5, 0.5) coordinate system set above.
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 canvasRoot,
                 mouseScreenPos,
@@ -944,8 +975,9 @@ namespace TimeGame.Systems.Inventory.UI
                 out Vector2 mouseCanvasPos
             );
 
-            // Item position = mouse position - ORIGINAL offset
-            itemRT.anchoredPosition = mouseCanvasPos - mouseDragCanvasOffset;
+            // sizeDelta is always (width * cellSize, height * cellSize) — set by Initialize and
+            // kept up to date by ResizeForRotation.  Use it directly; no cellSize lookup needed.
+            itemRT.anchoredPosition = mouseCanvasPos - itemRT.sizeDelta * 0.5f;
         }
 
         private void UpdateRotation()
@@ -989,7 +1021,13 @@ namespace TimeGame.Systems.Inventory.UI
             // If starting in free-float mode, parent to canvas immediately
             if (currentGrid == null && canvasRoot != null)
             {
-                visual.transform.SetParent(canvasRoot, worldPositionStays: true);
+                RectTransform visualRT = visual.GetComponent<RectTransform>();
+                Vector2 worldPos = visualRT.position;
+                visual.transform.SetParent(canvasRoot, worldPositionStays: false);
+                // Normalize anchors to canvas center so free-float coordinate math is correct
+                visualRT.anchorMin = new Vector2(0.5f, 0.5f);
+                visualRT.anchorMax = new Vector2(0.5f, 0.5f);
+                visualRT.position = worldPos;
             }
         }
 
@@ -1057,13 +1095,14 @@ namespace TimeGame.Systems.Inventory.UI
                 {
                     // Item was removed (same-grid move) - need to add it back!
                     
-                    // Re-add item at original position WITH SAME INSTANCE ID
+                    // Re-add item at original position WITH SAME INSTANCE ID and stack count
                     bool readded = originalGrid.InventorySystem.TryAddItem(
                         originalPlacedItem.InstanceID,
                         itemDef,
                         originalGridPosition,
                         originalDir,
-                        out PlacedItem restoredItem
+                        out PlacedItem restoredItem,
+                        draggedStackCount
                     );
                     
                     if (!readded)

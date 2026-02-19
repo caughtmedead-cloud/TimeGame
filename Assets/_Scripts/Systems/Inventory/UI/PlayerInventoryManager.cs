@@ -28,12 +28,26 @@ namespace TimeGame.Systems.Inventory.UI
         [Header("Debug")]
         [SerializeField] private bool verboseLogging = true;
 
+        // Singleton — O(1) access, avoids FindObjectOfType at runtime
+        public static PlayerInventoryManager Instance { get; private set; }
+
         // Grid tracking
         private InventoryGridVisual pocketGrid;
         private Dictionary<string, InventoryGridVisual> equipmentGrids = new Dictionary<string, InventoryGridVisual>();
 
         // Grid names
         private const string POCKET_GRID_NAME = "PocketGrid";
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("[PlayerInventoryManager] Duplicate instance detected — destroying self.");
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -126,7 +140,7 @@ namespace TimeGame.Systems.Inventory.UI
             // The item is now equipped (becoming a sidebar grid), so the floating window is stale.
             if (placedItem != null)
             {
-                FloatingContainerWindowManager windowManager = FindObjectOfType<FloatingContainerWindowManager>();
+                FloatingContainerWindowManager windowManager = FloatingContainerWindowManager.Instance;
                 windowManager?.CloseWindowForItem(placedItem);
             }
 

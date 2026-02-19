@@ -24,11 +24,11 @@ namespace TimeGame.Systems.Inventory.UI
         [SerializeField] private float scrollSensitivity = 20f;
 
         [Header("Layout Settings")]
-        [SerializeField] private float spacing = 20f;
+        [SerializeField] private float spacing = 30f;   // gap between grid sections
         [SerializeField] private int paddingLeft = 10;
         [SerializeField] private int paddingRight = 10;
-        [SerializeField] private int paddingTop = 10;
-        [SerializeField] private int paddingBottom = 10;
+        [SerializeField] private int paddingTop = 14;
+        [SerializeField] private int paddingBottom = 14;
 
         [Header("Auto-Setup")]
         [SerializeField] private bool autoSetupOnAwake = true;

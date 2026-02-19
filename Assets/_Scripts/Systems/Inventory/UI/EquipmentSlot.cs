@@ -37,6 +37,7 @@ namespace TimeGame.Systems.Inventory.UI
         private PlacedItem equippedPlacedItem; // NESTED INVENTORY: Store full item data including container inventory
         private RectTransform rectTransform;
         private CanvasGroup itemIconCanvasGroup;
+        private AspectRatioFitter iconAspectFitter;
         private InventoryDragHandler dragHandler;
 
         // Events
@@ -49,21 +50,12 @@ namespace TimeGame.Systems.Inventory.UI
         private void Awake()
         {
             Log("Awake called");
-            
             rectTransform = GetComponent<RectTransform>();
-            
-            // Find drag handler and register
-            dragHandler = FindObjectOfType<InventoryDragHandler>();
-            if (dragHandler != null)
-            {
-                dragHandler.RegisterDropTarget(this);
-                Log($"Registered with drag handler");
-            }
-            else
-            {
-                Debug.LogWarning($"[EquipmentSlot:{slotName}] No InventoryDragHandler found - drag/drop won't work!");
-            }
-            
+
+            // Clip icon rendering and raycasts to the slot bounds
+            if (GetComponent<RectMask2D>() == null)
+                gameObject.AddComponent<RectMask2D>();
+
             // Initialize CanvasGroup on itemIconImage
             if (itemIconImage != null)
             {
@@ -73,13 +65,36 @@ namespace TimeGame.Systems.Inventory.UI
                     itemIconCanvasGroup = itemIconImage.gameObject.AddComponent<CanvasGroup>();
                     Log("Added CanvasGroup to itemIconImage");
                 }
+
+                // AspectRatioFitter keeps the icon at its native proportions inside the slot
+                iconAspectFitter = itemIconImage.GetComponent<AspectRatioFitter>();
+                if (iconAspectFitter == null)
+                {
+                    iconAspectFitter = itemIconImage.gameObject.AddComponent<AspectRatioFitter>();
+                }
+                iconAspectFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
             }
             else
             {
                 Debug.LogError($"[EquipmentSlot:{slotName}] itemIconImage is NULL in inspector!", this);
             }
-            
+
             UpdateVisuals();
+        }
+
+        private void Start()
+        {
+            // Runs after all Awakes — InventoryDragHandler.Instance is guaranteed to be set
+            dragHandler = InventoryDragHandler.Instance;
+            if (dragHandler != null)
+            {
+                dragHandler.RegisterDropTarget(this);
+                Log("Registered with drag handler");
+            }
+            else
+            {
+                Debug.LogWarning($"[EquipmentSlot:{slotName}] No InventoryDragHandler found — drag/drop won't work!");
+            }
         }
 
         private void OnDestroy()
@@ -359,6 +374,9 @@ namespace TimeGame.Systems.Inventory.UI
                 if (hasItem && equippedItem.ItemIcon != null)
                 {
                     itemIconImage.sprite = equippedItem.ItemIcon;
+                    // Update aspect fitter so the icon fits the slot without stretching
+                    if (iconAspectFitter != null && equippedItem.ItemIcon.rect.height > 0)
+                        iconAspectFitter.aspectRatio = equippedItem.ItemIcon.rect.width / equippedItem.ItemIcon.rect.height;
                     Log($"Updated icon to {equippedItem.ItemName} (activeInHierarchy: {gameObject.activeInHierarchy})");
                 }
                 else if (!hasItem)

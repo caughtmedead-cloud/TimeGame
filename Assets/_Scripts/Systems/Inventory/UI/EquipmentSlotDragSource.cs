@@ -12,7 +12,7 @@ namespace TimeGame.Systems.Inventory.UI
     /// NO temp grids - just creates visual from item data.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class EquipmentSlotDragSource : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
         private EquipmentSlot equipmentSlot;
         private InventoryDragHandler dragHandler;
@@ -33,18 +33,32 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 Debug.LogError("[EquipmentSlotDragSource] No EquipmentSlot found in parent!", this);
             }
-            
-            dragHandler = FindObjectOfType<InventoryDragHandler>();
-            if (dragHandler == null)
-            {
-                Debug.LogError("[EquipmentSlotDragSource] No InventoryDragHandler found in scene!", this);
-            }
-            
-            // Find canvas root
+
+            // Find canvas root (self-init, no cross-object dependency)
             Canvas canvas = GetComponentInParent<Canvas>();
             if (canvas != null)
             {
                 canvasRoot = canvas.GetComponent<RectTransform>();
+            }
+        }
+
+        private void Start()
+        {
+            // Runs after all Awakes — InventoryDragHandler.Instance is guaranteed to be set
+            dragHandler = InventoryDragHandler.Instance;
+            if (dragHandler == null)
+            {
+                Debug.LogError("[EquipmentSlotDragSource] No InventoryDragHandler found in scene!", this);
+            }
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            // Right-click on an occupied slot opens the context menu
+            if (eventData.button == PointerEventData.InputButton.Right && equipmentSlot != null && equipmentSlot.IsOccupied)
+            {
+                InventoryContextMenu.ShowMenuForEquipmentSlot(eventData.position, equipmentSlot);
+                Log($"Showing context menu for {equipmentSlot.EquippedItem?.ItemName}");
             }
         }
 

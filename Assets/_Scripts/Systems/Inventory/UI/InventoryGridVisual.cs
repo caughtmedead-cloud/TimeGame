@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory.UI
@@ -41,8 +42,9 @@ namespace TimeGame.Systems.Inventory.UI
         private RectTransform rectTransform;
         private InventorySystem inventorySystem;
 
-        // CRITICAL: NOT serialized - InventoryGridFactory injects this via reflection
+        // CRITICAL: NOT serialized - InventoryGridFactory injects these via reflection
         private InventoryTileSprites tileSprites;
+        private TMP_FontAsset uiFont;
 
         // Drag handler reference (for floating windows that aren't children of drag handler)
         private InventoryDragHandler cachedDragHandler;
@@ -192,7 +194,7 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Subscribe to events
             inventorySystem.OnItemAdded += HandleItemAdded;
-            inventorySystem.OnItemRemoved -= HandleItemRemoved;
+            inventorySystem.OnItemRemoved += HandleItemRemoved;
 
             // Set our size to match grid
             rectTransform.sizeDelta = new Vector2(gridWidth * cellSize, gridHeight * cellSize);
@@ -240,6 +242,18 @@ namespace TimeGame.Systems.Inventory.UI
             // Subscribe to new system's events
             inventorySystem.OnItemAdded += HandleItemAdded;
             inventorySystem.OnItemRemoved += HandleItemRemoved;
+
+            // Keep any sibling InventoryWeightBar in sync with the new system.
+            // The bar lives on a WeightRow GameObject that is a sibling of the grid
+            // inside a labeled-grid container or floating window gridContainer.
+            if (transform.parent != null)
+            {
+                InventoryWeightBar bar = transform.parent.GetComponentInChildren<InventoryWeightBar>();
+                if (bar != null)
+                {
+                    bar.Resubscribe(system);
+                }
+            }
 
             // Redraw cells and item visuals with the new system's contents
             DrawGridBackground();
@@ -405,17 +419,6 @@ namespace TimeGame.Systems.Inventory.UI
                 }
             }
 
-            // Add border (Outline component) - only if NOT using tile sprites
-            if (tileSprites == null || tileSprites.emptyTileSprite == null)
-            {
-                Outline outline = cellObj.GetComponent<Outline>();
-                if (outline != null)
-                {
-                    outline.effectColor = gridBorderColor;
-                    outline.effectDistance = new Vector2(borderThickness, borderThickness);
-                }
-            }
-
             cellObj.name = $"Cell_{x}_{y}";
             return cellObj;
         }
@@ -493,14 +496,10 @@ namespace TimeGame.Systems.Inventory.UI
         private GameObject CreateDefaultGridCellPrefab()
         {
             GameObject prefab = new GameObject("GridCell");
-            
-            RectTransform rt = prefab.AddComponent<RectTransform>();
-            Image image = prefab.AddComponent<Image>();
-            Outline outline = prefab.AddComponent<Outline>();
 
+            prefab.AddComponent<RectTransform>();
+            Image image = prefab.AddComponent<Image>();
             image.color = gridCellColor;
-            outline.effectColor = gridBorderColor;
-            outline.effectDistance = new Vector2(borderThickness, borderThickness);
 
             return prefab;
         }
@@ -570,7 +569,7 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             // Initialize visual (pass gridVisual reference for drag-drop)
-            visual.Initialize(placedItem, itemDef, cellSize, this);
+            visual.Initialize(placedItem, itemDef, cellSize, this, uiFont);
 
             // Position at grid location
             Vector2 localPos = GridPositionToLocalPosition(placedItem.AnchorPosition);
@@ -627,7 +626,7 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             // Initialize visual (pass null for gridVisual since this is standalone - no drag-drop component)
-            visual.Initialize(placedItem, itemDef, cellSize, null);
+            visual.Initialize(placedItem, itemDef, cellSize, null, uiFont);
 
             // Don't enable drag background - we want the same look as normal dragging
             // visual.EnableDragBackground(tileSprites); // REMOVED

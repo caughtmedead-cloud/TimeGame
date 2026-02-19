@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using TimeGame.Systems.Inventory;
 
 namespace TimeGame.Systems.Inventory.UI
 {
@@ -9,6 +10,9 @@ namespace TimeGame.Systems.Inventory.UI
     /// </summary>
     public class ContainerInteractionManager : MonoBehaviour
     {
+        // Singleton — O(1) access, avoids FindObjectOfType at runtime
+        public static ContainerInteractionManager Instance { get; private set; }
+
         [Header("References")]
         [SerializeField] private ScrollableInventoryPanel containerPanel;
         [SerializeField] private GameObject leftPanelRoot;
@@ -18,6 +22,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         // Current open container
         private LootContainer currentContainer;
+        private WorldLootContainer currentWorldContainer; // The world object that owns currentContainer
         private List<InventoryGridVisual> currentContainerGrids = new List<InventoryGridVisual>();
 
         /// <summary>
@@ -29,6 +34,17 @@ namespace TimeGame.Systems.Inventory.UI
         /// Get the currently open container
         /// </summary>
         public LootContainer CurrentContainer => currentContainer;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("[ContainerInteractionManager] Duplicate instance detected — destroying self.");
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -42,9 +58,10 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Open a loot container and spawn its grids
+        /// Open a loot container and spawn its grids.
+        /// Pass the WorldLootContainer source so it can be notified when the panel closes.
         /// </summary>
-        public void OpenContainer(LootContainer container)
+        public void OpenContainer(LootContainer container, WorldLootContainer source = null)
         {
             if (container == null)
             {
@@ -58,13 +75,12 @@ namespace TimeGame.Systems.Inventory.UI
                 CloseContainer();
             }
 
-            currentContainer = container;
+            currentContainer      = container;
+            currentWorldContainer = source;
 
             // Show left panel
             if (leftPanelRoot != null)
-            {
                 leftPanelRoot.SetActive(true);
-            }
 
             // Spawn grids for each compartment in the container
             SpawnContainerGrids(container);
@@ -73,7 +89,7 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Close the currently open container
+        /// Close the currently open container and notify the WorldLootContainer source.
         /// </summary>
         public void CloseContainer()
         {
@@ -85,18 +101,19 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Clear all spawned grids
             if (containerPanel != null)
-            {
                 containerPanel.ClearAllGrids();
-            }
 
             currentContainerGrids.Clear();
             currentContainer = null;
 
+            // Notify the world object so it resets isCurrentlyOpen
+            WorldLootContainer worldContainer = currentWorldContainer;
+            currentWorldContainer = null;
+            worldContainer?.Close();
+
             // Hide left panel
             if (leftPanelRoot != null)
-            {
                 leftPanelRoot.SetActive(false);
-            }
 
             Log("Closed container");
         }

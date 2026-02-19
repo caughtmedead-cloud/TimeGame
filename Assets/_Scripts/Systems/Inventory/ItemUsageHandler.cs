@@ -30,6 +30,20 @@ namespace TimeGame.Systems.Inventory
         [SerializeField] private ScenePhysics scenePhysics;
         private void Start()
         {
+            // Ensure the inspect panel singleton exists
+            if (ItemInspectPanel.Instance == null)
+            {
+                GameObject panelGO = new GameObject("ItemInspectPanel");
+                panelGO.AddComponent<ItemInspectPanel>();
+                // Awake fires immediately, sets Instance and builds UI
+            }
+
+            // Pass the shared inventory font to the inspect panel so text matches the rest of the UI.
+            // SetFont() is a no-op if the panel already has a font assigned in the inspector.
+            InventoryGridFactory factory = FindObjectOfType<InventoryGridFactory>();
+            if (factory != null && ItemInspectPanel.Instance != null)
+                ItemInspectPanel.Instance.SetFont(factory.UIFont);
+
             // Auto-find player transform if not set
             if (playerTransform == null)
             {
@@ -108,6 +122,9 @@ namespace TimeGame.Systems.Inventory
                 contextMenu.OnInspectItem += HandleInspectItem;
                 contextMenu.OnDropItem += HandleDropAllItems;
                 contextMenu.OnDropOneItem += HandleDropOneItem;
+                contextMenu.OnEquipItem += HandleEquipItem;
+                contextMenu.OnEquipmentSlotUnequip += HandleEquipmentSlotUnequip;
+                contextMenu.OnEquipmentSlotInspect += HandleEquipmentSlotInspect;
                 Debug.Log("[ItemUsageHandler] Subscribed to context menu events");
             }
             else
@@ -128,7 +145,7 @@ namespace TimeGame.Systems.Inventory
             }
 
             // Open in floating window (for nested inventory containers)
-            FloatingContainerWindowManager windowManager = FindObjectOfType<FloatingContainerWindowManager>();
+            FloatingContainerWindowManager windowManager = FloatingContainerWindowManager.Instance;
             if (windowManager != null)
             {
                 windowManager.OpenContainer(item);
@@ -206,24 +223,133 @@ namespace TimeGame.Systems.Inventory
             InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
             if (itemDef == null) return;
 
-            Debug.Log($"[ItemUsageHandler] INSPECT: {itemDef.ItemName}");
-            Debug.Log($"  Description: {itemDef.Description}");
-            Debug.Log($"  Size: {itemDef.Width}x{itemDef.Height}");
-            Debug.Log($"  Weight: {itemDef.Weight}kg");
-            Debug.Log($"  Value: {itemDef.Value}");
-            Debug.Log($"  Category: {itemDef.Category}");
-            Debug.Log($"  Rarity: {itemDef.Rarity}");
-            Debug.Log($"  Stack Count: {item.StackCount}");
+            ItemInspectPanel.Instance?.Show(itemDef, item);
+        }
 
-            if (item.IsInstanceTracked && item.ItemInstances != null && item.ItemInstances.Count > 0)
+        /// <summary>
+        /// Equip an item from a grid directly into the first compatible empty slot.
+        /// Removes the item from the grid and places it in the equipment slot, preserving full lineage.
+        /// </summary>
+        private void HandleEquipItem(PlacedItem item, InventoryGridVisual grid, EquipmentSlot targetSlot)
+        {
+            if (item == null || grid == null || targetSlot == null) return;
+
+            InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
+            if (itemDef == null) return;
+
+            // Remove from grid first
+            grid.InventorySystem.RemoveItem(item.InstanceID);
+            grid.RefreshAllItemVisuals();
+
+            // Equip into slot, preserving full PlacedItem lineage
+            bool equipped = targetSlot.TryPlaceExistingItem(item, GridDirection.Down, Vector2.zero, out _);
+            if (!equipped)
             {
-                ItemInstance firstItem = item.ItemInstances[0];
-                Debug.Log($"  Uses: {firstItem.UsesRemaining}/{itemDef.MaxUses}");
-                Debug.Log($"  Durability: {firstItem.Durability}%");
-                Debug.Log($"  Condition: {firstItem.Condition:F2}");
+                // Slot rejected item — put it back
+                Debug.LogWarning($"[ItemUsageHandler] Equip failed for {itemDef.ItemName}, returning to grid");
+                grid.InventorySystem.TryAddItem(item.InstanceID, itemDef, item.AnchorPosition, item.Rotation, out _, item.StackCount);
+                grid.RefreshAllItemVisuals();
+            }
+            else
+            {
+                Debug.Log($"[ItemUsageHandler] Equipped {itemDef.ItemName} via context menu");
+            }
+        }
+
+        /// <summary>
+        /// Unequip an item from an equipment slot and move it to the first available grid slot.
+        /// </summary>
+        private void HandleEquipmentSlotUnequip(EquipmentSlot slot)
+        {
+            if (slot == null || !slot.IsOccupied) return;
+
+            InventoryItemSO itemDef = slot.EquippedItem;
+            PlacedItem placedItem = slot.GetEquippedPlacedItem();
+
+            // Unequip fires OnItemUnequipped which saves ContainerInventory
+            slot.UnequipItem();
+
+            if (placedItem == null)
+            {
+                Debug.LogWarning($"[ItemUsageHandler] Unequipped {itemDef?.ItemName} but had no PlacedItem data");
+                return;
             }
 
-            // TODO: Show actual inspect UI panel
+            // Find first grid with a free position that fits the item
+            PlayerInventoryManager inventoryManager = PlayerInventoryManager.Instance;
+            if (inventoryManager != null)
+            {
+                foreach (InventoryGridVisual grid in inventoryManager.GetAllGrids())
+                {
+                    if (grid == null || grid.InventorySystem == null) continue;
+
+                    // Scan all positions to find one where the item fits
+                    Vector2Int? freePos = FindFirstFreePosition(grid.InventorySystem, itemDef, GridDirection.Down);
+                    if (freePos == null) continue;
+
+                    bool placed = grid.InventorySystem.TryAddItem(
+                        placedItem.InstanceID,
+                        itemDef,
+                        freePos.Value,
+                        GridDirection.Down,
+                        out PlacedItem restoredItem
+                    );
+
+                    if (placed && restoredItem != null)
+                    {
+                        // Transfer container inventory and instances
+                        if (placedItem.ContainerInventory != null)
+                            restoredItem.ContainerInventory = placedItem.ContainerInventory;
+                        if (placedItem.IsInstanceTracked && placedItem.ItemInstances?.Count > 0)
+                            restoredItem.AddInstances(placedItem.ItemInstances);
+
+                        grid.RefreshAllItemVisuals();
+                        Debug.Log($"[ItemUsageHandler] Unequipped {itemDef.ItemName} → moved to {grid.name} at {freePos.Value}");
+                        return;
+                    }
+                }
+            }
+
+            Debug.LogWarning($"[ItemUsageHandler] No space found for unequipped {itemDef?.ItemName} — item lost!");
+        }
+
+        /// <summary>
+        /// Scans all positions in the given inventory system and returns the first position
+        /// where the item can be placed. Accounts for item rotation dimensions so we don't
+        /// wastefully test positions that couldn't possibly fit. Returns null if no free slot.
+        /// (Same pattern as InventoryTestHarness.FindFirstAvailablePosition)
+        /// </summary>
+        private Vector2Int? FindFirstFreePosition(InventorySystem system, InventoryItemSO item, GridDirection rotation)
+        {
+            if (system == null || item == null) return null;
+
+            int itemWidth  = item.GetRotatedWidth(rotation);
+            int itemHeight = item.GetRotatedHeight(rotation);
+
+            for (int y = 0; y <= system.Height - itemHeight; y++)
+            {
+                for (int x = 0; x <= system.Width - itemWidth; x++)
+                {
+                    Vector2Int pos = new Vector2Int(x, y);
+                    if (system.CanAddItem(item, pos, rotation))
+                        return pos;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Inspect an item currently equipped in a slot.
+        /// </summary>
+        private void HandleEquipmentSlotInspect(EquipmentSlot slot)
+        {
+            if (slot == null || !slot.IsOccupied) return;
+
+            InventoryItemSO itemDef = slot.EquippedItem;
+            PlacedItem placedItem   = slot.GetEquippedPlacedItem();
+
+            ItemInspectPanel.Instance?.Show(itemDef, placedItem);
         }
 
         private void HandleDropOneItem(PlacedItem item, InventoryGridVisual grid)
@@ -392,7 +518,7 @@ namespace TimeGame.Systems.Inventory
                             itemDef,
                             position,
                             direction,
-                            out GridPlacement.PlacedItem newItem,
+                            out PlacedItem newItem,
                             newStackCount,
                             allowAutoStack: false
                         );

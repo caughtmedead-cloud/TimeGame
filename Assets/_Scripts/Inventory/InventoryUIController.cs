@@ -24,6 +24,9 @@ namespace TimeGame.Inventory
 
         [Tooltip("FloatingContainerWindowManager - auto-found if not assigned")]
         [SerializeField] private TimeGame.Systems.Inventory.UI.FloatingContainerWindowManager floatingWindowManager;
+
+        [Tooltip("ContainerInteractionManager - auto-found if not assigned. Closes the left loot panel when inventory closes.")]
+        [SerializeField] private TimeGame.Systems.Inventory.UI.ContainerInteractionManager containerInteractionManager;
         
         [Header("Input Settings")]
         [Tooltip("Enable debug logging for inventory UI actions")]
@@ -66,10 +69,11 @@ namespace TimeGame.Inventory
             {
                 floatingWindowManager = FindObjectOfType<TimeGame.Systems.Inventory.UI.FloatingContainerWindowManager>();
                 if (floatingWindowManager == null)
-                {
                     Debug.LogWarning("[InventoryUIController] FloatingContainerWindowManager not found. Floating windows won't auto-close with inventory.");
-                }
             }
+
+            // ContainerInteractionManager is resolved lazily in CloseInventory via singleton
+            // to avoid Awake execution order dependency.
             
             // Validate references
             if (inventoryCanvas == null)
@@ -102,16 +106,22 @@ namespace TimeGame.Inventory
         
         private void Update()
         {
-            // Allow ESC key to close inventory (in addition to Tab toggle)
-            // Using old Input system here since ESC is a universal close key
-            if (IsOwner && isInventoryOpen && Input.GetKeyDown(KeyCode.Escape))
+            if (!IsOwner || !isInventoryOpen) return;
+
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
-                CloseInventory();
-                
-                if (debugMode)
+                // If the inspect panel is open, close it first — ESC consumed
+                var inspectPanel = TimeGame.Systems.Inventory.UI.ItemInspectPanel.Instance;
+                if (inspectPanel != null && inspectPanel.IsVisible)
                 {
-                    Debug.Log("[InventoryUIController] Inventory closed via ESC key");
+                    inspectPanel.Hide();
+                    return;
                 }
+
+                CloseInventory();
+
+                if (debugMode)
+                    Debug.Log("[InventoryUIController] Inventory closed via ESC key");
             }
         }
         
@@ -217,14 +227,28 @@ namespace TimeGame.Inventory
         private void CloseInventory(bool restoreCursor = true)
         {
             if (!IsOwner) return;
-            
+
             isInventoryOpen = false;
+
+            // Cancel any active drag before closing — prevents item visuals getting stuck
+            // when the grid they originated from is destroyed as part of close.
+            var dragHandler = TimeGame.Systems.Inventory.UI.InventoryDragHandler.Instance;
+            if (dragHandler != null && dragHandler.IsDragging)
+                dragHandler.CancelDrag();
 
             // Close all floating container windows when inventory closes
             if (floatingWindowManager != null)
-            {
                 floatingWindowManager.CloseAllWindows();
-            }
+
+            // Close left loot panel if a world container was open.
+            // Resolve via singleton at call-time — avoids Awake ordering issues.
+            var cim = containerInteractionManager != null
+                ? containerInteractionManager
+                : TimeGame.Systems.Inventory.UI.ContainerInteractionManager.Instance;
+            if (debugMode)
+                Debug.Log($"[InventoryUIController] CloseInventory — cim={cim != null}, IsContainerOpen={cim?.IsContainerOpen}");
+            if (cim != null && cim.IsContainerOpen)
+                cim.CloseContainer();
 
             // Hide inventory UI
             if (inventoryCanvas != null)

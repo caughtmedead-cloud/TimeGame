@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using FishNet.Object;
 using TimeGame.Systems.Inventory.UI;
 using TimeGame.Systems.GridPlacement;
+using TimeGame.Inventory;
 
 namespace TimeGame.Systems.Inventory
 {
@@ -28,10 +29,14 @@ namespace TimeGame.Systems.Inventory
         [Tooltip("Player inventory manager for pickup")]
         [SerializeField] private PlayerInventoryManager inventoryManager;
 
+        [Tooltip("Inventory UI controller — used to force-open inventory when a loot container is opened")]
+        [SerializeField] private InventoryUIController inventoryUIController;
+
         [Header("Debug")]
         [SerializeField] private bool debugMode = false;
 
         private WorldItem currentlyLookedAtItem;
+        private WorldLootContainer currentlyLookedAtContainer;
         private PlayerInputActions inputActions;
 
         #region Unity Lifecycle
@@ -58,6 +63,16 @@ namespace TimeGame.Systems.Inventory
 
         private void Start()
         {
+            // Auto-find InventoryUIController by walking up this player's own hierarchy only.
+            // Never use FindObjectOfType — in multiplayer each player has their own controller
+            // and a global search would grab a random player's instance.
+            if (inventoryUIController == null)
+            {
+                inventoryUIController = GetComponentInParent<InventoryUIController>(true);
+                if (inventoryUIController == null)
+                    Debug.LogWarning("[PlayerItemInteraction] InventoryUIController not found in parent hierarchy — assign it in the Inspector on the player prefab.");
+            }
+
             if (debugMode)
             {
                 Debug.Log("[PlayerItemInteraction] === INITIALIZATION CHECK ===");
@@ -65,6 +80,7 @@ namespace TimeGame.Systems.Inventory
                 Debug.Log($"  Interaction Range: {interactionRange}");
                 Debug.Log($"  Item Layer Mask: {itemLayerMask.value}");
                 Debug.Log($"  Inventory Manager: {(inventoryManager != null ? "Assigned" : "NULL - Pickup will fail!")}");
+                Debug.Log($"  InventoryUIController: {(inventoryUIController != null ? "Assigned" : "NULL - Container open will not force inventory")}");
                 Debug.Log("===========================================");
             }
         }
@@ -96,47 +112,56 @@ namespace TimeGame.Systems.Inventory
         {
             if (raycastOrigin == null) return;
 
-            Vector3 origin = raycastOrigin.position;
+            Vector3 origin    = raycastOrigin.position;
             Vector3 direction = raycastOrigin.forward;
 
             RaycastHit hit;
 
             if (debugMode)
-            {
                 Debug.DrawRay(origin, direction * interactionRange, Color.cyan);
-            }
 
             // Use scene-aware raycast if available, otherwise fall back to Physics.Raycast
             bool didHit;
             if (scenePhysics != null)
-            {
                 didHit = scenePhysics.Raycast(origin, direction, out hit, interactionRange, itemLayerMask, QueryTriggerInteraction.Ignore);
-            }
             else
-            {
                 didHit = Physics.Raycast(origin, direction, out hit, interactionRange, itemLayerMask, QueryTriggerInteraction.Ignore);
-            }
 
             if (didHit)
             {
-                WorldItem item = hit.collider.GetComponent<WorldItem>();
+                // Use GetComponentInParent so colliders on child mesh objects still find the
+                // component on the root — common with prefabs where the mesh/collider is a child.
 
+                // Priority 1: WorldItem (loose pickup)
+                WorldItem item = hit.collider.GetComponentInParent<WorldItem>();
                 if (item != null)
                 {
                     if (item != currentlyLookedAtItem)
                     {
-                        ClearCurrentItem();
+                        ClearCurrentTarget();
                         SetCurrentItem(item);
                     }
+                    return;
                 }
-                else
+
+                // Priority 2: WorldLootContainer
+                WorldLootContainer container = hit.collider.GetComponentInParent<WorldLootContainer>();
+                if (container != null)
                 {
-                    ClearCurrentItem();
+                    if (container != currentlyLookedAtContainer)
+                    {
+                        ClearCurrentTarget();
+                        SetCurrentContainer(container);
+                    }
+                    return;
                 }
+
+                // Hit something on the layer but it has neither component
+                ClearCurrentTarget();
             }
             else
             {
-                ClearCurrentItem();
+                ClearCurrentTarget();
             }
         }
 
@@ -151,22 +176,39 @@ namespace TimeGame.Systems.Inventory
             }
 
             if (debugMode)
-            {
-                Debug.Log($"[PlayerItemInteraction] Looking at: {item.ItemDefinition.ItemName} x{item.Quantity}");
-            }
+                Debug.Log($"[PlayerItemInteraction] Looking at item: {item.ItemDefinition.ItemName} x{item.Quantity}");
         }
 
-        private void ClearCurrentItem()
+        private void SetCurrentContainer(WorldLootContainer container)
         {
-            if (currentlyLookedAtItem != null)
-            {
-                currentlyLookedAtItem = null;
-            }
+            currentlyLookedAtContainer = container;
 
             if (crosshairUI != null)
             {
-                crosshairUI.gameObject.SetActive(false);
+                crosshairUI.gameObject.SetActive(true);
+                crosshairUI.SetLootContainer(container);
             }
+
+            if (debugMode)
+                Debug.Log($"[PlayerItemInteraction] Looking at container: {container.DisplayName}");
+        }
+
+        /// <summary>
+        /// Clears whichever target (item or container) the player was looking at.
+        /// Hides the crosshair and closes the world context menu if open.
+        /// </summary>
+        private void ClearCurrentTarget()
+        {
+            bool hadTarget = currentlyLookedAtItem != null || currentlyLookedAtContainer != null;
+
+            currentlyLookedAtItem      = null;
+            currentlyLookedAtContainer = null;
+
+            if (hadTarget)
+                InventoryContextMenu.HideMenu();
+
+            if (crosshairUI != null)
+                crosshairUI.gameObject.SetActive(false);
         }
 
         #endregion
@@ -175,26 +217,44 @@ namespace TimeGame.Systems.Inventory
 
         private void OnPickupPressed(InputAction.CallbackContext context)
         {
-            if (debugMode)
+            // WorldItem — pick up
+            if (currentlyLookedAtItem != null)
             {
-                Debug.Log($"[PlayerItemInteraction] OnPickupPressed called. Looking at item: {(currentlyLookedAtItem != null ? currentlyLookedAtItem.ItemDefinition.ItemName : "null")}");
+                if (debugMode)
+                    Debug.Log($"[PlayerItemInteraction] Interact: picking up {currentlyLookedAtItem.ItemDefinition.ItemName}");
+                TryPickupItem(currentlyLookedAtItem);
+                return;
             }
 
-            if (currentlyLookedAtItem == null) return;
-
-            TryPickupItem(currentlyLookedAtItem);
+            // WorldLootContainer — open
+            if (currentlyLookedAtContainer != null)
+            {
+                if (debugMode)
+                    Debug.Log($"[PlayerItemInteraction] Interact: opening container {currentlyLookedAtContainer.DisplayName}");
+                TryOpenContainer(currentlyLookedAtContainer);
+                return;
+            }
         }
 
         private void OnContextMenuPressed(InputAction.CallbackContext context)
         {
-            if (debugMode)
+            // WorldItem — full options menu
+            if (currentlyLookedAtItem != null)
             {
-                Debug.Log($"[PlayerItemInteraction] OnContextMenuPressed called. Looking at item: {(currentlyLookedAtItem != null ? currentlyLookedAtItem.ItemDefinition.ItemName : "null")}");
+                if (debugMode)
+                    Debug.Log($"[PlayerItemInteraction] Context menu for item: {currentlyLookedAtItem.ItemDefinition.ItemName}");
+                ShowWorldItemContextMenu(currentlyLookedAtItem);
+                return;
             }
 
-            if (currentlyLookedAtItem == null) return;
-
-            ShowWorldItemContextMenu(currentlyLookedAtItem);
+            // WorldLootContainer — future options (Lock, Unlock, Bash, etc.)
+            if (currentlyLookedAtContainer != null)
+            {
+                if (debugMode)
+                    Debug.Log($"[PlayerItemInteraction] Context menu for container: {currentlyLookedAtContainer.DisplayName}");
+                ShowWorldContainerContextMenu(currentlyLookedAtContainer);
+                return;
+            }
         }
 
         private void ShowWorldItemContextMenu(WorldItem worldItem)
@@ -208,6 +268,20 @@ namespace TimeGame.Systems.Inventory
                 () => TryPickupItem(worldItem)
             ));
 
+            // Equip option — only shown if item has an equipment type and a compatible empty slot exists
+            InventoryItemSO itemDef = worldItem.ItemDefinition;
+            if (itemDef != null && itemDef.EquipmentType != ItemType.None)
+            {
+                EquipmentSlot targetSlot = FindEmptyCompatibleSlot(itemDef);
+                if (targetSlot != null)
+                {
+                    options.Add(new ContextMenuOption(
+                        "Equip",
+                        () => TryEquipFromWorld(worldItem, targetSlot)
+                    ));
+                }
+            }
+
             // Inspect option
             options.Add(new ContextMenuOption(
                 "Inspect",
@@ -216,6 +290,127 @@ namespace TimeGame.Systems.Inventory
 
             // Show menu at screen center (no cursor in world mode)
             InventoryContextMenu.ShowMenuInWorld(Input.mousePosition, options);
+        }
+
+        /// <summary>
+        /// Open a world loot container — forces this player's inventory screen up, then populates left panel.
+        /// InventoryUIController lives on the player prefab, so this is always the local player's UI.
+        /// WorldLootContainer.Open() has no knowledge of UI — clean separation.
+        /// </summary>
+        private void TryOpenContainer(WorldLootContainer container)
+        {
+            if (container == null) return;
+
+            // Step 1: Force this player's inventory open (enables cursor, disables movement)
+            if (inventoryUIController != null)
+                inventoryUIController.Open();
+
+            // Step 2: Populate the left panel with the container's compartments
+            container.Open();
+        }
+
+        /// <summary>
+        /// Context menu for world loot containers.
+        /// Currently a stub for future options (Lock, Unlock, Bash, Pick Lock, etc.)
+        /// </summary>
+        private void ShowWorldContainerContextMenu(WorldLootContainer container)
+        {
+            if (container == null) return;
+
+            var options = new System.Collections.Generic.List<ContextMenuOption>();
+
+            options.Add(new ContextMenuOption(
+                "Open",
+                () => TryOpenContainer(container)
+            ));
+
+            // Future options stubbed here:
+            // options.Add(new ContextMenuOption("Lock",      () => { }));
+            // options.Add(new ContextMenuOption("Unlock",    () => { }));
+            // options.Add(new ContextMenuOption("Bash Open", () => { }));
+            // options.Add(new ContextMenuOption("Pick Lock", () => { }));
+
+            InventoryContextMenu.ShowMenuInWorld(Input.mousePosition, options);
+        }
+
+        /// <summary>
+        /// Find the first unoccupied equipment slot that accepts this item's type.
+        /// Mirrors InventoryContextMenu.FindEmptyCompatibleSlot.
+        /// </summary>
+        private EquipmentSlot FindEmptyCompatibleSlot(InventoryItemSO itemDef)
+        {
+            // includeInactive: true — inventory panel is hidden while in world, slots are on inactive GameObjects
+            EquipmentSlot[] allSlots = FindObjectsOfType<EquipmentSlot>(true);
+            foreach (EquipmentSlot slot in allSlots)
+            {
+                if (!slot.IsOccupied && slot.CanAcceptItem(itemDef, GridDirection.Down, Vector2.zero))
+                    return slot;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Pick up a world item and route it directly into an equipment slot,
+        /// preserving ItemInstance and ContainerData lineage.
+        /// </summary>
+        private void TryEquipFromWorld(WorldItem worldItem, EquipmentSlot targetSlot)
+        {
+            if (worldItem == null || targetSlot == null) return;
+
+            InventoryContextMenu.HideMenu();
+
+            // Re-validate: slot may have become occupied since menu opened
+            if (targetSlot.IsOccupied)
+            {
+                Debug.LogWarning("[PlayerItemInteraction] Equip slot became occupied — falling back to Pick Up");
+                TryPickupItem(worldItem);
+                return;
+            }
+
+            InventoryItemSO itemDef    = worldItem.ItemDefinition;
+            ItemInstance    instance   = worldItem.ItemInstance;
+            ContainerItemData containerData = worldItem.ContainerData;
+
+            // Build a PlacedItem that carries the world item's full lineage
+            PlacedItem placedItem = new PlacedItem(
+                System.Guid.NewGuid(),
+                itemDef,
+                Vector2Int.zero,
+                GridDirection.Down
+            );
+
+            // Restore instance tracking (durability, uses, etc.)
+            if (instance != null)
+                placedItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
+
+            // Restore container inventory if this item provides storage
+            if (containerData != null && itemDef.ProvidesStorage)
+            {
+                InventorySystem containerInv = new InventorySystem(
+                    itemDef.StorageGridSize.x,
+                    itemDef.StorageGridSize.y,
+                    64f,
+                    Vector3.zero,
+                    itemDef.StorageMaxWeight
+                );
+                containerData.LoadIntoInventorySystem(containerInv, 0);
+                placedItem.ContainerInventory = containerInv;
+            }
+
+            bool equipped = targetSlot.TryPlaceExistingItem(placedItem, GridDirection.Down, Vector2.zero, out _);
+
+            if (equipped)
+            {
+                Debug.Log($"[PlayerItemInteraction] Equipped {itemDef.ItemName} from world directly into slot");
+                worldItem.OnPickedUp();
+                ClearCurrentTarget();
+            }
+            else
+            {
+                // Slot rejected the item (e.g. wrong type check failed) — fall back to regular pickup
+                Debug.LogWarning($"[PlayerItemInteraction] Equip failed for {itemDef.ItemName} — falling back to Pick Up");
+                TryPickupItem(worldItem);
+            }
         }
 
         #endregion
@@ -248,7 +443,7 @@ namespace TimeGame.Systems.Inventory
                 }
 
                 worldItem.OnPickedUp();
-                ClearCurrentItem();
+                ClearCurrentTarget();
             }
             else
             {
@@ -265,58 +460,73 @@ namespace TimeGame.Systems.Inventory
 
             var allGrids = inventoryManager.GetAllGrids();
 
+            // Step 1: Try merging into an existing stack first (all grids, before spawning new stacks)
+            // Covers both tracked items (individual instances) and non-tracked stackables (plain quantity)
+            if (item.IsStackable)
+            {
+                foreach (var grid in allGrids)
+                {
+                    if (grid == null) continue;
+
+                    foreach (GridPlacement.PlacedItem existingItem in grid.InventorySystem.GetAllItems())
+                    {
+                        if (existingItem.ItemDefinition != item) continue;
+                        if (existingItem.StackCount >= item.MaxStackSize) continue;
+
+                        if (instance != null && item.TrackIndividualItems)
+                        {
+                            // Tracked item — add the specific instance
+                            existingItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
+                        }
+                        else
+                        {
+                            // Non-tracked stackable — just increment the stack count
+                            existingItem.AddToStack(quantity);
+                        }
+
+                        grid.RefreshAllItemVisuals();
+                        return true;
+                    }
+                }
+            }
+
+            // Step 2: No existing stack — find a free position, trying all rotations if allowed
+            GridPlacement.GridDirection[] rotations = item.CanRotate
+                ? new[] { GridPlacement.GridDirection.Down, GridPlacement.GridDirection.Right, GridPlacement.GridDirection.Up, GridPlacement.GridDirection.Left }
+                : new[] { GridPlacement.GridDirection.Down };
+
             foreach (var grid in allGrids)
             {
                 if (grid == null) continue;
 
-                // For items with instances, try to merge with existing stacks first
-                if (instance != null && item.IsStackable && item.TrackIndividualItems)
+                foreach (GridPlacement.GridDirection rotation in rotations)
                 {
-                    // Look for existing stacks we can merge into
-                    foreach (GridPlacement.PlacedItem existingItem in grid.InventorySystem.GetAllItems())
-                    {
-                        if (existingItem.ItemDefinition == item && existingItem.StackCount < item.MaxStackSize)
-                        {
-                            // Found a stack with space - add our instance directly
-                            existingItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
-                            grid.RefreshAllItemVisuals();
-                            return true;
-                        }
-                    }
-                }
+                    Vector2Int? position = FindFirstAvailablePosition(grid, item, rotation);
+                    if (!position.HasValue) continue;
 
-                // No existing stack to merge into, or item doesn't have instance - create new stack
-                Vector2Int? position = FindFirstAvailablePosition(grid, item);
-
-                if (position.HasValue)
-                {
-                    // When we have an instance to provide, pass stackCount=0 to prevent
-                    // InitializeStack from creating a pristine instance. We'll add the real instance after.
-                    int stackCountToCreate = (instance != null) ? 0 : quantity;
+                    // Pass stackCount=0 when we have a real instance so InitializeStack
+                    // doesn't create a pristine duplicate — we attach the real one below.
+                    int stackCountToCreate = (instance != null && item.TrackIndividualItems) ? 0 : quantity;
 
                     bool success = grid.InventorySystem.TryAddItem(
                         item,
                         position.Value,
-                        GridPlacement.GridDirection.Down,
+                        rotation,
                         out GridPlacement.PlacedItem placedItem,
                         stackCountToCreate,
-                        allowAutoStack: false // Don't auto-stack - we already tried merging above
+                        allowAutoStack: false // already handled stacking in Step 1
                     );
 
-                    if (success)
+                    if (success && placedItem != null)
                     {
-                        // Add the actual instance from the world item
-                        if (instance != null && placedItem != null)
-                        {
+                        // Attach real instance if tracked
+                        if (instance != null && item.TrackIndividualItems)
                             placedItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
-                        }
 
-                        // Restore container inventory data if this is a container item
-                        if (containerData != null && item.ProvidesStorage && placedItem != null)
+                        // Restore container inventory if this is a container item
+                        if (containerData != null && item.ProvidesStorage)
                         {
-                            // Create inventory system for this container.
                             // CRITICAL: Use 64f — must match UI cell size so grid renders correctly
-                            // when this system is swapped into a grid visual via Initialize().
                             InventorySystem containerInv = new InventorySystem(
                                 item.StorageGridSize.x,
                                 item.StorageGridSize.y,
@@ -324,11 +534,7 @@ namespace TimeGame.Systems.Inventory
                                 Vector3.zero,
                                 item.StorageMaxWeight
                             );
-
-                            // Load saved items into container
                             containerData.LoadIntoInventorySystem(containerInv, 0);
-
-                            // Attach container inventory to the placed item
                             placedItem.ContainerInventory = containerInv;
                         }
 
@@ -341,15 +547,14 @@ namespace TimeGame.Systems.Inventory
             return false;
         }
 
-        private Vector2Int? FindFirstAvailablePosition(InventoryGridVisual grid, InventoryItemSO item)
+        private Vector2Int? FindFirstAvailablePosition(InventoryGridVisual grid, InventoryItemSO item, GridPlacement.GridDirection rotation)
         {
             if (grid == null || item == null) return null;
 
             int width = grid.InventorySystem.Width;
             int height = grid.InventorySystem.Height;
-            GridPlacement.GridDirection rotation = GridPlacement.GridDirection.Down;
 
-            int itemWidth = item.GetRotatedWidth(rotation);
+            int itemWidth  = item.GetRotatedWidth(rotation);
             int itemHeight = item.GetRotatedHeight(rotation);
 
             for (int y = 0; y <= height - itemHeight; y++)
@@ -357,11 +562,8 @@ namespace TimeGame.Systems.Inventory
                 for (int x = 0; x <= width - itemWidth; x++)
                 {
                     Vector2Int pos = new Vector2Int(x, y);
-
                     if (grid.InventorySystem.CanAddItem(item, pos, rotation))
-                    {
                         return pos;
-                    }
                 }
             }
 
