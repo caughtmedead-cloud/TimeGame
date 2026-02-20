@@ -36,6 +36,9 @@ namespace TimeGame.Inventory
         private bool isInventoryOpen = false;
         private PlayerInputActions inputActions;
         private bool cursorWasLocked = false;
+
+        // Public properties
+        public PlayerController PlayerController => playerController;
         
         #region Unity Lifecycle
         
@@ -169,6 +172,15 @@ namespace TimeGame.Inventory
         private void OnInventoryToggle(InputAction.CallbackContext context)
         {
             if (!IsOwner) return; // Only local player can toggle their inventory
+
+            // Don't open inventory if inspect panel is visible from world
+            // (The inspect panel will handle closing itself)
+            var inspectPanel = TimeGame.Systems.Inventory.UI.ItemInspectPanel.Instance;
+            if (inspectPanel != null && inspectPanel.IsVisible && !isInventoryOpen)
+            {
+                // Inspect panel is open from world - let it handle the Tab key
+                return;
+            }
             
             if (isInventoryOpen)
             {
@@ -187,7 +199,7 @@ namespace TimeGame.Inventory
         /// <summary>
         /// Opens the inventory UI and unlocks the cursor
         /// </summary>
-        private void OpenInventory()
+        public void OpenInventory()
         {
             if (!IsOwner) return;
             
@@ -235,6 +247,13 @@ namespace TimeGame.Inventory
             var dragHandler = TimeGame.Systems.Inventory.UI.InventoryDragHandler.Instance;
             if (dragHandler != null && dragHandler.IsDragging)
                 dragHandler.CancelDrag();
+
+            // Close the inspect panel if it's open
+            if (TimeGame.Systems.Inventory.UI.ItemInspectPanel.Instance != null && 
+                TimeGame.Systems.Inventory.UI.ItemInspectPanel.Instance.IsVisible)
+            {
+                TimeGame.Systems.Inventory.UI.ItemInspectPanel.Instance.Hide();
+            }
 
             // Close all floating container windows when inventory closes
             if (floatingWindowManager != null)

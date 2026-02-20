@@ -22,7 +22,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         // Current open container
         private LootContainer currentContainer;
-        private WorldLootContainer currentWorldContainer; // The world object that owns currentContainer
+        private object currentContainerSource; // The world object that owns currentContainer (WorldLootContainer or WorldContainer)
         private List<InventoryGridVisual> currentContainerGrids = new List<InventoryGridVisual>();
 
         /// <summary>
@@ -59,9 +59,9 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Open a loot container and spawn its grids.
-        /// Pass the WorldLootContainer source so it can be notified when the panel closes.
+        /// Pass the source object (WorldLootContainer or WorldContainer) so it can be notified when the panel closes.
         /// </summary>
-        public void OpenContainer(LootContainer container, WorldLootContainer source = null)
+        public void OpenContainer(LootContainer container, object source = null)
         {
             if (container == null)
             {
@@ -76,7 +76,7 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             currentContainer      = container;
-            currentWorldContainer = source;
+            currentContainerSource = source;
 
             // Show left panel
             if (leftPanelRoot != null)
@@ -89,7 +89,7 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Close the currently open container and notify the WorldLootContainer source.
+        /// Close the currently open container and notify the source object.
         /// </summary>
         public void CloseContainer()
         {
@@ -106,10 +106,17 @@ namespace TimeGame.Systems.Inventory.UI
             currentContainerGrids.Clear();
             currentContainer = null;
 
-            // Notify the world object so it resets isCurrentlyOpen
-            WorldLootContainer worldContainer = currentWorldContainer;
-            currentWorldContainer = null;
-            worldContainer?.Close();
+            // Notify the world object so it resets isCurrentlyOpen and saves data
+            // Use dynamic invocation to call Close() on either WorldLootContainer or WorldContainer
+            object source = currentContainerSource;
+            currentContainerSource = null;
+
+            if (source != null)
+            {
+                // Try to call Close() via reflection - works for both WorldLootContainer and WorldContainer
+                var closeMethod = source.GetType().GetMethod("Close", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                closeMethod?.Invoke(source, null);
+            }
 
             // Hide left panel
             if (leftPanelRoot != null)

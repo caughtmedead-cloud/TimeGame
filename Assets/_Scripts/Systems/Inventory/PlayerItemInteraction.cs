@@ -262,13 +262,7 @@ namespace TimeGame.Systems.Inventory
             // Build context menu options for world item
             var options = new System.Collections.Generic.List<ContextMenuOption>();
 
-            // Pick Up option
-            options.Add(new ContextMenuOption(
-                "Pick Up",
-                () => TryPickupItem(worldItem)
-            ));
-
-            // Equip option — only shown if item has an equipment type and a compatible empty slot exists
+            // Equip option (first) — only shown if item has an equipment type and a compatible empty slot exists
             InventoryItemSO itemDef = worldItem.ItemDefinition;
             if (itemDef != null && itemDef.EquipmentType != ItemType.None)
             {
@@ -282,10 +276,26 @@ namespace TimeGame.Systems.Inventory
                 }
             }
 
-            // Inspect option
+            // Open option (second) — for dropped containers (backpacks, bags, etc.)
+            WorldContainer worldContainer = worldItem.GetComponent<WorldContainer>();
+            if (worldContainer != null)
+            {
+                options.Add(new ContextMenuOption(
+                    "Open",
+                    () => OpenWorldContainer(worldContainer)
+                ));
+            }
+
+            // Pick Up option (third - always available)
+            options.Add(new ContextMenuOption(
+                "Pick Up",
+                () => TryPickupItem(worldItem)
+            ));
+
+            // Inspect option (last)
             options.Add(new ContextMenuOption(
                 "Inspect",
-                () => Debug.Log($"[WorldItem] Inspecting: {worldItem.ItemDefinition.ItemName}")
+                () => InspectWorldItem(worldItem)
             ));
 
             // Show menu at screen center (no cursor in world mode)
@@ -410,6 +420,49 @@ namespace TimeGame.Systems.Inventory
                 // Slot rejected the item (e.g. wrong type check failed) — fall back to regular pickup
                 Debug.LogWarning($"[PlayerItemInteraction] Equip failed for {itemDef.ItemName} — falling back to Pick Up");
                 TryPickupItem(worldItem);
+            }
+        }
+
+        private void OpenWorldContainer(WorldContainer worldContainer)
+        {
+            if (worldContainer == null) return;
+
+            InventoryContextMenu.HideMenu();
+
+            // Open the container in the left panel
+            worldContainer.Open();
+
+            // Force open inventory UI so player can see both panels
+            if (inventoryUIController != null)
+            {
+                inventoryUIController.OpenInventory();
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerItemInteraction] InventoryUIController is null - cannot open inventory UI!");
+            }
+
+            if (debugMode)
+            {
+                Debug.Log($"[PlayerItemInteraction] Opened world container: {worldContainer.DisplayName}");
+            }
+        }
+
+        private void InspectWorldItem(WorldItem worldItem)
+        {
+            if (worldItem == null || worldItem.ItemDefinition == null) return;
+
+            InventoryContextMenu.HideMenu();
+
+            if (ItemInspectPanel.Instance != null)
+            {
+                // Show inspect panel with player control management
+                ItemInspectPanel.Instance.Show(worldItem.ItemDefinition, null, disablePlayerControls: true);
+
+                if (debugMode)
+                {
+                    Debug.Log($"[PlayerItemInteraction] Inspecting world item: {worldItem.ItemDefinition.ItemName}");
+                }
             }
         }
 

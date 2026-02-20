@@ -579,9 +579,16 @@ namespace TimeGame.Systems.Inventory.UI
             itemVisuals[placedItem.InstanceID] = visual;
             visualObj.name = $"Item_{itemDef.ItemName}_{placedItem.InstanceID}";
 
+            // CRITICAL: Set sibling index based on Y position (lower Y = earlier in hierarchy)
+            // This ensures items at the bottom of the grid get raycast priority over items above them
+            // Formula: items with HIGHER Y values should be LATER in sibling order (rendered on top)
+            // Since grid Y increases upward, we want higher Y = higher sibling index
+            int targetSiblingIndex = placedItem.AnchorPosition.y * gridWidth + placedItem.AnchorPosition.x;
+            visualObj.transform.SetSiblingIndex(targetSiblingIndex);
+
             if (enableDebugLogging)
             {
-                Debug.Log($"[InventoryGridVisual] Spawned visual for {itemDef.ItemName} at {placedItem.AnchorPosition}");
+                Debug.Log($"[InventoryGridVisual] Spawned visual for {itemDef.ItemName} at {placedItem.AnchorPosition}, siblingIndex={targetSiblingIndex}");
             }
         }
 

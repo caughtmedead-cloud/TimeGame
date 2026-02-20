@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.02
   subtype: freeProjectFiles
-  lastShownTimestamp: 1771409605
+  lastShownTimestamp: 1771498170
   lastUpdateResponse:
     version: 1.02
     versionUrl: https://unitycodemonkey.com
     enabled: 0
-  checkedLastUpdateTimestamp: 1771409606
+  checkedLastUpdateTimestamp: 1771498171
   lastQOTDResponse:
     questionId: 273
     questionText: When you create a new script, do you always have to extend MonoBehaviour?
@@ -28,27 +28,27 @@ MonoBehaviour:
     answerC: Only if you want to use it as a Game Object Component
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1771409606
+  lastQotdTimestamp: 1771498171
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/gameDevReport_2.png
     topText: Stay up to date with the latest in Game Dev straight to your inbox!
     topLink: gamedevreport
     bottomText: My 10+ Years of C# Knowledge in 1 Course!
     bottomLink: csharpcourse
-  lastDynamicHeaderTimestamp: 1771409606
+  lastDynamicHeaderTimestamp: 1771498171
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freeprojectfiles">Browse all the FREE Project
       Files! Click Here!</a><br><a href="https://cmonkey.co/freecourses">Check out
       all my FREE courses! Click Here!</a>
-  websiteLatestMessageTimestamp: 1771409606
+  websiteLatestMessageTimestamp: 1771498171
   websiteLatestVideos:
     videos:
+    - youTubeId: qzfsN2tm9ss
+      title: Add Photo Mode to your Games! (FREE Download, Players will LOVE it!)
     - youTubeId: cYM059zGSrs
       title: 100 Steam Game Marketing Questions Answered to help you find SUCCESS!
     - youTubeId: PBDBKTwZI8Y
       title: TOP 10 FREE NEW Assets FEBRUARY 2026!
     - youTubeId: Vb5BZu7TOIk
       title: 8 QUICK Game Dev Tips for SUCCESS!
-    - youTubeId: 4cG_gdjQ4no
-      title: TOP 10 NEW Games, Made with Unity! (JANUARY 2026)
-  websiteLatestVideosTimestamp: 1771409606
+  websiteLatestVideosTimestamp: 1771498171

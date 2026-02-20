@@ -57,6 +57,12 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2     lastDragPos;
         private float       yawVelocity;   // deg/s spin carried by inertia
         private float       currentYaw;
+        private float       currentPitch;
+        private const float MaxPitch = 80f; // limit vertical rotation
+
+        // Player control state tracking
+        private bool        shouldRestorePlayerControls = false;
+        private bool        cursorWasLockedBeforeInspect = false;
 
         // Resize state — proportional: both axes scale together
         private bool        isResizing       = false;
@@ -68,12 +74,6 @@ namespace TimeGame.Systems.Inventory.UI
         private bool        isDraggingWindow = false;
         private Vector2     windowDragOffset;
         private RectTransform topBarRT;      // used for drag hit-test
-
-        // Font scaling — all TMP labels rescale live as the window is resized
-        // Reference window width (in canvas pixels) at which base font sizes were designed.
-        private const float ReferenceFontWindowWidth = 900f;
-        private readonly System.Collections.Generic.List<(TextMeshProUGUI tmp, float baseSize)>
-            scaledTexts = new();
 
         // 3-D preview
         private Camera      previewCamera;
@@ -158,15 +158,21 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (!isVisible) return;
 
-            // ESC to close
+            // ESC always closes
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 Hide();
                 return;
             }
 
+            // Tab closes only when opened from world (to prevent interfering with inventory toggle)
+            if (shouldRestorePlayerControls && Input.GetKeyDown(KeyCode.Tab))
+            {
+                Hide();
+                return;
+            }
+
             TickModelRotation();
-            TickFontScale();
         }
 
         private void OnDestroy()
@@ -179,6 +185,17 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>Show the panel for an inventory item (optionally with instance data).</summary>
         public void Show(InventoryItemSO itemDef, GridPlacement.PlacedItem placedItem = null)
+        {
+            Show(itemDef, placedItem, false);
+        }
+
+        /// <summary>
+        /// Show the panel for an inventory item with optional player control management.
+        /// </summary>
+        /// <param name="itemDef">The item definition to display</param>
+        /// <param name="placedItem">Optional instance data</param>
+        /// <param name="disablePlayerControls">If true, disables player controls and tracks cursor state</param>
+        public void Show(InventoryItemSO itemDef, GridPlacement.PlacedItem placedItem, bool disablePlayerControls)
         {
             if (itemDef == null) return;
 
@@ -193,6 +210,23 @@ namespace TimeGame.Systems.Inventory.UI
             gameObject.SetActive(true);
             isVisible = true;
 
+            // Track whether we should restore controls on close
+            shouldRestorePlayerControls = disablePlayerControls;
+            if (disablePlayerControls)
+            {
+                cursorWasLockedBeforeInspect = Cursor.lockState == CursorLockMode.Locked;
+                
+                // Actually disable player controls and unlock cursor
+                var inventoryController = FindObjectOfType<TimeGame.Inventory.InventoryUIController>();
+                if (inventoryController != null && inventoryController.PlayerController != null)
+                {
+                    inventoryController.PlayerController.enabled = false;
+                }
+                
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+
             // Enable interaction now that the panel is open
             panelCanvasGroup.blocksRaycasts = true;
             panelCanvasGroup.interactable   = true;
@@ -202,6 +236,7 @@ namespace TimeGame.Systems.Inventory.UI
 
             // Reset rotation
             currentYaw   = 0f;
+            currentPitch = 0f;
             yawVelocity  = 0f;
             if (modelRoot != null)
                 modelRoot.transform.localRotation = Quaternion.identity;
@@ -222,6 +257,13 @@ namespace TimeGame.Systems.Inventory.UI
             panelCanvasGroup.blocksRaycasts = false;
             panelCanvasGroup.interactable   = false;
 
+            // Restore player controls if we disabled them
+            if (shouldRestorePlayerControls)
+            {
+                RestorePlayerControls();
+                shouldRestorePlayerControls = false;
+            }
+
             panelCanvasGroup.DOFade(0f, 0.15f).OnComplete(() =>
             {
                 DestroyPreviewModel();
@@ -230,6 +272,26 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         public bool IsVisible => isVisible;
+
+        /// <summary>
+        /// Restore player controls and cursor state after inspecting from world.
+        /// </summary>
+        private void RestorePlayerControls()
+        {
+            // Find the local player's inventory UI controller
+            var inventoryController = FindObjectOfType<TimeGame.Inventory.InventoryUIController>();
+            if (inventoryController != null && inventoryController.PlayerController != null)
+            {
+                inventoryController.PlayerController.enabled = true;
+            }
+
+            // Restore cursor state
+            if (cursorWasLockedBeforeInspect)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+        }
 
         /// <summary>
         /// Apply a font to all TMP components on the panel.
@@ -428,7 +490,7 @@ namespace TimeGame.Systems.Inventory.UI
                 currentYaw += effectiveSpin * Time.deltaTime;
             }
 
-            modelRoot.transform.localRotation = Quaternion.Euler(0f, currentYaw, 0f);
+            modelRoot.transform.localRotation = Quaternion.Euler(currentPitch, currentYaw, 0f);
 
             // Manually render to the RT each frame (camera.enabled = false intentionally)
             previewCamera.Render();
@@ -446,10 +508,19 @@ namespace TimeGame.Systems.Inventory.UI
         {
             if (!isDraggingModel) return;
 
-            float delta = (eventData.position.x - lastDragPos.x) * dragSensitivity;
-            currentYaw    += delta;
-            yawVelocity    = delta / Mathf.Max(Time.deltaTime, 0.0001f);
-            lastDragPos    = eventData.position;
+            // Horizontal movement rotates around Y axis (yaw)
+            // Negate to make dragging right rotate the model right (feels natural)
+            float deltaX = -(eventData.position.x - lastDragPos.x) * dragSensitivity;
+            currentYaw += deltaX;
+            yawVelocity = deltaX / Mathf.Max(Time.deltaTime, 0.0001f);
+
+            // Vertical movement rotates around X axis (pitch)
+            // Negate so dragging up tilts the model up (feels natural)
+            float deltaY = -(eventData.position.y - lastDragPos.y) * dragSensitivity;
+            currentPitch += deltaY;
+            currentPitch = Mathf.Clamp(currentPitch, -MaxPitch, MaxPitch);
+
+            lastDragPos = eventData.position;
         }
 
         private void OnPreviewEndDrag(PointerEventData eventData)
@@ -524,44 +595,10 @@ namespace TimeGame.Systems.Inventory.UI
 
         // ── Font scaling ──────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Register a TMP label so its font size scales proportionally when the window is resized.
-        /// Call immediately after creating the label. baseSize is the size at ReferenceFontWindowWidth.
-        /// </summary>
-        private TextMeshProUGUI RegisterScaled(TextMeshProUGUI tmp, float baseSize)
-        {
-            tmp.fontSize = baseSize; // set immediately
-            scaledTexts.Add((tmp, baseSize));
-            return tmp;
-        }
-
-        /// <summary>Called every frame while visible — rescales all registered labels to window width.</summary>
-        private void TickFontScale()
-        {
-            if (windowRT == null || scaledTexts.Count == 0) return;
-            float scale = windowRT.sizeDelta.x / ReferenceFontWindowWidth;
-            scale = Mathf.Max(scale, 0.5f); // never smaller than half
-            foreach (var (tmp, baseSize) in scaledTexts)
-            {
-                if (tmp != null)
-                    tmp.fontSize = baseSize * scale;
-            }
-        }
-
         // ── Stats population ──────────────────────────────────────────────────
-
-        // Index into scaledTexts at which the static (BuildUI) entries end.
-        // Everything at or above this index is dynamic (per-Show stat rows)
-        // and must be removed before PopulateStats destroys the old row GameObjects.
-        private int staticScaledTextsCount = -1; // -1 = not set yet
 
         private void PopulateStats(InventoryItemSO itemDef, GridPlacement.PlacedItem placedItem)
         {
-            // Remove dynamic TMP registrations from previous Show() call so we don't
-            // accumulate stale null entries in scaledTexts every time the panel opens.
-            if (staticScaledTextsCount >= 0 && scaledTexts.Count > staticScaledTextsCount)
-                scaledTexts.RemoveRange(staticScaledTextsCount, scaledTexts.Count - staticScaledTextsCount);
-
             // Title
             titleText.text = itemDef.ItemName;
 
@@ -632,14 +669,14 @@ namespace TimeGame.Systems.Inventory.UI
             row.transform.SetParent(statsScrollContent.transform, false);
 
             LayoutElement le = row.AddComponent<LayoutElement>();
-            le.preferredHeight = 28f;
+            le.preferredHeight = 34f;
             le.flexibleWidth   = 1f;
 
             // Faint separator line
             Image bg = row.AddComponent<Image>();
             bg.color = new Color(1f, 1f, 1f, 0.06f);
 
-            TextMeshProUGUI txt = CreateChildTMP(row, "DividerText", 13f);
+            TextMeshProUGUI txt = CreateChildTMP(row, "DividerText", 18f);
             txt.text      = label;
             txt.fontStyle = FontStyles.Bold;
             txt.color     = new Color(0.65f, 0.65f, 0.65f);
@@ -653,11 +690,11 @@ namespace TimeGame.Systems.Inventory.UI
             row.transform.SetParent(statsScrollContent.transform, false);
 
             LayoutElement le = row.AddComponent<LayoutElement>();
-            le.preferredHeight = 24f;
+            le.preferredHeight = 30f;
             le.flexibleWidth   = 1f;
 
             // Label (left)
-            TextMeshProUGUI labelTMP = CreateChildTMP(row, "Label", 15f);
+            TextMeshProUGUI labelTMP = CreateChildTMP(row, "Label", 19f);
             labelTMP.text      = label;
             labelTMP.color     = new Color(0.65f, 0.65f, 0.65f);
             labelTMP.alignment = TextAlignmentOptions.MidlineLeft;
@@ -668,7 +705,7 @@ namespace TimeGame.Systems.Inventory.UI
             lRT.offsetMax      = Vector2.zero;
 
             // Value (right)
-            TextMeshProUGUI valueTMP = CreateChildTMP(row, "Value", 15f);
+            TextMeshProUGUI valueTMP = CreateChildTMP(row, "Value", 19f);
             valueTMP.text      = value;
             valueTMP.color     = Color.white;
             valueTMP.alignment = TextAlignmentOptions.MidlineRight;
@@ -688,11 +725,11 @@ namespace TimeGame.Systems.Inventory.UI
             row.transform.SetParent(statsScrollContent.transform, false);
 
             LayoutElement le = row.AddComponent<LayoutElement>();
-            le.preferredHeight = 28f;
+            le.preferredHeight = 34f;
             le.flexibleWidth   = 1f;
 
             // Label
-            TextMeshProUGUI labelTMP = CreateChildTMP(row, "Label", 15f);
+            TextMeshProUGUI labelTMP = CreateChildTMP(row, "Label", 19f);
             labelTMP.text      = "Durability";
             labelTMP.color     = new Color(0.65f, 0.65f, 0.65f);
             labelTMP.alignment = TextAlignmentOptions.MidlineLeft;
@@ -729,7 +766,7 @@ namespace TimeGame.Systems.Inventory.UI
             fillRT.offsetMax = Vector2.zero;
 
             // Numeric value
-            TextMeshProUGUI valueTMP = CreateChildTMP(row, "Value", 15f);
+            TextMeshProUGUI valueTMP = CreateChildTMP(row, "Value", 19f);
             valueTMP.text      = $"{durability:0}%";
             valueTMP.color     = Color.white;
             valueTMP.alignment = TextAlignmentOptions.MidlineRight;
@@ -745,15 +782,15 @@ namespace TimeGame.Systems.Inventory.UI
         /// Pass baseSize = the desired font size at the reference window width (900px canvas units).
         /// All dynamic text in this panel goes through this helper.
         /// </summary>
-        private TextMeshProUGUI CreateChildTMP(GameObject parent, string objName, float baseSize = 13f)
+        private TextMeshProUGUI CreateChildTMP(GameObject parent, string objName, float fontSize = 13f)
         {
             GameObject go = new GameObject(objName);
             go.transform.SetParent(parent.transform, false);
             TextMeshProUGUI tmp = go.AddComponent<TextMeshProUGUI>();
             tmp.raycastTarget      = false;
             tmp.enableWordWrapping = false;
+            tmp.fontSize           = fontSize;
 
-            // Apply shared font if available
             if (uiFont != null)
                 tmp.font = uiFont;
 
@@ -763,8 +800,6 @@ namespace TimeGame.Systems.Inventory.UI
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
 
-            // Register for live scaling
-            RegisterScaled(tmp, baseSize);
             return tmp;
         }
 
@@ -875,31 +910,31 @@ namespace TimeGame.Systems.Inventory.UI
             topEndDrag.callback.AddListener(e => OnWindowDragEnd((PointerEventData)e));
             topDragET.triggers.Add(topEndDrag);
 
-            // Title text — base size 20pt (scales with window width)
+            // Title text — fixed size 20pt
             GameObject titleGO = new GameObject("Title");
             titleGO.transform.SetParent(topBar.transform, false);
             titleText           = titleGO.AddComponent<TextMeshProUGUI>();
             titleText.fontStyle = FontStyles.Bold;
+            titleText.fontSize  = 20f;
             titleText.color     = Color.white;
             titleText.alignment = TextAlignmentOptions.MidlineLeft;
             titleText.raycastTarget = false;
             if (uiFont != null) titleText.font = uiFont;
-            RegisterScaled(titleText, 20f);
             RectTransform titleRT = titleText.rectTransform;
             titleRT.anchorMin = new Vector2(0f, 0f);
             titleRT.anchorMax = new Vector2(0.65f, 1f);
             titleRT.offsetMin = new Vector2(14f, 0f);
             titleRT.offsetMax = Vector2.zero;
 
-            // Rarity badge — base size 13pt
+            // Rarity badge — fixed size 13pt
             GameObject rarityGO = new GameObject("Rarity");
             rarityGO.transform.SetParent(topBar.transform, false);
             rarityText           = rarityGO.AddComponent<TextMeshProUGUI>();
             rarityText.fontStyle = FontStyles.Bold;
+            rarityText.fontSize  = 13f;
             rarityText.alignment = TextAlignmentOptions.MidlineRight;
             rarityText.raycastTarget = false;
             if (uiFont != null) rarityText.font = uiFont;
-            RegisterScaled(rarityText, 13f);
             RectTransform rarityRT = rarityText.rectTransform;
             rarityRT.anchorMin = new Vector2(0.65f, 0f);
             rarityRT.anchorMax = new Vector2(0.88f, 1f);
@@ -907,7 +942,7 @@ namespace TimeGame.Systems.Inventory.UI
             rarityRT.offsetMax = Vector2.zero;
 
             // Close button — square, right-anchored
-            const float closeBtnW = 48f;
+            const float closeBtnW = 36f;
             GameObject closeGO  = new GameObject("CloseButton");
             closeGO.transform.SetParent(topBar.transform, false);
             Button closeBtn     = closeGO.AddComponent<Button>();
@@ -928,9 +963,9 @@ namespace TimeGame.Systems.Inventory.UI
             }
             else
             {
-                // Fallback: red button with ✕ text
-                closeBg.color = new Color(0.7f, 0.15f, 0.15f, 0.85f);
-                TextMeshProUGUI closeTxt = CreateChildTMP(closeGO, "X", 18f);
+                // Fallback: dark red button with ✕ text (#401717)
+                closeBg.color = new Color(0x40 / 255f, 0x17 / 255f, 0x17 / 255f, 1f);
+                TextMeshProUGUI closeTxt = CreateChildTMP(closeGO, "X", 16f);
                 closeTxt.text      = "✕";
                 closeTxt.color     = Color.white;
                 closeTxt.alignment = TextAlignmentOptions.Center;
@@ -939,8 +974,8 @@ namespace TimeGame.Systems.Inventory.UI
             closeBtn.onClick.AddListener(Hide);
             ColorBlock cb      = closeBtn.colors;
             cb.normalColor     = Color.white;
-            cb.highlightedColor = new Color(1.25f, 0.6f, 0.6f);
-            cb.pressedColor    = new Color(0.7f, 0.1f, 0.1f);
+            cb.highlightedColor = new Color(1.2f, 0.5f, 0.5f);
+            cb.pressedColor    = new Color(0.6f, 0.1f, 0.1f);
             closeBtn.colors    = cb;
             closeBtn.targetGraphic = closeBg;
 
@@ -980,6 +1015,7 @@ namespace TimeGame.Systems.Inventory.UI
             previewImage         = rawImgGO.AddComponent<RawImage>();
             previewImage.texture = previewRT;
             previewImage.color   = Color.white;
+            previewImage.raycastTarget = true;
 
             RectTransform rawRT  = previewImage.rectTransform;
             rawRT.anchorMin      = new Vector2(0.05f, 0.05f);
@@ -1007,11 +1043,11 @@ namespace TimeGame.Systems.Inventory.UI
             hintGO.transform.SetParent(leftPanel.transform, false);
             TextMeshProUGUI hint = hintGO.AddComponent<TextMeshProUGUI>();
             hint.text      = "drag to rotate";
+            hint.fontSize  = 11f;
             hint.color     = new Color(1f, 1f, 1f, 0.28f);
             hint.alignment = TextAlignmentOptions.BottomRight;
             hint.raycastTarget = false;
             if (uiFont != null) hint.font = uiFont;
-            RegisterScaled(hint, 11f);
             RectTransform hintRT = hint.rectTransform;
             hintRT.anchorMin = new Vector2(0f, 0f);
             hintRT.anchorMax = new Vector2(1f, 0f);
@@ -1034,12 +1070,12 @@ namespace TimeGame.Systems.Inventory.UI
             GameObject descGO   = new GameObject("Description");
             descGO.transform.SetParent(rightPanel.transform, false);
             descriptionText     = descGO.AddComponent<TextMeshProUGUI>();
+            descriptionText.fontSize       = 18f;
             descriptionText.color          = new Color(0.75f, 0.75f, 0.75f);
             descriptionText.alignment      = TextAlignmentOptions.TopLeft;
             descriptionText.enableWordWrapping = true;
             descriptionText.raycastTarget  = false;
             if (uiFont != null) descriptionText.font = uiFont;
-            RegisterScaled(descriptionText, 14f);
             RectTransform descRT           = descriptionText.rectTransform;
             descRT.anchorMin               = new Vector2(0f, 1f);
             descRT.anchorMax               = new Vector2(1f, 1f);
@@ -1103,8 +1139,8 @@ namespace TimeGame.Systems.Inventory.UI
             vlg.childControlHeight        = true;
             vlg.childForceExpandWidth     = true;
             vlg.childForceExpandHeight    = false;
-            vlg.spacing                   = 1f;
-            vlg.padding                   = new RectOffset(0, 0, 4, 4);
+            vlg.spacing                   = 4f;
+            vlg.padding                   = new RectOffset(0, 0, 8, 8);
 
             ContentSizeFitter csf         = scrollContent.AddComponent<ContentSizeFitter>();
             csf.verticalFit               = ContentSizeFitter.FitMode.PreferredSize;
@@ -1117,10 +1153,6 @@ namespace TimeGame.Systems.Inventory.UI
 
             // ── Resize handle (bottom-right corner of window) ─────────────────
             AddResizeHandle(window);
-
-            // Record how many scaledTexts entries are "static" (created by BuildUI).
-            // PopulateStats will trim everything beyond this point on each Show() call.
-            staticScaledTextsCount = scaledTexts.Count;
         }
 
         /// <summary>
@@ -1151,7 +1183,7 @@ namespace TimeGame.Systems.Inventory.UI
             // ⇲ icon / custom sprite on a child
             GameObject iconGO = new GameObject("ResizeIcon");
             iconGO.transform.SetParent(handle.transform, false);
-            RectTransform iconRT = iconGO.GetComponent<RectTransform>() ?? iconGO.AddComponent<RectTransform>();
+            RectTransform iconRT = iconGO.AddComponent<RectTransform>();
             iconRT.anchorMin = Vector2.zero;
             iconRT.anchorMax = Vector2.one;
             iconRT.offsetMin = Vector2.zero;

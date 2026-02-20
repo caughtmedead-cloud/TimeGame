@@ -57,7 +57,11 @@ namespace TimeGame.Systems.Inventory
         public int Quantity => quantity;
         public float InteractionRange => interactionRange;
         public ItemInstance ItemInstance => itemInstance;
-        public ContainerItemData ContainerData => containerData;
+        public ContainerItemData ContainerData 
+        { 
+            get => containerData;
+            internal set => containerData = value; // Allow WorldContainer to save data back
+        }
 
         #endregion
 
@@ -159,6 +163,13 @@ namespace TimeGame.Systems.Inventory
             }
 
             worldItem.Initialize(itemDef, qty, instance, containerData);
+
+            // WORLD CONTAINER: Automatically add WorldContainer component for storage items
+            if (itemDef.ProvidesStorage)
+            {
+                obj.AddComponent<WorldContainer>();
+            }
+
             return worldItem;
         }
 

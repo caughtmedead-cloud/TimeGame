@@ -442,17 +442,19 @@ namespace TimeGame.Systems.Inventory.UI
                                         itemAtPosition.AddToStack(actualAdded);
                                         Debug.LogWarning($"[InventoryDragHandler] TRACKED MERGE (fallback): Created {actualAdded} new pristine instances");
                                     }
-
-                                    // NOW remove the original item (after we've captured its instances)
-                                    if (!isStackSplit && originalGrid != null)
-                                    {
-                                        originalGrid.InventorySystem.RemoveItem(itemInstanceID);
-                                    }
                                 }
                                 else
                                 {
                                     // HOMOGENEOUS STACKS: Just add count
                                     itemAtPosition.AddToStack(actualAdded);
+                                }
+
+                                // CRITICAL FIX: Remove the original item for BOTH tracked AND homogeneous stacks
+                                // This was previously only inside the tracked stack block, causing homogeneous
+                                // stack duplication when merging!
+                                if (!isStackSplit && originalGrid != null)
+                                {
+                                    originalGrid.InventorySystem.RemoveItem(itemInstanceID);
                                 }
 
                                 dropped = true;

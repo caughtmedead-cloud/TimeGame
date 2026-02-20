@@ -85,8 +85,10 @@ namespace TimeGame.Systems.Inventory.UI
             visualTransform.pivot = new Vector2(0.5f, 0.5f);
             
             // Create BACKGROUND GameObject (white tile - renders BEHIND icon, only visible during drag)
+            // CRITICAL: Parent to ROOT transform (NOT visualTransform) so it NEVER rotates
+            // The raycast area must always match the grid-aligned outer rect, not the rotated visual
             GameObject backgroundObj = new GameObject("DragPreview_Background");
-            backgroundObj.transform.SetParent(visualTransform, false);
+            backgroundObj.transform.SetParent(transform, false); // <- PARENT TO ROOT, NOT visualTransform!
             
             RectTransform backgroundRT = backgroundObj.AddComponent<RectTransform>();
             backgroundRT.anchorMin = Vector2.zero;
@@ -97,7 +99,7 @@ namespace TimeGame.Systems.Inventory.UI
             
             backgroundImage = backgroundObj.AddComponent<Image>();
             // Always enabled and transparent — this is the ACTUAL raycast hit area for drag.
-            // Kept cell-sized so clicks outside the cell footprint are never detected.
+            // Kept grid-aligned so clicks outside the cell footprint are never detected.
             backgroundImage.color = Color.clear;
             backgroundImage.raycastTarget = true;
             backgroundImage.enabled = true;

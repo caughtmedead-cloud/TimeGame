@@ -9,9 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2740d6e09bde6a241b4a90df4a5bef2a, type: 3}
-  m_Name: PerfectShot - Photos Profile
+  m_Script: {fileID: 11500000, guid: c0011418c9d75434988a06b6df93b283, type: 3}
+  m_Name: ParrelSyncProjectSettings
   m_EditorClassIdentifier: 
-  photos:
-  - {fileID: 2800000, guid: 195d7e8b0ead48841b2a8a0078a90be0, type: 3}
-  counter: 11
+  m_OptionalSymbolicLinkFolders: []

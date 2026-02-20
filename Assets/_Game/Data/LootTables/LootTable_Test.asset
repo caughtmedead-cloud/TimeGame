@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9aec00df00266f7429b9f5e9e9d8869e, type: 3}
   m_Name: LootTable_Test
   m_EditorClassIdentifier: 
-  rollCount: 5
+  rollCount: 8
   allowDuplicates: 1
   placementMode: 0
   entries:
   - item: {fileID: 11400000, guid: 231699b592ae08a45a5025ce6c888e6f, type: 2}
     weight: 1
     minQuantity: 1
-    maxQuantity: 2
+    maxQuantity: 10
     compartmentIndex: 0
     spillToOtherCompartments: 1
   - item: {fileID: 11400000, guid: cfbf87991d2121e4095add2ac6a01723, type: 2}
@@ -38,5 +38,17 @@ MonoBehaviour:
     weight: 1
     minQuantity: 0
     maxQuantity: 2
+    compartmentIndex: 0
+    spillToOtherCompartments: 1
+  - item: {fileID: 11400000, guid: e2869b5fd4678774d802733942d58e73, type: 2}
+    weight: 1
+    minQuantity: 0
+    maxQuantity: 10
+    compartmentIndex: 0
+    spillToOtherCompartments: 1
+  - item: {fileID: 11400000, guid: 21370374b9290db40b6a2d21c79caa85, type: 2}
+    weight: 1
+    minQuantity: 0
+    maxQuantity: 5
     compartmentIndex: 0
     spillToOtherCompartments: 1

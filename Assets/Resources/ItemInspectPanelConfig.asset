@@ -21,9 +21,9 @@ MonoBehaviour:
   minWindowSize: {x: 500, y: 380}
   maxWindowSize: {x: 1600, y: 1000}
   cameraDistance: 2.5
-  cameraFOV: 40
+  cameraFOV: 15
   cameraElevation: 15
   previewResolution: 1024
   dragSensitivity: 0.4
   inertiaDamping: 8
-  autoSpinSpeed: 20
+  autoSpinSpeed: 30

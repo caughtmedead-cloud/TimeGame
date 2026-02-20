@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 612e636300a15fe4998fed0ad3bfb446, type: 3}
+  m_Name: Wires
+  m_EditorClassIdentifier: 
+  ItemName: Wires
+  Width: 1
+  Height: 1
+  CanRotate: 1
+  ItemIcon: {fileID: 21300000, guid: b1d0fa2afb966bd4a91594be1b47a215, type: 3}
+  Description: Old cables still in good shape.
+  IsStackable: 1
+  MaxStackSize: 4
+  TrackIndividualItems: 0
+  HasLimitedUses: 0
+  MaxUses: 1
+  EquipmentType: 0
+  Category: 6
+  Rarity: 1
+  Weight: 0.25
+  Value: 50
+  ProvidesStorage: 0
+  StorageGridSize: {x: 6, y: 4}
+  StorageMaxWeight: 20
+  WorldItemPrefab: {fileID: 3794206052468870254, guid: f0d14c7a7a85fdd45bc397e8f0fe74a4, type: 3}

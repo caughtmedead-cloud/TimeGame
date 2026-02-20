@@ -130,6 +130,10 @@ namespace TimeGame.Systems.Inventory
             if (entry.item == null) return false;
 
             int qty = entry.GetQuantity();
+            
+            // CRITICAL FIX: Respect MaxStackSize when spawning loot
+            // If quantity exceeds max stack size, we need to create multiple stacks
+            int remainingQty = qty;
 
             // Try all rotations if item supports it
             GridPlacement.GridDirection[] rotations = entry.item.CanRotate
@@ -137,42 +141,81 @@ namespace TimeGame.Systems.Inventory
                           GridPlacement.GridDirection.Up,   GridPlacement.GridDirection.Left }
                 : new[] { GridPlacement.GridDirection.Down };
 
-            foreach (var rotation in rotations)
+            bool placedAny = false;
+
+            // Keep placing stacks until we've placed all items or run out of space
+            while (remainingQty > 0)
             {
-                int itemW = entry.item.GetRotatedWidth(rotation);
-                int itemH = entry.item.GetRotatedHeight(rotation);
+                // Clamp to max stack size for this placement
+                int qtyThisStack = entry.item.IsStackable 
+                    ? Mathf.Min(remainingQty, entry.item.MaxStackSize) 
+                    : 1;
 
-                for (int y = 0; y <= system.Height - itemH; y++)
+                bool placedThisStack = false;
+
+                foreach (var rotation in rotations)
                 {
-                    for (int x = 0; x <= system.Width - itemW; x++)
+                    int itemW = entry.item.GetRotatedWidth(rotation);
+                    int itemH = entry.item.GetRotatedHeight(rotation);
+
+                    for (int y = 0; y <= system.Height - itemH; y++)
                     {
-                        var pos = new Vector2Int(x, y);
-                        if (!system.CanAddItem(entry.item, pos, rotation)) continue;
-
-                        bool success = system.TryAddItem(
-                            entry.item, pos, rotation,
-                            out GridPlacement.PlacedItem placed,
-                            qty,
-                            allowAutoStack: true
-                        );
-
-                        if (success)
+                        for (int x = 0; x <= system.Width - itemW; x++)
                         {
-                            // Optionally initialise a fresh ItemInstance for tracked items
-                            if (entry.item.TrackIndividualItems && placed != null)
+                            var pos = new Vector2Int(x, y);
+                            if (!system.CanAddItem(entry.item, pos, rotation)) continue;
+
+                            bool success = system.TryAddItem(
+                                entry.item, pos, rotation,
+                                out GridPlacement.PlacedItem placed,
+                                qtyThisStack,
+                                allowAutoStack: true
+                            );
+
+                            if (success)
                             {
-                                ItemInstance fresh = new ItemInstance();
-                                if (entry.item.HasLimitedUses)
-                                    fresh.UsesRemaining = entry.item.MaxUses;
-                                placed.AddInstances(new List<ItemInstance> { fresh });
+                                // Optionally initialise a fresh ItemInstance for tracked items
+                                if (entry.item.TrackIndividualItems && placed != null)
+                                {
+                                    // Create instances for the actual stack count
+                                    for (int i = 0; i < qtyThisStack; i++)
+                                    {
+                                        ItemInstance fresh = new ItemInstance();
+                                        if (entry.item.HasLimitedUses)
+                                            fresh.UsesRemaining = entry.item.MaxUses;
+                                        placed.AddInstances(new List<ItemInstance> { fresh });
+                                    }
+                                }
+
+                                remainingQty -= qtyThisStack;
+                                placedAny = true;
+                                placedThisStack = true;
+
+                                if (debugMode && remainingQty > 0)
+                                {
+                                    Debug.Log($"[LootTable] Placed stack of {qtyThisStack} {entry.item.ItemName}, {remainingQty} remaining to place");
+                                }
+
+                                break; // Found a spot for this stack, move to next stack
                             }
-                            return true;
                         }
+                        if (placedThisStack) break;
                     }
+                    if (placedThisStack) break;
+                }
+
+                // If we couldn't place this stack, no point trying to place more
+                if (!placedThisStack)
+                {
+                    if (debugMode && remainingQty > 0)
+                    {
+                        Debug.LogWarning($"[LootTable] Out of space! Could not place remaining {remainingQty} {entry.item.ItemName}");
+                    }
+                    break;
                 }
             }
 
-            return false;
+            return placedAny;
         }
 
         private float GetTotalWeight(List<LootEntry> pool)
