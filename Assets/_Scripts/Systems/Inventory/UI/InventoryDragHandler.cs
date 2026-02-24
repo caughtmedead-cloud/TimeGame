@@ -55,6 +55,24 @@ namespace TimeGame.Systems.Inventory.UI
 
         public bool IsDragging => draggingPlacedObject != null;
 
+        /// <summary>
+        /// Fired after a successful cross-grid item move (non-split, non-same-grid).
+        /// Networking layer subscribes to detect items dragged OUT of container grids
+        /// so it can call SvrTakeItemFromContainer on the server.
+        /// Parameters: sourceGrid, targetGrid, movedItem (already placed in targetGrid).
+        /// </summary>
+        public static event System.Action<InventoryGridVisual, InventoryGridVisual, PlacedItem> OnItemMovedBetweenGrids;
+
+        /// <summary>
+        /// Fired after a successful same-grid item repositioning (non-split).
+        /// The networking layer subscribes to detect when an item is moved to a new
+        /// position within the same container grid so it can call SvrMoveItemInContainer —
+        /// preventing the item from snapping back to its original position when the
+        /// container is closed and reopened.
+        /// Parameters: grid, movedItem (already placed at its new position).
+        /// </summary>
+        public static event System.Action<InventoryGridVisual, PlacedItem> OnItemRepositionedInGrid;
+
         // Singleton — O(1) access, avoids FindObjectOfType at runtime
         public static InventoryDragHandler Instance { get; private set; }
 
@@ -705,6 +723,22 @@ namespace TimeGame.Systems.Inventory.UI
 
                         // Refresh the original grid to remove the visual
                         originalGrid.RefreshAllItemVisuals();
+
+                        // Notify networking layer (and any other listeners) that an item
+                        // crossed grids.  NetworkedInventoryComponent uses this to call
+                        // SvrTakeItemFromContainer when the source was a container grid.
+                        // Use dropTarget as InventoryGridVisual — targetGrid is scoped to the
+                        // pattern-match block above and isn't accessible here.
+                        OnItemMovedBetweenGrids?.Invoke(originalGrid, dropTarget as InventoryGridVisual, placedItem);
+                    }
+                    // Equipment slot → grid: item was already unequipped at drag start so
+                    // originalGrid is null.  Fire the networking event so HandleItemMovedBetweenGrids
+                    // can send SvrPutItemIntoContainer when the target is a container grid.
+                    // Passing null as sourceGrid is safe: TryGetContainerContext(null) returns false,
+                    // so the TAKE branch is skipped and only the PUT branch fires.
+                    else if (!isStackSplit && originalGrid == null && dropTarget is InventoryGridVisual equipToGridTarget)
+                    {
+                        OnItemMovedBetweenGrids?.Invoke(null, equipToGridTarget, placedItem);
                     }
                     else if (isStackSplit)
                     {
@@ -714,6 +748,25 @@ namespace TimeGame.Systems.Inventory.UI
                         {
                             originalGrid.RefreshAllItemVisuals();
                         }
+
+                        // Notify the networking layer when a split crosses to a different grid.
+                        // This allows SvrPutItemIntoContainer / SvrTakeItemFromContainer to
+                        // persist the partial operation to the server's authoritative state.
+                        // NOTE: For merge+split paths (isDroppingOnSameStack && isStackSplit),
+                        // placedItem is the merged-into item; the server will deny that case
+                        // and log a warning — full merge+split networking is a follow-up phase.
+                        InventoryGridVisual splitTargetGrid = dropTarget as InventoryGridVisual;
+                        if (splitTargetGrid != null && splitTargetGrid != originalGrid)
+                        {
+                            OnItemMovedBetweenGrids?.Invoke(originalGrid, splitTargetGrid, placedItem);
+                        }
+                    }
+                    else if (!isStackSplit && isSameGridMove && originalGrid != null)
+                    {
+                        // Item was repositioned within the same grid — no cross-grid cleanup needed.
+                        // Notify the networking layer so it can sync the new position to the server,
+                        // preventing the item from snapping back when the container is reopened.
+                        OnItemRepositionedInGrid?.Invoke(originalGrid, placedItem);
                     }
 
                     // Destroy the temp visual (target created its own OR merged into existing)

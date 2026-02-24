@@ -5,11 +5,14 @@ namespace TimeGame.Systems.Inventory
 {
     /// <summary>
     /// ScriptableObject registry for looking up InventoryItemSO assets by name.
-    /// Required for network synchronization where server sends item names as strings.
-    /// 
-    /// This is the NEW registry using our new InventoryItemSO type.
+    /// Required for network synchronization where the server sends item names as
+    /// strings and clients resolve them back to the actual InventoryItemSO asset.
+    ///
+    /// SETUP: Create one instance of this asset, place it in a Resources/ folder
+    /// named exactly "InventoryItemRegistry", and populate it with all your
+    /// InventoryItemSO assets (or use the "Auto-Find All Items" context menu).
     /// </summary>
-    [CreateAssetMenu(fileName = "InventoryItemRegistry", menuName = "TimeGame/Inventory/Item Registry")]
+    [CreateAssetMenu(fileName = "InventoryItemRegistry", menuName = "TimeGame/Inventory/Networking/Item Registry")]
     public class InventoryItemRegistry : ScriptableObject
     {
         [Header("All Available Items")]

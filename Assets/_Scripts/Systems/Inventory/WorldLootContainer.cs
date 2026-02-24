@@ -10,11 +10,13 @@ namespace TimeGame.Systems.Inventory
     /// Design:
     /// - Owns a LootContainer data object for the lifetime of this GameObject.
     /// - PlayerItemInteraction detects this component via raycast and drives open/close.
-    /// - First open populates compartments from the assigned LootTable (or Inspector items).
+    /// - Loot population and UI opening are intentionally separated:
+    ///     EnsureLootPopulated() — rolls the loot table exactly once, safe to call anywhere.
+    ///     Open()               — UI concern only; calls EnsureLootPopulated() then shows the panel.
+    ///     GetLootContainer()   — data accessor; calls EnsureLootPopulated() then returns the data.
     /// - The InventorySystem inside each compartment is the single source of truth — items
     ///   dragged out by the player are gone; state persists between opens within a session.
     /// - Calls ContainerInteractionManager.Instance.OpenContainer / CloseContainer.
-    /// - Calls InventoryUIController.Open() to force the inventory screen up.
     /// </summary>
     public class WorldLootContainer : MonoBehaviour
     {
@@ -41,13 +43,13 @@ namespace TimeGame.Systems.Inventory
 
         // Runtime state
         private LootContainer lootContainer;
-        private bool hasBeenOpened = false;
+        private bool lootPopulated = false;
         private bool isCurrentlyOpen = false;
 
         // Properties read by PlayerItemInteraction
-        public string DisplayName => displayName;
-        public float InteractionRange => interactionRange;
-        public bool IsCurrentlyOpen => isCurrentlyOpen;
+        public string DisplayName    => displayName;
+        public float  InteractionRange => interactionRange;
+        public bool   IsCurrentlyOpen  => isCurrentlyOpen;
 
         #region Unity Lifecycle
 
@@ -71,11 +73,9 @@ namespace TimeGame.Systems.Inventory
             {
                 compartmentList.Add(new ContainerCompartment
                 {
-                    Label      = def.label,
-                    GridSize   = new Vector2Int(def.gridWidth, def.gridHeight),
-                    MaxWeight  = def.maxWeight,
-                    // InventorySystem is null here — SwapInventorySystem in ContainerInteractionManager
-                    // will create one if needed, or we create it explicitly on first open below.
+                    Label           = def.label,
+                    GridSize        = new Vector2Int(def.gridWidth, def.gridHeight),
+                    MaxWeight       = def.maxWeight,
                     InventorySystem = new InventorySystem(def.gridWidth, def.gridHeight, 64f, Vector3.zero, def.maxWeight)
                 });
             }
@@ -88,28 +88,66 @@ namespace TimeGame.Systems.Inventory
 
         #endregion
 
+        #region Loot Population
+
+        /// <summary>
+        /// Rolls the loot table into the compartments exactly once.
+        /// Safe to call from anywhere — server, client, or UI code.
+        /// Subsequent calls are no-ops.
+        /// </summary>
+        public void EnsureLootPopulated()
+        {
+            if (lootPopulated) return;
+            lootPopulated = true;
+
+            if (lootTable == null)
+            {
+                if (debugMode)
+                    Debug.Log($"[WorldLootContainer] No loot table assigned — '{displayName}' starts empty");
+                return;
+            }
+
+            lootTable.Populate(lootContainer.GetCompartments(), debugMode);
+
+            if (debugMode)
+                Debug.Log($"[WorldLootContainer] Loot populated for '{displayName}'");
+        }
+
+        #endregion
+
+        #region Data Accessor
+
+        /// <summary>
+        /// Returns the internal LootContainer, ensuring loot has been rolled first.
+        /// Use this whenever you need the data without opening the UI —
+        /// for example, the server calling this on OnStartServer to build its manifest.
+        /// </summary>
+        public LootContainer GetLootContainer()
+        {
+            EnsureLootPopulated();
+            return lootContainer;
+        }
+
+        #endregion
+
         #region Open / Close
 
         /// <summary>
-        /// Called by PlayerItemInteraction when the player presses the interact key.
-        /// Populates loot on first open, then shows compartments in the left panel.
-        /// The caller (PlayerItemInteraction) is responsible for opening the inventory UI
-        /// on the correct local player — WorldLootContainer has no knowledge of UI ownership.
+        /// Called by PlayerItemInteraction (solo path) when the player presses interact.
+        /// Ensures loot is populated, then shows the compartments in the left UI panel.
+        /// The caller is responsible for opening the inventory UI on the correct local player.
+        ///
+        /// In multiplayer, PlayerItemInteraction sends SvrRequestContainerOpen instead and
+        /// this method is not called — the client populates its UI from the server snapshot.
         /// </summary>
         public void Open()
         {
             if (isCurrentlyOpen) return;
 
-            // First open: roll loot table if assigned and not yet populated
-            if (!hasBeenOpened)
-            {
-                PopulateLoot();
-                hasBeenOpened = true;
-            }
+            EnsureLootPopulated();
 
             isCurrentlyOpen = true;
 
-            // Show loot in left panel — pass 'this' so the manager can call Close() when the panel closes
             if (ContainerInteractionManager.Instance != null)
                 ContainerInteractionManager.Instance.OpenContainer(lootContainer, this);
             else
@@ -131,23 +169,6 @@ namespace TimeGame.Systems.Inventory
 
             if (debugMode)
                 Debug.Log($"[WorldLootContainer] Closed '{displayName}'");
-        }
-
-        #endregion
-
-        #region Loot Population
-
-        private void PopulateLoot()
-        {
-            if (lootTable == null)
-            {
-                if (debugMode)
-                    Debug.Log($"[WorldLootContainer] No loot table assigned — '{displayName}' starts empty");
-                return;
-            }
-
-            List<ContainerCompartment> compartmentList = lootContainer.GetCompartments();
-            lootTable.Populate(compartmentList, debugMode);
         }
 
         #endregion

@@ -14,41 +14,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.02
   subtype: freeProjectFiles
-  lastShownTimestamp: 1771498170
+  lastShownTimestamp: 1771875561
   lastUpdateResponse:
     version: 1.02
     versionUrl: https://unitycodemonkey.com
     enabled: 0
-  checkedLastUpdateTimestamp: 1771498171
+  checkedLastUpdateTimestamp: 1771875562
   lastQOTDResponse:
-    questionId: 273
-    questionText: When you create a new script, do you always have to extend MonoBehaviour?
+    questionId: 275
+    questionText: 'Does this variable get reset when you load a different Scene?
+
+      <p>private
+      static int score;</p>'
     answerA: Yes
     answerB: No
-    answerC: Only if you want to use it as a Game Object Component
+    answerC: Only when loading the Main Menu
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1771498171
+  lastQotdTimestamp: 1771875562
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/gameDevReport_2.png
     topText: Stay up to date with the latest in Game Dev straight to your inbox!
     topLink: gamedevreport
     bottomText: My 10+ Years of C# Knowledge in 1 Course!
     bottomLink: csharpcourse
-  lastDynamicHeaderTimestamp: 1771498171
+  lastDynamicHeaderTimestamp: 1771875562
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freeprojectfiles">Browse all the FREE Project
       Files! Click Here!</a><br><a href="https://cmonkey.co/freecourses">Check out
       all my FREE courses! Click Here!</a>
-  websiteLatestMessageTimestamp: 1771498171
+  websiteLatestMessageTimestamp: 1771875562
   websiteLatestVideos:
     videos:
+    - youTubeId: FdyHnVIoQko
+      title: TOP 10 NEW Systems and Tools FEBRUARY 2026! | Unity Asset Store
+    - youTubeId: 0ER2bxCoP2Q
+      title: Unity CEO says AI will soon make ENTIRE games?
     - youTubeId: qzfsN2tm9ss
       title: Add Photo Mode to your Games! (FREE Download, Players will LOVE it!)
     - youTubeId: cYM059zGSrs
       title: 100 Steam Game Marketing Questions Answered to help you find SUCCESS!
-    - youTubeId: PBDBKTwZI8Y
-      title: TOP 10 FREE NEW Assets FEBRUARY 2026!
-    - youTubeId: Vb5BZu7TOIk
-      title: 8 QUICK Game Dev Tips for SUCCESS!
-  websiteLatestVideosTimestamp: 1771498171
+  websiteLatestVideosTimestamp: 1771875562

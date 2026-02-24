@@ -1,5 +1,7 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
+using TimeGame.Systems.GridPlacement;
 using TimeGame.Systems.Inventory;
 
 namespace TimeGame.Systems.Inventory.UI
@@ -26,6 +28,13 @@ namespace TimeGame.Systems.Inventory.UI
         private List<InventoryGridVisual> currentContainerGrids = new List<InventoryGridVisual>();
 
         /// <summary>
+        /// NetworkObject.ObjectId of the NetworkedWorldLootContainer that supplied the current
+        /// container data.  -1 when the container was opened locally (solo play) or is closed.
+        /// Set by OpenContainer(container, source, containerNetId).
+        /// </summary>
+        private int _currentContainerNetId = -1;
+
+        /// <summary>
         /// Is a container currently open?
         /// </summary>
         public bool IsContainerOpen => currentContainer != null;
@@ -34,6 +43,14 @@ namespace TimeGame.Systems.Inventory.UI
         /// Get the currently open container
         /// </summary>
         public LootContainer CurrentContainer => currentContainer;
+
+        /// <summary>
+        /// NetworkObject.ObjectId of the currently open networked container, or -1 when no
+        /// networked container is open (solo play, container closed, or 2-arg OpenContainer used).
+        /// Exposed so ObserversRpcs on NetworkedWorldLootContainer can verify they are
+        /// updating the correct container's UI rather than any open container.
+        /// </summary>
+        public int CurrentContainerNetId => _currentContainerNetId;
 
         private void Awake()
         {
@@ -89,6 +106,99 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
+        /// Open a networked loot container, tracking its NetworkObject ID so the networking
+        /// layer can reference it when items are dragged out.
+        /// Called by NetworkedInventoryComponent.TgtReceiveContainerSnapshot.
+        ///
+        /// IMPORTANT: _currentContainerNetId must be set AFTER OpenContainer(container, source)
+        /// because that inner call may invoke CloseContainer() first (if a container was already
+        /// open), which resets _currentContainerNetId to -1.  Setting it afterwards guarantees
+        /// TryGetContainerContext() sees the correct ID during the subsequent drag session.
+        /// </summary>
+        public void OpenContainer(LootContainer container, object source, int containerNetId)
+        {
+            OpenContainer(container, source);        // may call CloseContainer() → resets to -1, that's fine
+            _currentContainerNetId = containerNetId; // set AFTER so the reset above doesn't wipe it
+        }
+
+        /// <summary>
+        /// If the given grid is one of the currently open container's compartment grids,
+        /// returns true and outputs the container's NetworkObject ID and compartment index.
+        /// Used by NetworkedInventoryComponent to build the SvrTakeItemFromContainer call.
+        /// </summary>
+        public bool TryGetContainerContext(
+            InventoryGridVisual grid,
+            out int             containerNetId,
+            out int             compartmentIndex)
+        {
+            containerNetId    = -1;
+            compartmentIndex  = -1;
+
+            if (grid == null || _currentContainerNetId < 0) return false;
+
+            for (int i = 0; i < currentContainerGrids.Count; i++)
+            {
+                if (currentContainerGrids[i] == grid)
+                {
+                    containerNetId   = _currentContainerNetId;
+                    compartmentIndex = i;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Refresh only the visual of a specific container compartment grid without
+        /// closing and reopening the whole container.
+        /// Called by RpcItemRemovedFromContainer after removing an item from the
+        /// client-side InventorySystem.
+        /// </summary>
+        public void RefreshCompartmentGrid(int compartmentIndex)
+        {
+            if (compartmentIndex < 0 || compartmentIndex >= currentContainerGrids.Count) return;
+            currentContainerGrids[compartmentIndex]?.RefreshAllItemVisuals();
+        }
+
+        /// <summary>
+        /// Add an item to a specific container compartment grid.
+        /// Called by RpcItemAddedToContainer when a player puts an item into the container.
+        ///
+        /// If the item is already present in the compartment's InventorySystem (because the
+        /// placing client already added it speculatively via the drag handler), this is a no-op
+        /// except for refreshing the visual so the grid stays in sync.
+        /// </summary>
+        public void AddItemToCompartmentGrid(
+            int             compartmentIndex,
+            Guid            instanceId,
+            InventoryItemSO itemDef,
+            Vector2Int      gridPos,
+            GridDirection   rotation,
+            int             stackCount)
+        {
+            if (compartmentIndex < 0 || compartmentIndex >= currentContainerGrids.Count) return;
+
+            InventoryGridVisual grid = currentContainerGrids[compartmentIndex];
+            if (grid?.InventorySystem == null) return;
+
+            // Speculative path: placing client already has the item here from the drag.
+            // Skip the TryAddItem call (would fail on duplicate ID) and just refresh.
+            if (grid.InventorySystem.GetItemByID(instanceId) != null)
+            {
+                grid.RefreshAllItemVisuals();
+                return;
+            }
+
+            // Other clients: item is not yet in their local InventorySystem — add it now.
+            grid.InventorySystem.TryAddItem(instanceId, itemDef, gridPos, rotation, out _, stackCount);
+            grid.RefreshAllItemVisuals();
+
+            Log($"AddItemToCompartmentGrid — '{itemDef.ItemName}' " +
+                $"id={instanceId.ToString("N").Substring(0, 8)} at {gridPos} compartment {compartmentIndex}.");
+        }
+
+        /// <summary>
         /// Close the currently open container and notify the source object.
         /// </summary>
         public void CloseContainer()
@@ -98,6 +208,8 @@ namespace TimeGame.Systems.Inventory.UI
                 Log("No container to close");
                 return;
             }
+
+            _currentContainerNetId = -1;
 
             // Clear all spawned grids
             if (containerPanel != null)

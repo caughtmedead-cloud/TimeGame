@@ -1,6 +1,7 @@
 using UnityEngine;
 using TimeGame.Systems.Inventory.UI;
 using TimeGame.Systems.GridPlacement;
+using TimeGame.Systems.Networking.Inventory;
 using System.Linq;
 
 namespace TimeGame.Systems.Inventory.Testing
@@ -41,6 +42,11 @@ namespace TimeGame.Systems.Inventory.Testing
         [Tooltip("Root transform containing all inventory grids (optional - for finding additional grids)")]
         [SerializeField] private Transform inventoryRootTransform;
 
+        [Tooltip("NetworkedInventoryComponent on the local player — used to sync test items with the " +
+                 "server manifest so they can be put into networked containers.  Assign the local " +
+                 "player's NetworkedInventoryComponent here.")]
+        [SerializeField] private NetworkedInventoryComponent networkedInventory;
+
         [Header("Settings")]
         [Tooltip("Show debug logs")]
         [SerializeField] private bool verboseLogging = true;
@@ -74,6 +80,21 @@ namespace TimeGame.Systems.Inventory.Testing
             if (Input.GetKeyDown(KeyCode.Alpha4))
             {
                 TestPickupItem(testPickupItem);
+            }
+
+            // Press 5 to manually sync inventory with server
+            // Use this if items were added and are not appearing in networked containers.
+            if (Input.GetKeyDown(KeyCode.Alpha5))
+            {
+                if (networkedInventory != null)
+                {
+                    networkedInventory.SyncInventoryWithServer();
+                    Log("Requested manual server inventory sync.");
+                }
+                else
+                {
+                    Log("Cannot sync — NetworkedInventoryComponent not assigned in inspector.");
+                }
             }
 
             // Press U to unequip helmet
@@ -173,6 +194,9 @@ namespace TimeGame.Systems.Inventory.Testing
                 Log($"✓ Successfully equipped {item.ItemName} into {slotName} with full lineage!");
                 Log($"  → PlacedItem stored in slot: {equippedItem != null}");
                 Log($"  → ContainerInventory preserved: {equippedItem?.ContainerInventory != null}");
+                // Sync with server so items inside the equipped container (e.g., backpack contents)
+                // are registered in the server manifest and can be put into networked containers.
+                networkedInventory?.SyncInventoryWithServer();
             }
             else
             {
@@ -240,6 +264,9 @@ namespace TimeGame.Systems.Inventory.Testing
             if (placed)
             {
                 Log($"✓ Successfully picked up {item.ItemName}!");
+                // Register the newly added item with the server manifest so it can be
+                // dragged into networked world containers (SvrPutItemIntoContainer ownership check).
+                networkedInventory?.SyncInventoryWithServer();
             }
             else
             {
@@ -425,6 +452,9 @@ namespace TimeGame.Systems.Inventory.Testing
             GUILayout.Label("", style);
             GUILayout.Label("PICKUP TEST:", style);
             GUILayout.Label("  [4] - Pickup Item (any grid)", style);
+            GUILayout.Label("", style);
+            GUILayout.Label("NETWORK SYNC:", style);
+            GUILayout.Label("  [5] - Sync Inventory with Server", style);
             GUILayout.EndArea();
         }
     }

@@ -43,9 +43,19 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Open a container in a floating window
+        /// Open a container in a floating window.
+        /// Pass <paramref name="parentWorldContainerNetId"/> and <paramref name="parentCompartmentIndex"/>
+        /// when the container item lives inside a networked world loot container so that closing
+        /// the window triggers SvrSyncNestedContainer and the changes persist on the server.
+        /// Both default to -1 for player-inventory containers where no server sync is needed.
+        /// <paramref name="parentContainerPath"/> is the ancestor chain (excluding this window's own
+        /// container ID) used by the networking layer for real-time nested sync RPCs.
         /// </summary>
-        public FloatingContainerWindow OpenContainer(GridPlacement.PlacedItem containerItem)
+        public FloatingContainerWindow OpenContainer(
+            GridPlacement.PlacedItem containerItem,
+            int parentWorldContainerNetId = -1,
+            int parentCompartmentIndex    = -1,
+            System.Guid[] parentContainerPath = null)
         {
             if (containerItem == null)
             {
@@ -124,6 +134,12 @@ namespace TimeGame.Systems.Inventory.UI
             // Close button: from config only (no factory equivalent)
             if (uiConfig != null && uiConfig.closeButtonSprite != null)
                 window.SetCloseButtonSprite(uiConfig.closeButtonSprite);
+
+            // Record parent world-container context so Close() can sync the contents.
+            // Both params default to -1 (player-inventory container — no server sync needed).
+            // parentContainerPath carries the ancestor chain for real-time nested sync RPCs.
+            if (parentWorldContainerNetId >= 0)
+                window.SetParentContext(parentWorldContainerNetId, parentCompartmentIndex, parentContainerPath);
 
             // Initialize window
             window.Initialize(containerItem, gridVisual, itemDef.ItemName);
@@ -346,6 +362,40 @@ namespace TimeGame.Systems.Inventory.UI
                     lastWindow.Close();
                 }
             }
+        }
+
+        /// <summary>
+        /// Find the floating window whose grid visual matches the given reference.
+        /// Used by networking to detect when operations happen in floating windows.
+        /// </summary>
+        public FloatingContainerWindow FindWindowByGrid(InventoryGridVisual grid)
+        {
+            if (grid == null) return null;
+            return openWindows.FirstOrDefault(w => w != null && w.GridVisual == grid);
+        }
+
+        /// <summary>
+        /// Find the floating window whose inventory contains an item with the given InstanceID.
+        /// Used to detect the parent window when opening a nested container from a floating window.
+        /// </summary>
+        public FloatingContainerWindow FindWindowContainingItem(System.Guid itemInstanceId)
+        {
+            foreach (var window in openWindows)
+            {
+                if (window?.GridVisual?.InventorySystem?.GetItemByID(itemInstanceId) != null)
+                    return window;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Find the floating window whose ContainerItem has the given InstanceID.
+        /// Used by networking RPCs to locate which window to refresh after server broadcasts.
+        /// </summary>
+        public FloatingContainerWindow FindWindowByItemId(System.Guid itemInstanceId)
+        {
+            return openWindows.FirstOrDefault(w =>
+                w != null && w.ContainerItem != null && w.ContainerItem.InstanceID == itemInstanceId);
         }
 
         private void Log(string message)

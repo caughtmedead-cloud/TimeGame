@@ -148,8 +148,47 @@ namespace TimeGame.Systems.Inventory
             FloatingContainerWindowManager windowManager = FloatingContainerWindowManager.Instance;
             if (windowManager != null)
             {
-                windowManager.OpenContainer(item);
-                Debug.Log($"[ItemUsageHandler] Opened {itemDef.ItemName} in floating window");
+                int parentNetId       = -1;
+                int parentCompartment = -1;
+                System.Guid[] parentPath = null;
+
+                // Case A: item is directly in a root world-container compartment grid.
+                ContainerInteractionManager cim = ContainerInteractionManager.Instance;
+                if (cim != null && cim.IsContainerOpen && grid != null)
+                {
+                    if (cim.TryGetContainerContext(grid, out parentNetId, out parentCompartment))
+                    {
+                        parentPath = System.Array.Empty<System.Guid>(); // root level — no ancestors
+                    }
+                }
+
+                // Case B: item is inside an already-open floating window (deeper nesting).
+                if (parentNetId < 0 && grid != null)
+                {
+                    FloatingContainerWindow parentWindow =
+                        windowManager.FindWindowByGrid(grid);
+
+                    if (parentWindow != null)
+                    {
+                        FloatingContainerWindow.ParentContainerContext ctx =
+                            parentWindow.GetParentContext();
+
+                        if (ctx.IsValid)
+                        {
+                            parentNetId       = ctx.WorldContainerNetId;
+                            parentCompartment = ctx.CompartmentIndex;
+                            // Build the path for the child window:
+                            // parent window's ancestor chain + parent window's own container ID.
+                            parentPath = AppendGuid(ctx.ContainerPath, parentWindow.ContainerItem.InstanceID);
+                        }
+                    }
+                }
+
+                windowManager.OpenContainer(item, parentNetId, parentCompartment, parentPath);
+                Debug.Log($"[ItemUsageHandler] Opened {itemDef.ItemName} in floating window" +
+                          (parentNetId >= 0
+                              ? $" (world container {parentNetId} compartment {parentCompartment} pathDepth={parentPath?.Length ?? 0})"
+                              : ""));
                 return;
             }
 
@@ -537,6 +576,20 @@ namespace TimeGame.Systems.Inventory
             {
                 Debug.LogError($"[ItemUsageHandler] Failed to spawn any world items for {itemDef.ItemName}");
             }
+        }
+
+        /// <summary>
+        /// Return a new Guid[] that is <paramref name="existing"/> with <paramref name="id"/> appended.
+        /// </summary>
+        private static System.Guid[] AppendGuid(System.Guid[] existing, System.Guid id)
+        {
+            if (existing == null || existing.Length == 0)
+                return new System.Guid[] { id };
+
+            System.Guid[] result = new System.Guid[existing.Length + 1];
+            System.Array.Copy(existing, result, existing.Length);
+            result[existing.Length] = id;
+            return result;
         }
 
         private void ExecuteItemEffect(InventoryItemSO itemDef)

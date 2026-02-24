@@ -198,6 +198,21 @@ namespace TimeGame.Systems.Inventory
         public ContainerItemData ContainerData;
 
         /// <summary>
+        /// Network-only: the server-authoritative InstanceID for this item.
+        /// Not serialized by Unity (Guid is not a Unity-serializable type).
+        ///
+        /// Populated by FromPlacedItem so the ID survives the PlacedItem → PlacedItemData → wire
+        /// → PlacedItemData round-trip.  LoadIntoInventorySystem then stamps this ID onto the
+        /// newly created PlacedItem so the client's item identity matches the server's, allowing
+        /// SvrTakeItemFromContainer to locate the item by ID in _serverCompartments.
+        ///
+        /// Guid.Empty when loaded from a local save (non-networked path) — in that case
+        /// LoadIntoInventorySystem falls back to generating a fresh Guid as before.
+        /// </summary>
+        [System.NonSerialized]
+        public Guid InstanceId;
+
+        /// <summary>
         /// Create PlacedItemData from an existing PlacedItem
         /// </summary>
         public static PlacedItemData FromPlacedItem(PlacedItem placedItem)
@@ -206,10 +221,11 @@ namespace TimeGame.Systems.Inventory
 
             PlacedItemData data = new PlacedItemData
             {
+                InstanceId     = placedItem.InstanceID,   // preserve identity for networking
                 ItemDefinition = placedItem.ItemDefinition as InventoryItemSO,
                 AnchorPosition = placedItem.AnchorPosition,
-                Rotation = placedItem.Rotation,
-                StackCount = placedItem.StackCount
+                Rotation       = placedItem.Rotation,
+                StackCount     = placedItem.StackCount
             };
 
             // Copy item instances if this is a tracked item
@@ -232,7 +248,12 @@ namespace TimeGame.Systems.Inventory
         }
 
         /// <summary>
-        /// Load this item data into an InventorySystem
+        /// Load this item data into an InventorySystem.
+        ///
+        /// When InstanceId is non-empty (network snapshot path) the Guid-accepting TryAddItem
+        /// overload is used so the newly created PlacedItem carries the server's authoritative ID.
+        /// When InstanceId is Guid.Empty (local save / non-networked path) a fresh Guid is
+        /// generated as before (preserves existing solo-mode behaviour).
         /// </summary>
         public PlacedItem LoadIntoInventorySystem(InventorySystem inventorySystem)
         {
@@ -242,14 +263,33 @@ namespace TimeGame.Systems.Inventory
             // For tracked items with instances, pass stackCount=0 to prevent creating pristine instances
             int stackCountToCreate = (ItemInstances != null && ItemInstances.Count > 0) ? 0 : StackCount;
 
-            bool success = inventorySystem.TryAddItem(
-                ItemDefinition,
-                AnchorPosition,
-                Rotation,
-                out PlacedItem placedItem,
-                stackCountToCreate,
-                allowAutoStack: false // Don't auto-stack when loading saved data - preserve exact positions
-            );
+            bool success;
+            PlacedItem placedItem;
+
+            if (InstanceId != Guid.Empty)
+            {
+                // NETWORK PATH: preserve the server-authoritative InstanceID so the client's
+                // PlacedItem can be looked up by the server in SvrTakeItemFromContainer.
+                success = inventorySystem.TryAddItem(
+                    InstanceId,
+                    ItemDefinition,
+                    AnchorPosition,
+                    Rotation,
+                    out placedItem,
+                    stackCountToCreate);
+            }
+            else
+            {
+                // LOCAL PATH (save/load, solo play): generate a fresh Guid as before.
+                success = inventorySystem.TryAddItem(
+                    ItemDefinition,
+                    AnchorPosition,
+                    Rotation,
+                    out placedItem,
+                    stackCountToCreate,
+                    allowAutoStack: false // Don't auto-stack when loading saved data - preserve exact positions
+                );
+            }
 
             if (success && placedItem != null)
             {
