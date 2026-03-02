@@ -5,7 +5,7 @@ namespace BuildingTools
 {
     public static class BuildingSocketCleanup
     {
-        [MenuItem("Tools/Building Tools/Strip BuildingSocket Components from Selection")]
+        [MenuItem("Tools/TimeGame/Building Tools/Strip BuildingSocket Components from Selection")]
         private static void StripSocketsFromSelection()
         {
             if (Selection.gameObjects.Length == 0)
@@ -36,13 +36,13 @@ namespace BuildingTools
             }
         }
         
-        [MenuItem("Tools/Building Tools/Strip BuildingSocket Components from Selection", true)]
+        [MenuItem("Tools/TimeGame/Building Tools/Strip BuildingSocket Components from Selection", true)]
         private static bool ValidateStripSocketsFromSelection()
         {
             return Selection.gameObjects.Length > 0;
         }
         
-        [MenuItem("Tools/Building Tools/Strip All BuildingSocket Components in Scene")]
+        [MenuItem("Tools/TimeGame/Building Tools/Strip All BuildingSocket Components in Scene")]
         private static void StripAllSocketsInScene()
         {
             BuildingSocket[] allSockets = Object.FindObjectsByType<BuildingSocket>(FindObjectsSortMode.None);
@@ -78,7 +78,7 @@ namespace BuildingTools
             Debug.Log($"Removed {allSockets.Length} BuildingSocket component(s) from scene.");
         }
         
-        [MenuItem("Tools/Building Tools/Info: BuildingSocket Components")]
+        [MenuItem("Tools/TimeGame/Building Tools/Info: BuildingSocket Components")]
         private static void ShowInfo()
         {
             EditorUtility.DisplayDialog(

@@ -13,7 +13,7 @@ namespace Thelos.AI.Editor
         private bool createPatrolPoints = false;
         private int patrolPointCount = 4;
         
-        [MenuItem("Tools/AI/Setup Test Scene")]
+        [MenuItem("Tools/TimeGame/AI/Setup Test Scene")]
         private static void ShowWindow()
         {
             GetWindow<AITestSceneSetup>("AI Test Scene Setup");

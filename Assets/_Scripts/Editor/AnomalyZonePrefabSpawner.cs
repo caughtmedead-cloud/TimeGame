@@ -19,7 +19,7 @@ public class AnomalyZonePrefabSpawner : EditorWindow
     private float previewRotation = 0f;
     private bool alignToSurfaceNormal = false;
 
-    [MenuItem("Tools/Anomaly Zone/Prefab Spawner")]
+    [MenuItem("Tools/TimeGame/Anomaly Zone/Prefab Spawner")]
     public static void ShowWindow()
     {
         AnomalyZonePrefabSpawner window = GetWindow<AnomalyZonePrefabSpawner>("Zone Spawner");

@@ -29,10 +29,6 @@ namespace BuildingTools
         [Tooltip("Grid space this piece occupies")]
         public Vector3 gridSize = new Vector3(4, 3, 0.5f);
         
-        [Header("Visual")]
-        [Tooltip("Optional icon for UI")]
-        public Texture2D icon;
-        
         [Header("Placement Rules")]
         [Tooltip("Can this be placed on the ground?")]
         public bool canPlaceOnGround = true;

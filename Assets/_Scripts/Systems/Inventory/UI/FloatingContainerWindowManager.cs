@@ -45,8 +45,8 @@ namespace TimeGame.Systems.Inventory.UI
         /// <summary>
         /// Open a container in a floating window.
         /// Pass <paramref name="parentWorldContainerNetId"/> and <paramref name="parentCompartmentIndex"/>
-        /// when the container item lives inside a networked world loot container so that closing
-        /// the window triggers SvrSyncNestedContainer and the changes persist on the server.
+        /// when the container item lives inside a networked world loot container so that the
+        /// networking layer can build correct real-time sync RPC paths.
         /// Both default to -1 for player-inventory containers where no server sync is needed.
         /// <paramref name="parentContainerPath"/> is the ancestor chain (excluding this window's own
         /// container ID) used by the networking layer for real-time nested sync RPCs.

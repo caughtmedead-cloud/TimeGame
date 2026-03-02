@@ -43,7 +43,7 @@ namespace BuildingTools
             { BuildingPieceType.Decor, true }
         };
         
-        [MenuItem("Tools/Building Placement Tool")]
+        [MenuItem("Tools/TimeGame/Building Tools/Building Placement Tool")]
         public static void ShowWindow()
         {
             BuildingPlacementTool window = GetWindow<BuildingPlacementTool>("Building Tool");
@@ -239,17 +239,12 @@ namespace BuildingTools
             bool isSelected = selectedPieceIndex == index;
             GUI.color = isSelected ? Color.green : Color.white;
             
-            GUIContent buttonContent;
-            if (piece.icon != null)
-            {
-                buttonContent = new GUIContent(piece.pieceName, piece.icon);
-            }
-            else
-            {
-                buttonContent = new GUIContent(piece.pieceName);
-            }
+            Texture2D preview = AssetPreview.GetAssetPreview(piece.prefab);
+            GUIContent buttonContent = preview != null 
+                ? new GUIContent(piece.pieceName, preview)
+                : new GUIContent(piece.pieceName);
             
-            if (GUILayout.Button(buttonContent, GUILayout.Height(30)))
+            if (GUILayout.Button(buttonContent, GUILayout.Height(40)))
             {
                 SelectPiece(index);
             }
@@ -312,12 +307,6 @@ namespace BuildingTools
             
             if (e.type == EventType.MouseDown && e.button == 0)
             {
-                Debug.Log($"CLICK! About to place:");
-                Debug.Log($"  nearestSocketTarget: {(nearestSocketTarget != null ? nearestSocketTarget.name : "NULL")}");
-                Debug.Log($"  mySocketIndex: {mySocketIndex}");
-                Debug.Log($"  nearestSocketIndex: {nearestSocketIndex}");
-                Debug.Log($"  socketSnapEnabled: {socketSnapEnabled}");
-                
                 PlacePiece(targetPosition, targetRotation, selectedPiece);
                 e.Use();
             }
@@ -356,25 +345,17 @@ namespace BuildingTools
             {
                 float step = heightAdjustStep;
                 
-                // Fine adjustment with Shift
                 if (e.shift)
                 {
                     step *= 0.1f;
-                    Debug.Log($"Shift+Scroll detected! Fine step: {step}");
                 }
                 
-                // Control for even finer adjustment
                 if (e.control)
                 {
                     step *= 0.01f;
                 }
                 
-                // Mouse wheel delta is inverted (up = negative, down = positive)
-                // We want: wheel up = raise piece, wheel down = lower piece
-                float oldOffset = heightOffset;
                 heightOffset -= e.delta.y * step;
-                
-                Debug.Log($"Height adjusted: {oldOffset:F3} → {heightOffset:F3} (delta: {e.delta.y}, step: {step})");
                 
                 e.Use();
                 Repaint();
@@ -383,23 +364,9 @@ namespace BuildingTools
         
         private void FindNearestSocket(Ray ray, BuildingPieceDefinition selectedPiece, out Vector3 position, out Quaternion rotation)
         {
-            // DON'T reset these - keep last found values!
-            // nearestSocketTarget = null;
-            // nearestSocketIndex = -1;
-            // mySocketIndex = -1;
-            
             float minDistance = SOCKET_SEARCH_DISTANCE;
             
             Vector3 gridPos = GetGridPosition(ray);
-            
-            // ALWAYS get raw mouse position for socket searching
-            Vector3 rawMousePos = gridPos;
-            Plane plane = new Plane(Vector3.up, Vector3.up * (currentLayer * (currentLibrary != null ? currentLibrary.floorHeight : 3f)));
-            if (plane.Raycast(ray, out float enter))
-            {
-                rawMousePos = ray.GetPoint(enter);
-            }
-            
             position = gridPos;
             rotation = Quaternion.Euler(0, currentRotation, 0);
             
@@ -412,84 +379,40 @@ namespace BuildingTools
             
             BuildingSocket[] allSockets = FindObjectsByType<BuildingSocket>(FindObjectsSortMode.None);
             
-            if (allSockets.Length == 0)
-            {
-                Debug.LogWarning("Socket Snap: No BuildingSocket components found in scene!");
-            }
-            
-            int socketsChecked = 0;
-            int socketsOccupied = 0;
-            float closestDistance = float.MaxValue;
-            
             foreach (var targetSocket in allSockets)
             {
                 if (targetSocket.sockets == null || targetSocket.sockets.Count == 0)
-                {
-                    Debug.LogWarning($"Socket Snap: {targetSocket.name} has no sockets!");
                     continue;
-                }
                 
                 for (int targetIdx = 0; targetIdx < targetSocket.sockets.Count; targetIdx++)
                 {
                     Socket targetSocketData = targetSocket.sockets[targetIdx];
-                    
-                    if (targetSocketData.isOccupied)
-                    {
-                        socketsOccupied++;
-                        continue;
-                    }
-                    
                     Vector3 targetWorldPos = targetSocket.GetSocketWorldPosition(targetIdx);
                     
-                    // Calculate 3D distance from mouse ray to socket position
-                    // This properly handles vertical sockets (top/bottom)
                     Vector3 closestPointOnRay = ClosestPointOnRay(ray, targetWorldPos);
                     float distance = Vector3.Distance(closestPointOnRay, targetWorldPos);
                     
-                    socketsChecked++;
-                    if (distance < closestDistance) closestDistance = distance;
-                    
                     if (distance > minDistance)
                         continue;
-                    
-                    Debug.Log($"Socket Snap: Found socket within range! Distance: {distance:F2}, Socket: {targetSocket.name}[{targetIdx}] '{targetSocketData.socketName}'");
                     
                     for (int myIdx = 0; myIdx < selectedPiece.sockets.Length; myIdx++)
                     {
                         Socket mySocketData = selectedPiece.sockets[myIdx];
                         
-                        // Check socket-to-socket compatibility using provides/accepts
-                        bool targetAcceptsMyProvides = string.IsNullOrEmpty(targetSocketData.acceptedTypes) || 
-                                                        (string.IsNullOrEmpty(mySocketData.providedTypes) ? false : targetSocketData.Accepts(mySocketData.providedTypes));
+                        // Check if my socket provides what target accepts
+                        bool iProvideWhatTargetAccepts = mySocketData.ProvidesCompatibleWith(targetSocketData);
                         
-                        bool iAcceptTargetProvides = string.IsNullOrEmpty(mySocketData.acceptedTypes) || 
-                                                      (string.IsNullOrEmpty(targetSocketData.providedTypes) ? false : mySocketData.Accepts(targetSocketData.providedTypes));
+                        // Check if target provides what I accept
+                        bool targetProvidesWhatIAccept = targetSocketData.ProvidesCompatibleWith(mySocketData);
                         
-                        // Also check piece-level tags as fallback
-                        bool targetAcceptsPieceTags = targetSocketData.Accepts(selectedPiece.providedTags);
-                        bool iAcceptPieceTags = mySocketData.Accepts(targetSocket.pieceTypeTags);
-                        
-                        // Connect if EITHER socket provides/accepts match OR piece tags match
-                        bool socketLevelMatch = targetAcceptsMyProvides || iAcceptTargetProvides;
-                        bool pieceLevelMatch = targetAcceptsPieceTags || iAcceptPieceTags;
-                        
-                        if (!socketLevelMatch && !pieceLevelMatch)
-                        {
-                            Debug.Log($"Socket Snap: No match between {mySocketData.socketName} and {targetSocketData.socketName}");
+                        // At least one direction must be compatible
+                        if (!iProvideWhatTargetAccepts && !targetProvidesWhatIAccept)
                             continue;
-                        }
-                        
-                        Debug.Log($"Socket Snap: COMPATIBLE! {mySocketData.socketName} (provides:{mySocketData.providedTypes}, accepts:{mySocketData.acceptedTypes}) ↔ {targetSocketData.socketName} (provides:{targetSocketData.providedTypes}, accepts:{targetSocketData.acceptedTypes})");
                         
                         float socketScore = CalculateSocketScore(mySocketData.socketType, targetSocketData.socketType, distance);
                         
                         if (socketScore < minDistance)
                         {
-                            Debug.Log($"=== SOCKET MATCH FOUND ===");
-                            Debug.Log($"  Score: {socketScore:F2}");
-                            Debug.Log($"  My socket [{myIdx}]: {mySocketData.socketName}");
-                            Debug.Log($"  Target socket [{targetIdx}]: {targetSocketData.socketName} on {targetSocket.name}");
-                            
                             minDistance = socketScore;
                             nearestSocketTarget = targetSocket;
                             nearestSocketIndex = targetIdx;
@@ -499,17 +422,13 @@ namespace BuildingTools
                                 targetSocket, targetIdx, targetSocketData,
                                 mySocketData, rotation
                             );
-                            
-                            Debug.Log($"  Calculated position: {position}");
                         }
                     }
                 }
             }
             
-            if (nearestSocketTarget == null && socketsChecked > 0)
+            if (nearestSocketTarget == null)
             {
-                Debug.Log($"Socket Snap: Checked {socketsChecked} sockets ({socketsOccupied} occupied), closest was {closestDistance:F2} units away (need < {minDistance})");
-                // Reset only if no socket found THIS time
                 nearestSocketTarget = null;
                 nearestSocketIndex = -1;
                 mySocketIndex = -1;
@@ -562,13 +481,6 @@ namespace BuildingTools
             Vector3 mySocketOffset = myRotation * mySocketLocalPos;
             
             Vector3 connectionPos = targetWorldPos - mySocketOffset;
-            
-            Debug.Log($"Socket Position Calc:\n" +
-                     $"  Target world pos: {targetWorldPos}\n" +
-                     $"  My socket local: {mySocketLocalPos}\n" +
-                     $"  My rotation: {myRotation.eulerAngles}\n" +
-                     $"  My socket offset (rotated): {mySocketOffset}\n" +
-                     $"  Final position: {connectionPos}");
             
             if (targetSocketData.connectionOffset != Vector3.zero)
             {
@@ -670,25 +582,9 @@ namespace BuildingTools
             
             socket.InitializeFromDefinition(currentLibrary, selectedPieceIndex);
             
-            Debug.Log($"After init: socket has {socket.sockets.Count} sockets");
-            
             if (nearestSocketTarget != null && socketSnapEnabled && mySocketIndex >= 0 && nearestSocketIndex >= 0)
             {
-                Debug.Log($"Attempting connection: {newObject.name}[{mySocketIndex}] → {nearestSocketTarget.name}[{nearestSocketIndex}]");
-                Debug.Log($"  My socket count: {socket.sockets.Count}, Target socket count: {nearestSocketTarget.sockets.Count}");
-                Debug.Log($"  Can connect? {socket.CanConnectToSocket(mySocketIndex, nearestSocketTarget, nearestSocketIndex)}");
-                
                 socket.ConnectSocket(mySocketIndex, nearestSocketTarget, nearestSocketIndex);
-                
-                Debug.Log($"After ConnectSocket:");
-                Debug.Log($"  My socket[{mySocketIndex}].isOccupied = {socket.sockets[mySocketIndex].isOccupied}");
-                Debug.Log($"  Target socket[{nearestSocketIndex}].isOccupied = {nearestSocketTarget.sockets[nearestSocketIndex].isOccupied}");
-                Debug.Log($"  My connections: {socket.connections.Count}");
-                Debug.Log($"  Target connections: {nearestSocketTarget.connections.Count}");
-            }
-            else
-            {
-                Debug.Log($"NOT connecting: nearestTarget={nearestSocketTarget != null}, socketSnap={socketSnapEnabled}, myIdx={mySocketIndex}, targetIdx={nearestSocketIndex}");
             }
             
             Undo.RegisterCreatedObjectUndo(newObject, "Place Building Piece");

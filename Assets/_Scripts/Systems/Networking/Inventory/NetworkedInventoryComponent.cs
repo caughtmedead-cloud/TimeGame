@@ -975,6 +975,110 @@ namespace TimeGame.Systems.Networking.Inventory
         }
 
         // ─────────────────────────────────────────────────────────────────────
+        //  Root compartment → nested container move
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Owner requests to move an item from a root compartment grid directly into a
+        /// nested container that is open as a floating window (e.g. root → backpack).
+        ///
+        /// This is distinct from SvrPutItemIntoNestedContainer (player inventory → floating
+        /// window) because here the SOURCE is the world container itself, not the player's
+        /// manifest. The item must be removed from the root compartment and placed at the
+        /// nested path in one atomic server operation.
+        /// </summary>
+        [ServerRpc]
+        private void SvrMoveItemFromRootToNested(
+            int                  containerNetId,
+            int                  sourceCompartmentIndex,
+            int                  targetCompartmentIndex,
+            Guid[]               targetContainerPath,
+            Guid                 itemInstanceId,
+            Vector2Int           newGridPosition,
+            GridDirection        newRotation,
+            int                  stackCount,
+            bool                 hasContainerSnapshot,
+            NetContainerSnapshot containerSnapshot)
+        {
+            if (!ServerManager.Objects.Spawned.TryGetValue(
+                    containerNetId, out FishNet.Object.NetworkObject nob))
+            {
+                Log($"[Server] SvrMoveItemFromRootToNested DENY — NetworkObject {containerNetId} not found.");
+                return;
+            }
+
+            NetworkedWorldLootContainer netContainer = nob.GetComponent<NetworkedWorldLootContainer>();
+            if (netContainer == null)
+            {
+                Log("[Server] SvrMoveItemFromRootToNested DENY — no container component.");
+                return;
+            }
+
+            netContainer.ServerMoveFromRootToNested(
+                sourceCompartmentIndex,
+                targetCompartmentIndex,
+                targetContainerPath,
+                itemInstanceId,
+                newGridPosition,
+                newRotation,
+                stackCount,
+                hasContainerSnapshot,
+                containerSnapshot);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Phase 6 — Cross-nested container move
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Owner requests to move an item from one nested container (floating window) to
+        /// another nested container (floating window) that both live inside the same world
+        /// loot container compartment.
+        ///
+        /// Example: dragging a bandage from a backpack into a pouch that is also inside
+        /// the backpack — sourcePath=[backpackId], targetPath=[backpackId, pouchId].
+        ///
+        /// The drag handler already applied the move speculatively on the client.  This RPC
+        /// tells the server to mirror it so that other clients and future reopens are correct.
+        /// </summary>
+        [ServerRpc]
+        private void SvrMoveItemBetweenNestedContainers(
+            int           containerNetId,
+            int           compartmentIndex,
+            Guid[]        sourceContainerPath,
+            Guid[]        targetContainerPath,
+            Guid          itemInstanceId,
+            Vector2Int    newGridPosition,
+            GridDirection newRotation,
+            int           stackCount)
+        {
+            if (!ServerManager.Objects.Spawned.TryGetValue(
+                    containerNetId, out FishNet.Object.NetworkObject nob))
+            {
+                Log($"[Server] SvrMoveItemBetweenNestedContainers DENY — " +
+                    $"NetworkObject {containerNetId} not found.");
+                return;
+            }
+
+            NetworkedWorldLootContainer netContainer =
+                nob.GetComponent<NetworkedWorldLootContainer>();
+            if (netContainer == null)
+            {
+                Log($"[Server] SvrMoveItemBetweenNestedContainers DENY — no container component.");
+                return;
+            }
+
+            netContainer.ServerMoveItemBetweenPaths(
+                compartmentIndex,
+                sourceContainerPath,
+                targetContainerPath,
+                itemInstanceId,
+                newGridPosition,
+                newRotation,
+                stackCount);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         //  Phase 6 — Container put (drag hook — inverse of take)
         // ─────────────────────────────────────────────────────────────────────
 
@@ -1064,7 +1168,7 @@ namespace TimeGame.Systems.Networking.Inventory
 
             bool success = netContainer.ServerTryPutItem(
                 itemInstanceId, itemDef, actualCount, compartmentIndex, gridPosition, rotation,
-                hasSnapshot, snapshot);
+                hasSnapshot, snapshot, Array.Empty<Guid>());
 
             if (!success)
             {
@@ -1124,6 +1228,97 @@ namespace TimeGame.Systems.Networking.Inventory
             // TODO Phase 6d: roll back — remove item from container grid, re-add to player inventory.
             Debug.LogWarning($"[NetworkedInventory] Container put denied for {ShortGuid(itemInstanceId)}: {reason}. " +
                              "Speculative place should be rolled back — implement in Phase 6d.");
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Phase 6 — Nested container put (separate RPC — required Guid[] param)
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Owner requests to put an item directly into a nested container (floating window).
+        ///
+        /// This is a SEPARATE RPC from SvrPutItemIntoContainer intentionally.
+        /// FishNet's weaver corrupts optional Guid[] parameters, so containerPath
+        /// must be a required parameter here rather than an optional one on the root RPC.
+        ///
+        /// FLOW: same as SvrPutItemIntoContainer but ServerTryPutItem walks containerPath
+        /// to find the correct nested InventorySystem before placing the item.
+        /// </summary>
+        [ServerRpc]
+        private void SvrPutItemIntoNestedContainer(
+            int                  containerNetId,
+            int                  compartmentIndex,
+            Guid                 itemInstanceId,
+            Vector2Int           gridPosition,
+            GridDirection        rotation,
+            Guid[]               containerPath,
+            int                  stackCount,
+            bool                 clientHasContainerSnapshot,
+            NetContainerSnapshot clientContainerSnapshot)
+        {
+            if (!ServerManager.Objects.Spawned.TryGetValue(containerNetId, out FishNet.Object.NetworkObject nob))
+            {
+                Log($"[Server] SvrPutItemIntoNestedContainer DENY — NetworkObject {containerNetId} not found.");
+                TgtPutItemDenied(Owner, itemInstanceId, "Container no longer exists.");
+                return;
+            }
+
+            NetworkedWorldLootContainer netContainer = nob.GetComponent<NetworkedWorldLootContainer>();
+            if (netContainer == null)
+            {
+                TgtPutItemDenied(Owner, itemInstanceId, "Invalid container.");
+                return;
+            }
+
+            if (!ServerOwnsItem(itemInstanceId))
+            {
+                Log($"[Server] SvrPutItemIntoNestedContainer DENY — player does not own {ShortGuid(itemInstanceId)}.");
+                TgtPutItemDenied(Owner, itemInstanceId, "Item not in your inventory.");
+                return;
+            }
+
+            ServerItemRecord record = _serverManifest[itemInstanceId];
+
+            InventoryItemSO itemDef = itemRegistry != null ? itemRegistry.GetItem(record.ItemDefName) : null;
+            if (itemDef == null)
+            {
+                Log($"[Server] SvrPutItemIntoNestedContainer DENY — unknown item def '{record.ItemDefName}'.");
+                TgtPutItemDenied(Owner, itemInstanceId, "Item definition not found on server.");
+                return;
+            }
+
+            int  actualCount  = (stackCount > 0 && stackCount <= record.StackCount) ? stackCount : record.StackCount;
+            bool isPartialPut = actualCount < record.StackCount;
+
+            bool hasSnapshot = clientHasContainerSnapshot || record.HasContainerSnapshot;
+            NetContainerSnapshot snapshot = clientHasContainerSnapshot ? clientContainerSnapshot : record.ContainerSnapshot;
+
+            bool success = netContainer.ServerTryPutItem(
+                itemInstanceId, itemDef, actualCount, compartmentIndex, gridPosition, rotation,
+                hasSnapshot, snapshot, containerPath);
+
+            if (!success)
+            {
+                Log($"[Server] SvrPutItemIntoNestedContainer DENY — container rejected placement.");
+                TgtPutItemDenied(Owner, itemInstanceId, "Container rejected the item (position conflict).");
+                return;
+            }
+
+            if (isPartialPut)
+            {
+                ServerItemRecord updated = record;
+                updated.StackCount -= actualCount;
+                _serverManifest[itemInstanceId] = updated;
+            }
+            else
+            {
+                ServerRemoveItem(itemInstanceId);
+            }
+
+            Log($"[Server] SvrPutItemIntoNestedContainer GRANTED — {record.ItemDefName} " +
+                $"id={ShortGuid(itemInstanceId)} pathDepth={containerPath.Length} pos={gridPosition}");
+
+            TgtPutItemGranted(Owner, itemInstanceId);
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -1249,8 +1444,7 @@ namespace TimeGame.Systems.Networking.Inventory
                     sourceGrid, out int takeNetId, out int takeCompartmentIndex))
             {
                 // Before treating this as a TAKE, check whether the TARGET is also a grid
-                // belonging to THE SAME container.  If it is, this is a cross-compartment
-                // intra-container drag — item stays in the container and no manifest change.
+                // belonging to THE SAME container (cross-compartment intra-container drag).
                 if (cim.TryGetContainerContext(
                         targetGrid, out int intraNetId, out int intraTargetCompartment)
                     && intraNetId == takeNetId)
@@ -1266,8 +1460,71 @@ namespace TimeGame.Systems.Networking.Inventory
                         movedItem.InstanceID,
                         movedItem.AnchorPosition,
                         movedItem.Rotation,
-                        Array.Empty<Guid>());  // root-level, no path needed
+                        Array.Empty<Guid>());
                     return;
+                }
+
+                // Also check whether the TARGET is a floating window that lives INSIDE this
+                // same world container.  Root compartment → floating window is a nested PUT,
+                // not a TAKE to the player's inventory.
+                if (FloatingContainerWindowManager.Instance != null)
+                {
+                    FloatingContainerWindow tgtWin =
+                        FloatingContainerWindowManager.Instance.FindWindowByGrid(targetGrid);
+
+                    Log($"[Client] HandleItemMovedBetweenGrids ROOT→NESTED check — " +
+                        $"tgtWin={(tgtWin != null ? tgtWin.ContainerItem?.ItemDefinition?.name : "NULL")} " +
+                        $"targetGrid={targetGrid?.name}");
+
+                    if (tgtWin != null)
+                    {
+                        FloatingContainerWindow.ParentContainerContext tgtCtx = tgtWin.GetParentContext();
+
+                        Log($"[Client] HandleItemMovedBetweenGrids ROOT→NESTED ctx — " +
+                            $"IsValid={tgtCtx.IsValid} tgtNetId={tgtCtx.WorldContainerNetId} takeNetId={takeNetId}");
+
+                        if (tgtCtx.IsValid && tgtCtx.WorldContainerNetId == takeNetId)
+                        {
+                            // Root compartment → nested floating window: treat as nested PUT.
+                            Guid[] putPath = AppendGuid(tgtCtx.ContainerPath, tgtWin.ContainerItem.InstanceID);
+
+                            Log($"[Client] HandleItemMovedBetweenGrids ROOT→NESTED PUT — " +
+                                $"'{movedItem.ItemDefinition?.ItemName}' " +
+                                $"from root comp {takeCompartmentIndex} " +
+                                $"into container {tgtCtx.WorldContainerNetId} pathDepth={putPath.Length}.");
+
+                            bool                hasContainerData  = false;
+                            NetContainerSnapshot containerSnapshot = default;
+
+                            InventoryItemSO putItemDef = movedItem.ItemDefinition as InventoryItemSO;
+                            if (putItemDef != null && putItemDef.ProvidesStorage
+                                && movedItem.ContainerInventory != null)
+                            {
+                                ContainerItemData currentData =
+                                    ContainerItemData.FromInventorySystem(movedItem.ContainerInventory);
+                                if (currentData != null && !currentData.IsEmpty())
+                                {
+                                    containerSnapshot = InventoryNetConverter.ToNetSnapshot(currentData);
+                                    hasContainerData  = true;
+                                }
+                            }
+
+                            // The item moves OUT of the root compartment on the server too,
+                            // so first take it from the root, then put it into the nested path.
+                            SvrMoveItemFromRootToNested(
+                                takeNetId,
+                                takeCompartmentIndex,
+                                tgtCtx.CompartmentIndex,
+                                putPath,
+                                movedItem.InstanceID,
+                                movedItem.AnchorPosition,
+                                movedItem.Rotation,
+                                movedItem.StackCount,
+                                hasContainerData,
+                                containerSnapshot);
+                            return;
+                        }
+                    }
                 }
 
                 Log($"[Client] HandleItemMovedBetweenGrids TAKE — '{movedItem.ItemDefinition?.ItemName}' " +
@@ -1278,10 +1535,54 @@ namespace TimeGame.Systems.Networking.Inventory
                 SvrTakeItemFromContainer(
                     takeNetId,
                     takeCompartmentIndex,
-                    Array.Empty<Guid>(),      // root-level — no ancestor path
+                    Array.Empty<Guid>(),
                     movedItem.InstanceID,
                     movedItem.StackCount);
                 return;
+            }
+
+            // ── FLOATING → FLOATING: item dragged between two nested containers ──
+            // MUST be checked BEFORE the NESTED TAKE block below.
+            // When both grids are floating windows inside the SAME world container,
+            // this is an intra-nested move — not a take to player inventory.
+            // Sending NESTED TAKE here would remove the item from the source on the server
+            // but never add it to the target, leaving the server state corrupt.
+            if (FloatingContainerWindowManager.Instance != null)
+            {
+                FloatingContainerWindow srcWin =
+                    FloatingContainerWindowManager.Instance.FindWindowByGrid(sourceGrid);
+                FloatingContainerWindow tgtWin =
+                    FloatingContainerWindowManager.Instance.FindWindowByGrid(targetGrid);
+
+                if (srcWin != null && tgtWin != null)
+                {
+                    FloatingContainerWindow.ParentContainerContext srcCtx = srcWin.GetParentContext();
+                    FloatingContainerWindow.ParentContainerContext tgtCtx = tgtWin.GetParentContext();
+
+                    if (srcCtx.IsValid && tgtCtx.IsValid &&
+                        srcCtx.WorldContainerNetId == tgtCtx.WorldContainerNetId &&
+                        srcCtx.CompartmentIndex    == tgtCtx.CompartmentIndex)
+                    {
+                        Guid[] srcPath = AppendGuid(srcCtx.ContainerPath, srcWin.ContainerItem.InstanceID);
+                        Guid[] tgtPath = AppendGuid(tgtCtx.ContainerPath, tgtWin.ContainerItem.InstanceID);
+
+                        Log($"[Client] HandleItemMovedBetweenGrids FLOATING→FLOATING — " +
+                            $"'{movedItem.ItemDefinition?.ItemName}' " +
+                            $"container={srcCtx.WorldContainerNetId} comp={srcCtx.CompartmentIndex} " +
+                            $"srcPathDepth={srcPath.Length} tgtPathDepth={tgtPath.Length}.");
+
+                        SvrMoveItemBetweenNestedContainers(
+                            srcCtx.WorldContainerNetId,
+                            srcCtx.CompartmentIndex,
+                            srcPath,
+                            tgtPath,
+                            movedItem.InstanceID,
+                            movedItem.AnchorPosition,
+                            movedItem.Rotation,
+                            movedItem.StackCount);
+                        return;
+                    }
+                }
             }
 
             // ── TAKE from floating window (nested container) ──────────────────
@@ -1357,6 +1658,68 @@ namespace TimeGame.Systems.Networking.Inventory
                     movedItem.StackCount,
                     hasContainerData,
                     containerSnapshot);
+                return;
+            }
+
+            // ── NESTED PUT: player dragged an item INTO a floating window ─────
+            // Handles dragging from player inventory (or another non-container grid)
+            // directly into a nested container that is open as a floating window.
+            // Without this block the item ends up only in the client's local floating-
+            // window InventorySystem; the server never learns about the move, so the
+            // change is lost when the container is closed and reopened.
+            if (FloatingContainerWindowManager.Instance != null)
+            {
+                FloatingContainerWindow targetWindow =
+                    FloatingContainerWindowManager.Instance.FindWindowByGrid(targetGrid);
+
+                if (targetWindow != null)
+                {
+                    FloatingContainerWindow.ParentContainerContext ctx = targetWindow.GetParentContext();
+                    if (ctx.IsValid)
+                    {
+                        // Full path = ancestors stored in the window + this window's container ID.
+                        Guid[] putPath = AppendGuid(ctx.ContainerPath, targetWindow.ContainerItem.InstanceID);
+
+                        // Snapshot the item's container inventory if it is itself a container
+                        // (e.g. the player is dropping a pouch into a backpack).
+                        bool                hasContainerData  = false;
+                        NetContainerSnapshot containerSnapshot = default;
+
+                        InventoryItemSO putItemDef = movedItem.ItemDefinition as InventoryItemSO;
+                        if (putItemDef != null && putItemDef.ProvidesStorage &&
+                            movedItem.ContainerInventory != null)
+                        {
+                            ContainerItemData currentData =
+                                ContainerItemData.FromInventorySystem(movedItem.ContainerInventory);
+                            if (currentData != null && !currentData.IsEmpty())
+                            {
+                                containerSnapshot = InventoryNetConverter.ToNetSnapshot(currentData);
+                                hasContainerData  = true;
+
+                                Log($"[Client] HandleItemMovedBetweenGrids NESTED PUT — snapshotting " +
+                                    $"{currentData.GetTotalItemCount()} item(s) inside '{putItemDef?.ItemName}'.");
+                            }
+                        }
+
+                        Log($"[Client] HandleItemMovedBetweenGrids NESTED PUT — " +
+                            $"'{movedItem.ItemDefinition?.ItemName}' " +
+                            $"into container {ctx.WorldContainerNetId} compartment {ctx.CompartmentIndex} " +
+                            $"pathDepth={putPath.Length} at {movedItem.AnchorPosition}.");
+
+                        _pendingContainerPuts.Add(movedItem.InstanceID);
+
+                        SvrPutItemIntoNestedContainer(
+                            ctx.WorldContainerNetId,
+                            ctx.CompartmentIndex,
+                            movedItem.InstanceID,
+                            movedItem.AnchorPosition,
+                            movedItem.Rotation,
+                            putPath,
+                            movedItem.StackCount,
+                            hasContainerData,
+                            containerSnapshot);
+                    }
+                }
             }
         }
 
@@ -1391,6 +1754,7 @@ namespace TimeGame.Systems.Networking.Inventory
                     grid, out containerNetId, out compartmentIndex))
             {
                 containerPath = Array.Empty<Guid>();
+                Log($"[Client] HandleItemRepositionedInGrid — Case A ROOT grid detected, container={containerNetId} comp={compartmentIndex}.");
             }
             // ── Case B: floating window grid (nested container) ───────────────
             else if (FloatingContainerWindowManager.Instance != null)
@@ -1398,9 +1762,12 @@ namespace TimeGame.Systems.Networking.Inventory
                 FloatingContainerWindow window =
                     FloatingContainerWindowManager.Instance.FindWindowByGrid(grid);
 
+                Log($"[Client] HandleItemRepositionedInGrid — Case B FLOATING: window={(window != null ? window.ContainerItem?.ItemDefinition?.name : "NULL")} grid={grid?.name}.");
+
                 if (window != null)
                 {
                     FloatingContainerWindow.ParentContainerContext ctx = window.GetParentContext();
+                    Log($"[Client] HandleItemRepositionedInGrid — ctx.IsValid={ctx.IsValid} NetId={ctx.WorldContainerNetId} comp={ctx.CompartmentIndex} ancestorDepth={ctx.ContainerPath?.Length ?? -1}.");
                     if (ctx.IsValid)
                     {
                         containerNetId   = ctx.WorldContainerNetId;
@@ -1411,7 +1778,11 @@ namespace TimeGame.Systems.Networking.Inventory
                 }
             }
 
-            if (containerNetId < 0) return; // player-inventory grid — no server sync needed
+            if (containerNetId < 0)
+            {
+                Log($"[Client] HandleItemRepositionedInGrid — player-inventory grid, skipping sync.");
+                return;
+            }
 
             Log($"[Client] HandleItemRepositionedInGrid — '{movedItem.ItemDefinition?.ItemName}' " +
                 $"moved to {movedItem.AnchorPosition} rot={movedItem.Rotation} " +
@@ -1605,110 +1976,119 @@ namespace TimeGame.Systems.Networking.Inventory
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        //  Phase 6 — Nested container sync (floating window close path)
+        //  Nested container reconciliation (close-time persistence snapshot)
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Client → Server: Persist the current contents of a nested container item
-        /// (backpack, pouch, etc.) that lives inside a world loot container.
+        /// Owner → Server: persist the current contents of a nested container by walking
+        /// <paramref name="containerPath"/> from the root compartment to the target
+        /// InventorySystem and replacing it with the provided snapshot.
         ///
-        /// Called by FloatingContainerWindow.Close() when the floating window was opened
-        /// from a world container compartment.  The server replaces the PlacedItem's
-        /// ContainerInventory with the snapshot so the changes survive close/reopen.
+        /// Called by FloatingContainerWindow.Close() as a reconciliation step.
+        /// Real-time RPCs (SvrMoveItemInContainer, SvrPutItemIntoNestedContainer, etc.)
+        /// keep the server authoritative during a session.  This snapshot acts as a
+        /// safety net: it ensures that any operation not covered by a real-time RPC
+        /// (e.g. a same-grid reposition that the event missed, or a merge) is still
+        /// persisted when the window closes.
         ///
-        /// Security notes:
-        ///   • The server verifies the world container and compartment exist.
-        ///   • The server verifies the nested item exists and provides storage.
-        ///   • Only the owner of this NetworkObject can call this RPC.
-        ///   • Content validation (registry lookup per item) happens inside
-        ///     InventoryNetConverter.FromNetSnapshot on the server side.
+        /// <paramref name="containerPath"/> is the FULL path including the container
+        /// being closed (ancestors + this container's own InstanceID), so the server
+        /// can walk to the exact InventorySystem regardless of nesting depth.
         /// </summary>
         [ServerRpc]
         public void SvrSyncNestedContainer(
             int                  worldContainerNetId,
             int                  compartmentIndex,
-            Guid                 nestedContainerInstanceId,
+            Guid[]               containerPath,
             bool                 hasSnapshot,
             NetContainerSnapshot snapshot)
         {
-            // Locate the world container
             if (!ServerManager.Objects.Spawned.TryGetValue(
                     worldContainerNetId, out FishNet.Object.NetworkObject nob))
             {
-                Log($"[Server] SvrSyncNestedContainer DENY — " +
-                    $"NetworkObject {worldContainerNetId} not found.");
+                Log($"[Server] SvrSyncNestedContainer DENY — NetworkObject {worldContainerNetId} not found.");
                 return;
             }
 
-            NetworkedWorldLootContainer netContainer =
-                nob.GetComponent<NetworkedWorldLootContainer>();
+            NetworkedWorldLootContainer netContainer = nob.GetComponent<NetworkedWorldLootContainer>();
             if (netContainer == null)
             {
                 Log("[Server] SvrSyncNestedContainer DENY — no NetworkedWorldLootContainer.");
                 return;
             }
 
-            // Locate the compartment and the nested item inside it
-            InventorySystem compartment =
-                netContainer.GetServerCompartment(compartmentIndex);
+            if (containerPath == null || containerPath.Length == 0)
+            {
+                Log("[Server] SvrSyncNestedContainer DENY — containerPath is empty.");
+                return;
+            }
+
+            InventorySystem compartment = netContainer.GetServerCompartment(compartmentIndex);
             if (compartment == null)
             {
-                Log($"[Server] SvrSyncNestedContainer DENY — " +
-                    $"invalid compartment {compartmentIndex}.");
+                Log($"[Server] SvrSyncNestedContainer DENY — invalid compartment {compartmentIndex}.");
                 return;
             }
 
-            PlacedItem nestedItem = compartment.GetItemByID(nestedContainerInstanceId);
-            if (nestedItem == null)
+            // Walk every ID in containerPath except the last — those are ancestors.
+            // The last ID in the path is the container whose InventorySystem we replace.
+            InventorySystem parentInv = compartment;
+            for (int i = 0; i < containerPath.Length - 1; i++)
+            {
+                PlacedItem ancestor = parentInv.GetItemByID(containerPath[i]);
+                if (ancestor?.ContainerInventory == null)
+                {
+                    Log($"[Server] SvrSyncNestedContainer DENY — " +
+                        $"path walk failed at depth {i} id={ShortGuid(containerPath[i])}.");
+                    return;
+                }
+                parentInv = ancestor.ContainerInventory;
+            }
+
+            Guid targetId = containerPath[containerPath.Length - 1];
+            PlacedItem targetItem = parentInv.GetItemByID(targetId);
+            if (targetItem == null)
             {
                 Log($"[Server] SvrSyncNestedContainer DENY — " +
-                    $"nested item {ShortGuid(nestedContainerInstanceId)} not found " +
-                    $"in compartment {compartmentIndex}.");
+                    $"target item {ShortGuid(targetId)} not found at path leaf.");
                 return;
             }
 
-            InventoryItemSO itemDef = nestedItem.ItemDefinition as InventoryItemSO;
+            InventoryItemSO itemDef = targetItem.ItemDefinition as InventoryItemSO;
             if (itemDef == null || !itemDef.ProvidesStorage)
             {
                 Log($"[Server] SvrSyncNestedContainer DENY — " +
-                    $"item {ShortGuid(nestedContainerInstanceId)} does not provide storage.");
+                    $"item {ShortGuid(targetId)} does not provide storage.");
                 return;
             }
 
-            // Rebuild the live ContainerInventory from the client's snapshot
             if (hasSnapshot)
             {
                 if (itemRegistry == null)
                     itemRegistry = Resources.Load<InventoryItemRegistry>("InventoryItemRegistry");
 
-                ContainerItemData data =
-                    InventoryNetConverter.FromNetSnapshot(snapshot, itemRegistry);
+                ContainerItemData data = InventoryNetConverter.FromNetSnapshot(snapshot, itemRegistry);
                 if (data != null)
                 {
                     InventorySystem containerInv = new InventorySystem(
                         itemDef.StorageGridSize.x,
                         itemDef.StorageGridSize.y,
-                        64f,           // cell size — matches UI cell size throughout
-                        Vector3.zero,
+                        64f, Vector3.zero,
                         itemDef.StorageMaxWeight);
-
                     data.LoadIntoInventorySystem(containerInv, compartmentIndex: 0);
-                    nestedItem.ContainerInventory = containerInv;
+                    targetItem.ContainerInventory = containerInv;
 
-                    Log($"[Server] SvrSyncNestedContainer — updated '{itemDef.ItemName}' " +
-                        $"id={ShortGuid(nestedContainerInstanceId)} " +
-                        $"with {data.GetTotalItemCount()} item(s) " +
-                        $"in container {worldContainerNetId} compartment {compartmentIndex}.");
+                    Log($"[Server] SvrSyncNestedContainer — '{itemDef.ItemName}' " +
+                        $"id={ShortGuid(targetId)} pathDepth={containerPath.Length} " +
+                        $"items={data.GetTotalItemCount()} " +
+                        $"container={worldContainerNetId} comp={compartmentIndex}.");
                 }
             }
             else
             {
-                // Player emptied the backpack or it was always empty
-                nestedItem.ContainerInventory = null;
-
-                Log($"[Server] SvrSyncNestedContainer — cleared '{itemDef.ItemName}' " +
-                    $"id={ShortGuid(nestedContainerInstanceId)} " +
-                    $"(no snapshot — container is empty).");
+                targetItem.ContainerInventory = null;
+                Log($"[Server] SvrSyncNestedContainer — '{itemDef.ItemName}' " +
+                    $"id={ShortGuid(targetId)} cleared (empty snapshot).");
             }
         }
 

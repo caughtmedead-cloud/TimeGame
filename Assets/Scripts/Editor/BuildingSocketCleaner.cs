@@ -5,7 +5,7 @@ namespace BuildingTools
 {
     public static class BuildingSocketCleaner
     {
-        [MenuItem("Tools/Building Tools/Strip BuildingSocket Components from Selection")]
+        [MenuItem("Tools/TimeGame/Building Tools/Strip BuildingSocket Components from Selection")]
         private static void StripFromSelection()
         {
             if (Selection.gameObjects.Length == 0)
@@ -28,13 +28,13 @@ namespace BuildingTools
             Debug.Log($"Removed {count} BuildingSocket component(s) from selection.");
         }
         
-        [MenuItem("Tools/Building Tools/Strip BuildingSocket Components from Selection", true)]
+        [MenuItem("Tools/TimeGame/Building Tools/Strip BuildingSocket Components from Selection", true)]
         private static bool ValidateStripFromSelection()
         {
             return Selection.gameObjects.Length > 0;
         }
         
-        [MenuItem("Tools/Building Tools/Strip All BuildingSocket Components in Scene")]
+        [MenuItem("Tools/TimeGame/Building Tools/Strip All BuildingSocket Components in Scene")]
         private static void StripFromScene()
         {
             if (!EditorUtility.DisplayDialog(
@@ -67,7 +67,7 @@ namespace BuildingTools
             Debug.Log($"Removed {allSockets.Length} BuildingSocket component(s) from scene.");
         }
         
-        [MenuItem("Tools/Building Tools/Count BuildingSocket Components in Scene")]
+        [MenuItem("Tools/TimeGame/Building Tools/Count BuildingSocket Components in Scene")]
         private static void CountInScene()
         {
             BuildingSocket[] allSockets = Object.FindObjectsByType<BuildingSocket>(FindObjectsSortMode.None);

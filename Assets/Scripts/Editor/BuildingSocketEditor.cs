@@ -34,7 +34,7 @@ namespace BuildingTools
                 SocketEditor window = EditorWindow.GetWindow<SocketEditor>("Socket Editor");
                 window.Show();
                 // The menu item will handle the actual live edit setup
-                EditorApplication.ExecuteMenuItem("Tools/Building Tools/Edit Sockets (Live Mode)");
+                EditorApplication.ExecuteMenuItem("Tools/TimeGame/Building Tools/Edit Sockets (Live Mode)");
             }
             
             if (GUILayout.Button("Remove This Component"))

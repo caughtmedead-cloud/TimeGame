@@ -11,6 +11,12 @@ namespace BuildingTools
         Volume      // 3D space (door frame, window opening)
     }
     
+    public enum SocketMatchMode
+    {
+        Any,        // Accept if ANY of the accepted types match (OR logic)
+        All         // Accept only if ALL accepted types match (AND logic)
+    }
+    
     [System.Serializable]
     public class Socket
     {
@@ -27,11 +33,14 @@ namespace BuildingTools
         [Tooltip("What piece types can connect to this socket (comma-separated)")]
         public string acceptedTypes = "";
         
+        [Tooltip("ANY = accept if any tag matches (floor,wall accepts floor OR wall)\nALL = require all tags (tile,floor requires tile AND floor)")]
+        public SocketMatchMode acceptMatchMode = SocketMatchMode.Any;
+        
         [Tooltip("What piece types this socket provides when connected")]
         public string providedTypes = "";
         
-        [Tooltip("Is this socket occupied?")]
-        public bool isOccupied = false;
+        [Tooltip("ANY = provides any of the tags (floor,wall means floor OR wall)\nALL = provides all tags together (tile,floor means tile AND floor as a set)")]
+        public SocketMatchMode provideMatchMode = SocketMatchMode.Any;
         
         [Header("Behavior")]
         [Tooltip("Auto-align connected piece to this socket's rotation")]
@@ -63,11 +72,8 @@ namespace BuildingTools
         
         public bool Accepts(string pieceTags)
         {
-            if (isOccupied)
-                return false;
-            
             if (string.IsNullOrEmpty(acceptedTypes))
-                return true;
+                return false;
             
             if (string.IsNullOrEmpty(pieceTags))
                 return false;
@@ -75,15 +81,112 @@ namespace BuildingTools
             string[] acceptedArray = acceptedTypes.Split(',');
             string[] pieceTagsArray = pieceTags.Split(',');
             
-            foreach (string acceptedType in acceptedArray)
+            if (acceptMatchMode == SocketMatchMode.All)
             {
-                foreach (string pieceTag in pieceTagsArray)
+                // ALL accepted types must be present in the provided tags
+                foreach (string acceptedType in acceptedArray)
                 {
-                    if (acceptedType.Trim().Equals(pieceTag.Trim(), System.StringComparison.OrdinalIgnoreCase))
-                        return true;
+                    string trimmedAccepted = acceptedType.Trim();
+                    bool foundMatch = false;
+                    
+                    foreach (string pieceTag in pieceTagsArray)
+                    {
+                        if (trimmedAccepted.Equals(pieceTag.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            foundMatch = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!foundMatch)
+                        return false;
+                }
+                
+                return true;
+            }
+            else // SocketMatchMode.Any
+            {
+                // Accept if ANY of the accepted types match
+                foreach (string acceptedType in acceptedArray)
+                {
+                    string trimmedAccepted = acceptedType.Trim();
+                    
+                    foreach (string pieceTag in pieceTagsArray)
+                    {
+                        if (trimmedAccepted.Equals(pieceTag.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                            return true;
+                    }
+                }
+                
+                return false;
+            }
+        }
+        
+        public string GetProvidedTypesAsString()
+        {
+            return providedTypes;
+        }
+        
+        public bool ProvidesCompatibleWith(Socket otherSocket)
+        {
+            if (string.IsNullOrEmpty(providedTypes))
+                return false;
+            
+            if (string.IsNullOrEmpty(otherSocket.acceptedTypes))
+                return false;
+            
+            string[] providedArray = providedTypes.Split(',');
+            string[] acceptedArray = otherSocket.acceptedTypes.Split(',');
+            
+            if (provideMatchMode == SocketMatchMode.All)
+            {
+                // When providing ALL: All my provided types must be in the other's accepted list
+                // AND the other socket must accept them based on its accept mode
+                if (otherSocket.acceptMatchMode == SocketMatchMode.All)
+                {
+                    // Other wants ALL its accepted types present in what I provide
+                    // So I must provide at least all of what it accepts
+                    foreach (string acceptedType in acceptedArray)
+                    {
+                        string trimmedAccepted = acceptedType.Trim();
+                        bool foundInProvided = false;
+                        
+                        foreach (string providedType in providedArray)
+                        {
+                            if (trimmedAccepted.Equals(providedType.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                            {
+                                foundInProvided = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!foundInProvided)
+                            return false;
+                    }
+                    return true;
+                }
+                else // otherSocket.acceptMatchMode == Any
+                {
+                    // Other accepts ANY of its types, I provide ALL of mine
+                    // Check if ANY of what I provide matches ANY of what it accepts
+                    foreach (string providedType in providedArray)
+                    {
+                        string trimmedProvided = providedType.Trim();
+                        
+                        foreach (string acceptedType in acceptedArray)
+                        {
+                            if (trimmedProvided.Equals(acceptedType.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                                return true;
+                        }
+                    }
+                    return false;
                 }
             }
-            return false;
+            else // provideMatchMode == Any
+            {
+                // When providing ANY: At least one of my provided types must match what they accept
+                return otherSocket.Accepts(providedTypes);
+            }
         }
         
         public bool Provides(string pieceType)
@@ -137,7 +240,6 @@ namespace BuildingTools
         
         [Header("Visual Settings")]
         public bool showSockets = true;
-        public bool showOccupiedSockets = false;
         public float gizmoSize = 0.3f;
         
         private void Awake()
@@ -190,7 +292,9 @@ namespace BuildingTools
                             localRotation = socket.localRotation,
                             size = socket.size,
                             acceptedTypes = socket.acceptedTypes,
+                            acceptMatchMode = socket.acceptMatchMode,
                             providedTypes = socket.providedTypes,
+                            provideMatchMode = socket.provideMatchMode,
                             alignRotation = socket.alignRotation,
                             connectionOffset = socket.connectionOffset,
                             gizmoColor = socket.gizmoColor
@@ -228,22 +332,19 @@ namespace BuildingTools
             Socket mySocket = sockets[mySocketIndex];
             Socket otherSocket = otherPiece.sockets[otherSocketIndex];
             
-            if (mySocket.isOccupied || otherSocket.isOccupied)
-                return false;
+            // Check if my socket provides what other accepts
+            bool iProvideWhatOtherAccepts = mySocket.ProvidesCompatibleWith(otherSocket);
             
-            bool myAcceptsOther = mySocket.Accepts(otherPiece.pieceTypeTags);
-            bool otherAcceptsMe = otherSocket.Accepts(pieceTypeTags);
+            // Check if other provides what I accept
+            bool otherProvidesWhatIAccept = otherSocket.ProvidesCompatibleWith(mySocket);
             
-            return myAcceptsOther || otherAcceptsMe;
+            return iProvideWhatOtherAccepts || otherProvidesWhatIAccept;
         }
         
         public void ConnectSocket(int mySocketIndex, BuildingSocket otherPiece, int otherSocketIndex)
         {
             if (!CanConnectToSocket(mySocketIndex, otherPiece, otherSocketIndex))
                 return;
-            
-            sockets[mySocketIndex].isOccupied = true;
-            otherPiece.sockets[otherSocketIndex].isOccupied = true;
             
             SocketConnection connection = new SocketConnection(this, mySocketIndex, otherPiece, otherSocketIndex);
             connections.Add(connection);
@@ -260,9 +361,6 @@ namespace BuildingTools
                 var conn = connections[i];
                 if (conn.sourceSocketIndex == socketIndex || conn.targetSocketIndex == socketIndex)
                 {
-                    conn.sourceSocket.sockets[conn.sourceSocketIndex].isOccupied = false;
-                    conn.targetSocket.sockets[conn.targetSocketIndex].isOccupied = false;
-                    
                     conn.sourceSocket.connections.Remove(conn);
                     conn.targetSocket.connections.Remove(conn);
                 }
@@ -309,13 +407,10 @@ namespace BuildingTools
             {
                 Socket socket = sockets[i];
                 
-                if (!showOccupiedSockets && socket.isOccupied)
-                    continue;
-                
                 Vector3 worldPos = GetSocketWorldPosition(i);
                 Quaternion worldRot = GetSocketWorldRotation(i);
                 
-                Color socketColor = socket.isOccupied ? Color.gray : socket.gizmoColor;
+                Color socketColor = socket.gizmoColor;
                 float alpha = selected ? 0.8f : 0.4f;
                 socketColor.a = alpha;
                 

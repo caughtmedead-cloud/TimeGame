@@ -19,7 +19,7 @@ namespace Thelos.AI.Editor
         
         private Vector2 scrollPosition;
         
-        [MenuItem("Tools/AI/Create AI Animator Controller")]
+        [MenuItem("Tools/TimeGame/AI/Create AI Animator Controller")]
         private static void ShowWindow()
         {
             GetWindow<AIAnimatorSetup>("AI Animator Setup");

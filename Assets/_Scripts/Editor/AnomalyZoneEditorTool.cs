@@ -36,7 +36,7 @@ public class AnomalyZoneCreatorWindow : EditorWindow
     
     private bool showAdvancedSettings = false;
     
-    [MenuItem("Tools/Anomaly Zone/Create New Zone")]
+    [MenuItem("Tools/TimeGame/Anomaly Zone/Create New Zone")]
     public static void ShowWindow()
     {
         AnomalyZoneCreatorWindow window = GetWindow<AnomalyZoneCreatorWindow>("Anomaly Zone Creator");

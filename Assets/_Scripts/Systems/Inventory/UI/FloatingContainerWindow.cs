@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using DG.Tweening;
-using TimeGame.Systems.Networking.Inventory;
 
 namespace TimeGame.Systems.Inventory.UI
 {
@@ -41,17 +40,6 @@ namespace TimeGame.Systems.Inventory.UI
         public void SetCloseButtonSprite(Sprite sprite) => stagedCloseButtonSprite = sprite;
 
         /// <summary>
-        /// Record the world loot container that owns the backpack this window is displaying.
-        /// When both values are valid (≥ 0), Close() will call SvrSyncNestedContainer so the
-        /// server persists any changes the player made inside the backpack.
-        /// Call this before Initialize() so the info is ready when the window is first shown.
-        /// </summary>
-        public void SetParentContainer(int worldContainerNetId, int compartmentIndex)
-        {
-            _parentWorldContainerNetId = worldContainerNetId;
-            _parentCompartmentIndex    = compartmentIndex;
-        }
-
         // The container item this window displays
         private GridPlacement.PlacedItem containerItem;
 
@@ -62,36 +50,29 @@ namespace TimeGame.Systems.Inventory.UI
         private Vector2 dragOffset;
         private bool isDragging = false;
 
-        // ── World-container parent tracking ──────────────────────────────────
-        // When this floating window is opened from a world loot container, these
-        // are set so Close() can snapshot the current contents and call
-        // SvrSyncNestedContainer to persist the changes on the server.
-        // Both fields are -1 when the window was opened from player inventory
-        // (no server sync needed in that case).
+        // ── Parent container context for real-time networking sync ───────────
+        // Stores which world container owns this floating window and the chain of
+        // container InstanceIDs that must be walked to reach THIS window's inventory.
+        // ContainerPath contains ancestors only (NOT this window's own container ID).
+        // The networking layer appends ContainerItem.InstanceID when building RPCs.
         private int _parentWorldContainerNetId = -1;
         private int _parentCompartmentIndex    = -1;
+        private System.Guid[] _containerPath;
 
         public GridPlacement.PlacedItem ContainerItem => containerItem;
         public InventoryGridVisual GridVisual => gridVisual;
 
         // ── Parent container context for real-time networking sync ───────────
-        // Stores which world container owns this floating window and the chain of
-        // container InstanceIDs that must be walked to reach THIS window's inventory.
-        // ContainerPath contains ancestors only (NOT this window's own container ID).
-        // The networking layer appends this window's ContainerItem.InstanceID when
-        // building the path for server RPCs.
 
         [System.Serializable]
         public struct ParentContainerContext
         {
-            public int    WorldContainerNetId; // NetworkObject.ObjectId of the root world container
-            public int    CompartmentIndex;    // Which compartment in that container
-            public System.Guid[] ContainerPath;       // Ancestor chain from root compartment to this container's parent
+            public int           WorldContainerNetId; // NetworkObject.ObjectId of the root world container
+            public int           CompartmentIndex;    // Which compartment in that container
+            public System.Guid[] ContainerPath;       // Ancestor IDs from root to this container's parent
 
             public bool IsValid => WorldContainerNetId >= 0;
         }
-
-        private System.Guid[] _containerPath;
 
         /// <summary>
         /// Set the full parent context including the container path for real-time nested sync.
@@ -303,57 +284,61 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Close this window
+        /// Close this window.
+        /// Any in-progress drag from this window's grid is cancelled so the item returns
+        /// to the grid rather than getting stuck to the cursor.
+        /// A snapshot of the current grid contents is then sent to the server so the
+        /// nested container's authoritative state is up-to-date, acting as a reconciliation
+        /// step that covers any real-time RPC gaps (reordering, merges, etc.).
+        /// Real-time RPCs keep OTHER clients' floating windows in sync during the session;
+        /// the snapshot here ensures persistence across close/reopen for THIS client.
         /// </summary>
         public void Close()
         {
-            // If an item is currently being dragged FROM this window's grid, cancel the drag
-            // before destroying the grid. Otherwise the drag handler holds a dead reference
-            // and the item gets stuck to the cursor.
+            // Cancel any active drag so the item snaps back instead of floating on the
+            // cursor after the window disappears.
             InventoryDragHandler dragHandler = gridVisual != null ? gridVisual.GetDragHandler() : null;
             if (dragHandler != null && dragHandler.IsDragging)
             {
                 dragHandler.CancelDrag();
             }
 
-            // ── Nested-container sync ─────────────────────────────────────────
-            // If this window was opened from a world loot container, snapshot the
-            // current backpack contents and send them to the server NOW — before the
-            // fade animation destroys containerItem.  The server replaces the PlacedItem's
-            // ContainerInventory so the changes survive a close/reopen cycle.
+            // ── Persistence snapshot ──────────────────────────────────────────
+            // Send the live nested-container state to the server so changes survive
+            // close/reopen.  Only fires when this window was opened from a world loot
+            // container (both IDs ≥ 0); player-only containers (-1) need no server sync.
             if (_parentWorldContainerNetId >= 0 && _parentCompartmentIndex >= 0
                 && containerItem != null)
             {
-                NetworkedInventoryComponent netInv = NetworkedInventoryComponent.LocalInstance;
+                TimeGame.Systems.Networking.Inventory.NetworkedInventoryComponent netInv =
+                    TimeGame.Systems.Networking.Inventory.NetworkedInventoryComponent.LocalInstance;
                 if (netInv != null)
                 {
                     bool                hasSnapshot = false;
-                    NetContainerSnapshot snapshot   = default;
+                    TimeGame.Systems.Networking.Inventory.NetContainerSnapshot snapshot = default;
 
                     if (containerItem.ContainerInventory != null)
                     {
                         ContainerItemData data =
                             ContainerItemData.FromInventorySystem(containerItem.ContainerInventory);
-                        if (data != null && !data.IsEmpty())
+                        if (data != null)
                         {
-                            snapshot    = InventoryNetConverter.ToNetSnapshot(data);
-                            hasSnapshot = true;
+                            snapshot    = TimeGame.Systems.Networking.Inventory.InventoryNetConverter.ToNetSnapshot(data);
+                            hasSnapshot = !data.IsEmpty();
                         }
                     }
+
+                    // Build the full container path: ancestors + this window's own container ID.
+                    System.Guid[] fullPath = AppendGuid(
+                        _containerPath ?? System.Array.Empty<System.Guid>(),
+                        containerItem.InstanceID);
 
                     netInv.SvrSyncNestedContainer(
                         _parentWorldContainerNetId,
                         _parentCompartmentIndex,
-                        containerItem.InstanceID,
+                        fullPath,
                         hasSnapshot,
                         snapshot);
-
-                    int itemCount = hasSnapshot && containerItem.ContainerInventory != null
-                        ? containerItem.ContainerInventory.GetAllItems().Count
-                        : 0;
-                    Log($"Synced nested container '{containerItem.ItemDefinition?.ItemName}' " +
-                        $"({itemCount} item(s)) to world container {_parentWorldContainerNetId} " +
-                        $"compartment {_parentCompartmentIndex}.");
                 }
             }
 
@@ -456,6 +441,21 @@ namespace TimeGame.Systems.Inventory.UI
             {
                 Debug.Log($"[FloatingContainerWindow:{titleText?.text}] {message}");
             }
+        }
+
+        /// <summary>
+        /// Return a new Guid[] equal to <paramref name="existing"/> with <paramref name="id"/> appended.
+        /// Used when building the full container path for server sync RPCs.
+        /// </summary>
+        private static System.Guid[] AppendGuid(System.Guid[] existing, System.Guid id)
+        {
+            if (existing == null || existing.Length == 0)
+                return new System.Guid[] { id };
+
+            System.Guid[] result = new System.Guid[existing.Length + 1];
+            System.Array.Copy(existing, result, existing.Length);
+            result[existing.Length] = id;
+            return result;
         }
     }
 }

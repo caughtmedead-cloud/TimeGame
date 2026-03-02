@@ -33,7 +33,7 @@ namespace BuildingTools
             public Socket data;
         }
         
-        [MenuItem("Tools/Building Tools/Socket Editor")]
+        [MenuItem("Tools/TimeGame/Building Tools/Socket Editor")]
         public static void ShowWindow()
         {
             SocketEditor window = GetWindow<SocketEditor>("Socket Editor");
@@ -41,14 +41,14 @@ namespace BuildingTools
             window.Show();
         }
         
-        [MenuItem("Tools/Building Tools/Edit Sockets (Live Mode)", true)]
+        [MenuItem("Tools/TimeGame/Building Tools/Edit Sockets (Live Mode)", true)]
         private static bool ValidateEditLive()
         {
             return Selection.activeGameObject != null && 
                    Selection.activeGameObject.GetComponent<BuildingSocket>() != null;
         }
         
-        [MenuItem("Tools/Building Tools/Edit Sockets (Live Mode)")]
+        [MenuItem("Tools/TimeGame/Building Tools/Edit Sockets (Live Mode)")]
         public static void EditLive()
         {
             SocketEditor window = GetWindow<SocketEditor>("Socket Editor");
@@ -475,8 +475,7 @@ namespace BuildingTools
             Socket socket = liveEditTarget.sockets[index];
             bool isSelected = selectedSocketIndex == index;
             
-            GUI.backgroundColor = isSelected ? new Color(0.5f, 1f, 0.5f) : 
-                                 socket.isOccupied ? new Color(0.8f, 0.8f, 0.8f) : Color.white;
+            GUI.backgroundColor = isSelected ? new Color(0.5f, 1f, 0.5f) : Color.white;
             EditorGUILayout.BeginVertical("box");
             GUI.backgroundColor = Color.white;
             
@@ -493,11 +492,6 @@ namespace BuildingTools
             if (EditorGUI.EndChangeCheck())
             {
                 EditorUtility.SetDirty(liveEditTarget);
-            }
-            
-            if (socket.isOccupied)
-            {
-                EditorGUILayout.LabelField("CONNECTED", GUILayout.Width(80));
             }
             
             if (GUILayout.Button("X", GUILayout.Width(25)))
@@ -732,7 +726,9 @@ namespace BuildingTools
                     localRotation = socket.localRotation,
                     size = socket.size,
                     acceptedTypes = socket.acceptedTypes,
+                    acceptMatchMode = socket.acceptMatchMode,
                     providedTypes = socket.providedTypes,
+                    provideMatchMode = socket.provideMatchMode,
                     alignRotation = socket.alignRotation,
                     connectionOffset = socket.connectionOffset,
                     gizmoColor = socket.gizmoColor
@@ -981,81 +977,13 @@ namespace BuildingTools
                     {
                         Undo.RecordObject(liveEditTarget, "Move Socket");
                         
-                        Vector3 oldLocalPos = socket.localPosition;
                         socket.localPosition = transform.InverseTransformPoint(newPos);
                         socket.localRotation = (Quaternion.Inverse(transform.rotation) * newRot).eulerAngles;
                         EditorUtility.SetDirty(liveEditTarget);
                         
-                        // If socket is occupied, update connected pieces!
-                        if (socket.isOccupied)
-                        {
-                            UpdateConnectedPieces(liveEditTarget, i);
-                        }
-                        
                         Repaint();
                     }
                 }
-            }
-        }
-        
-        private void UpdateConnectedPieces(BuildingSocket movedSocket, int socketIndex)
-        {
-            Debug.Log($"UpdateConnectedPieces called for {movedSocket.name}, socket {socketIndex}");
-            Debug.Log($"Total connections on this socket: {movedSocket.connections.Count}");
-            
-            // Find all connections from this socket
-            foreach (var connection in movedSocket.connections)
-            {
-                Debug.Log($"Checking connection: {connection.sourceSocket.name}[{connection.sourceSocketIndex}] → {connection.targetSocket.name}[{connection.targetSocketIndex}]");
-                
-                BuildingSocket otherSocket;
-                int otherSocketIndex;
-                
-                // Determine which socket is the "other" one
-                if (connection.sourceSocket == movedSocket && connection.sourceSocketIndex == socketIndex)
-                {
-                    otherSocket = connection.targetSocket;
-                    otherSocketIndex = connection.targetSocketIndex;
-                    Debug.Log($"I am SOURCE, other is TARGET: {otherSocket.name}");
-                }
-                else if (connection.targetSocket == movedSocket && connection.targetSocketIndex == socketIndex)
-                {
-                    otherSocket = connection.sourceSocket;
-                    otherSocketIndex = connection.sourceSocketIndex;
-                    Debug.Log($"I am TARGET, other is SOURCE: {otherSocket.name}");
-                }
-                else
-                {
-                    Debug.Log("This connection doesn't involve the moved socket");
-                    continue;
-                }
-                
-                if (otherSocket == null)
-                {
-                    Debug.LogWarning("Other socket is null!");
-                    continue;
-                }
-                
-                // Calculate new position for the connected piece
-                Vector3 thisSocketWorldPos = movedSocket.GetSocketWorldPosition(socketIndex);
-                Socket otherSocketData = otherSocket.sockets[otherSocketIndex];
-                Vector3 otherSocketLocalPos = otherSocketData.localPosition;
-                
-                Debug.Log($"This socket world pos: {thisSocketWorldPos}");
-                Debug.Log($"Other socket local pos: {otherSocketLocalPos}");
-                Debug.Log($"Other current position: {otherSocket.transform.position}");
-                
-                // New position = this socket world pos - other socket's offset
-                Vector3 newPosition = thisSocketWorldPos - otherSocket.transform.rotation * otherSocketLocalPos;
-                
-                Debug.Log($"Calculated new position: {newPosition}");
-                
-                // Move the connected piece
-                Undo.RecordObject(otherSocket.transform, "Update Connected Piece");
-                otherSocket.transform.position = newPosition;
-                EditorUtility.SetDirty(otherSocket.gameObject);
-                
-                Debug.Log($"MOVED {otherSocket.name} to {newPosition}");
             }
         }
         
@@ -1064,7 +992,7 @@ namespace BuildingTools
             Vector3 worldPos = transform.TransformPoint(socket.localPosition);
             Quaternion worldRot = transform.rotation * Quaternion.Euler(socket.localRotation);
             
-            Color color = socket.isOccupied ? Color.gray : socket.gizmoColor;
+            Color color = socket.gizmoColor;
             color.a = isSelected ? 1f : 0.6f;
             Handles.color = color;
             

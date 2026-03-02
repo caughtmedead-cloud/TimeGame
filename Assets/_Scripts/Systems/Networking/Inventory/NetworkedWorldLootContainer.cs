@@ -116,7 +116,6 @@ namespace TimeGame.Systems.Networking.Inventory
         {
             if (_worldLootContainer == null) return;
 
-            // Populate loot and grab the LootContainer without touching any UI.
             LootContainer loot = _worldLootContainer.GetLootContainer();
 
             _serverCompartments.Clear();
@@ -126,12 +125,56 @@ namespace TimeGame.Systems.Networking.Inventory
                 foreach (ContainerCompartment compartment in loot.GetCompartments())
                 {
                     if (compartment.InventorySystem != null)
+                    {
+                        // Ensure every container item (backpack, pouch, etc.) in this compartment
+                        // has a live ContainerInventory on the server.  Loot-table spawn creates
+                        // PlacedItems via TryAddItem(ItemDefinition,...) which never touches
+                        // ContainerInventory, so path walks inside ServerMoveFromRootToNested and
+                        // SvrSyncNestedContainer would always fail with "path walk failed at X".
+                        ServerEnsureContainerInventories(compartment.InventorySystem);
+
                         _serverCompartments.Add(compartment.InventorySystem);
+                    }
                 }
             }
 
             _hasBeenLooted.Value = false;
             Log($"[Server] Built {_serverCompartments.Count} compartment(s) for '{_worldLootContainer.DisplayName}'.");
+        }
+
+        /// <summary>
+        /// Recursively walk every PlacedItem in <paramref name="inv"/> and, for any item that
+        /// provides storage but has a null ContainerInventory, create an empty InventorySystem
+        /// of the correct size.  This ensures server-side path walks always find a non-null
+        /// ContainerInventory regardless of whether the item was placed by a player PUT or by
+        /// the loot-table spawn at server start.
+        /// </summary>
+        [Server]
+        private void ServerEnsureContainerInventories(InventorySystem inv)
+        {
+            if (inv == null) return;
+
+            foreach (PlacedItem item in inv.GetAllItems())
+            {
+                InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
+                if (itemDef == null || !itemDef.ProvidesStorage) continue;
+
+                if (item.ContainerInventory == null)
+                {
+                    item.ContainerInventory = new InventorySystem(
+                        itemDef.StorageGridSize.x,
+                        itemDef.StorageGridSize.y,
+                        64f,
+                        Vector3.zero,
+                        itemDef.StorageMaxWeight);
+
+                    Log($"[Server] ServerEnsureContainerInventories — created empty ContainerInventory " +
+                        $"for '{itemDef.ItemName}' id={ShortGuid(item.InstanceID)}.");
+                }
+
+                // Recurse so nested containers (e.g. a pouch inside a backpack) are also initialised.
+                ServerEnsureContainerInventories(item.ContainerInventory);
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -478,11 +521,21 @@ namespace TimeGame.Systems.Networking.Inventory
                 return false;
             }
 
-            // If the item provides storage and we received a container snapshot, reconstruct the
-            // nested inventory on the server's authoritative PlacedItem now.  This ensures that
-            // the next container snapshot (sent on reopen) includes the nested contents.
-            if (hasContainerSnapshot && placed != null && itemDef.ProvidesStorage)
-                RestoreContainerInventory(placed, containerSnapshot, itemDef);
+            // Every container item must have a live ContainerInventory on the server so that
+            // path walks in ServerMoveFromRootToNested, SvrSyncNestedContainer, etc. never fail
+            // with "path walk failed at X".  If the client sent a snapshot, restore it;
+            // otherwise create an empty InventorySystem of the correct size.
+            if (placed != null && itemDef.ProvidesStorage)
+            {
+                if (hasContainerSnapshot)
+                    RestoreContainerInventory(placed, containerSnapshot, itemDef);
+                else if (placed.ContainerInventory == null)
+                    placed.ContainerInventory = new InventorySystem(
+                        itemDef.StorageGridSize.x,
+                        itemDef.StorageGridSize.y,
+                        64f, Vector3.zero,
+                        itemDef.StorageMaxWeight);
+            }
 
             Log($"[Server] ServerTryPutItem — {itemDef.ItemName} id={ShortGuid(instanceId)} " +
                 $"placed at {gridPos} rot={rotation} in compartment {compartmentIndex} " +
@@ -495,13 +548,253 @@ namespace TimeGame.Systems.Networking.Inventory
         }
 
         /// <summary>
+        /// Move an item from one nested container to another within the same root compartment.
+        /// Called by NetworkedInventoryComponent.SvrMoveItemBetweenNestedContainers when the
+        /// owner drags an item between two floating windows that both live inside this container.
+        ///
+        /// Walks <paramref name="sourcePath"/> and <paramref name="targetPath"/> independently
+        /// from the root compartment InventorySystem to locate the two nested InventorySystems,
+        /// removes the item from the source, adds it to the target, then broadcasts both a
+        /// remove and an add RPC so all observers stay in sync.
+        /// </summary>
+        [Server]
+        public bool ServerMoveItemBetweenPaths(
+            int           compartmentIndex,
+            Guid[]        sourcePath,
+            Guid[]        targetPath,
+            Guid          itemInstanceId,
+            Vector2Int    newGridPosition,
+            GridDirection newRotation,
+            int           stackCount)
+        {
+            if (compartmentIndex < 0 || compartmentIndex >= _serverCompartments.Count)
+            {
+                Log($"[Server] ServerMoveItemBetweenPaths FAIL — invalid compartment {compartmentIndex}.");
+                return false;
+            }
+
+            InventorySystem rootInv = _serverCompartments[compartmentIndex];
+
+            // Walk source path
+            InventorySystem sourceInv = rootInv;
+            foreach (Guid pathId in sourcePath)
+            {
+                PlacedItem c = FindItemById(sourceInv, pathId);
+                if (c?.ContainerInventory == null)
+                {
+                    Log($"[Server] ServerMoveItemBetweenPaths FAIL — " +
+                        $"source path walk failed at {ShortGuid(pathId)}.");
+                    return false;
+                }
+                sourceInv = c.ContainerInventory;
+            }
+
+            PlacedItem item = FindItemById(sourceInv, itemInstanceId);
+            if (item == null)
+            {
+                Log($"[Server] ServerMoveItemBetweenPaths FAIL — " +
+                    $"item {ShortGuid(itemInstanceId)} not found in source.");
+                return false;
+            }
+
+            InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
+            if (itemDef == null)
+            {
+                Log($"[Server] ServerMoveItemBetweenPaths FAIL — item has no InventoryItemSO.");
+                return false;
+            }
+
+            Vector2Int    originalPos = item.AnchorPosition;
+            GridDirection originalRot = item.Rotation;
+
+            // Walk target path
+            InventorySystem targetInv = rootInv;
+            foreach (Guid pathId in targetPath)
+            {
+                PlacedItem c = FindItemById(targetInv, pathId);
+                if (c?.ContainerInventory == null)
+                {
+                    Log($"[Server] ServerMoveItemBetweenPaths FAIL — " +
+                        $"target path walk failed at {ShortGuid(pathId)}.");
+                    return false;
+                }
+                targetInv = c.ContainerInventory;
+            }
+
+            // Resolve the ContainerInventory before removing from source — TryAddItem creates a
+            // new PlacedItem so we must re-apply it to the inserted object after the insert.
+            InventorySystem resolvedContainerInv = null;
+            InventoryItemSO movedItemDef = item.ItemDefinition as InventoryItemSO;
+            if (movedItemDef != null && movedItemDef.ProvidesStorage)
+            {
+                resolvedContainerInv = item.ContainerInventory
+                    ?? new InventorySystem(
+                        movedItemDef.StorageGridSize.x,
+                        movedItemDef.StorageGridSize.y,
+                        64f, Vector3.zero,
+                        movedItemDef.StorageMaxWeight);
+            }
+
+            // Remove from source
+            sourceInv.RemoveItem(itemInstanceId);
+
+            // Add to target
+            bool success = targetInv.TryAddItem(
+                itemInstanceId, itemDef, newGridPosition, newRotation, out _, stackCount);
+
+            if (!success)
+            {
+                // Rollback — put it back where it was
+                sourceInv.TryAddItem(itemInstanceId, itemDef, originalPos, originalRot, out _, stackCount);
+                Log($"[Server] ServerMoveItemBetweenPaths FAIL — " +
+                    $"target rejected item, rolled back to source.");
+                return false;
+            }
+
+            // Transfer ContainerInventory onto the new PlacedItem that TryAddItem created.
+            if (resolvedContainerInv != null)
+            {
+                PlacedItem inserted = FindItemById(targetInv, itemInstanceId);
+                if (inserted != null)
+                    inserted.ContainerInventory = resolvedContainerInv;
+            }
+
+            Log($"[Server] ServerMoveItemBetweenPaths — '{itemDef.ItemName}' " +
+                $"id={ShortGuid(itemInstanceId)} " +
+                $"srcPathDepth={sourcePath.Length} tgtPathDepth={targetPath.Length} " +
+                $"pos={newGridPosition} rot={newRotation}.");
+
+            // Broadcast remove from source and add to target so all observers update.
+            RpcItemRemovedFromContainer(compartmentIndex, sourcePath, itemInstanceId);
+            RpcItemAddedToContainer(
+                compartmentIndex, itemInstanceId, itemDef.ItemName,
+                newGridPosition, newRotation, stackCount, targetPath);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Move an item from a root compartment directly into a nested container at
+        /// <paramref name="targetContainerPath"/>. Called when the player drags from the
+        /// root container grid into an open floating window (e.g. root → backpack).
+        ///
+        /// Removes from the root compartment InventorySystem, walks the path to the target
+        /// nested InventorySystem, inserts there, then broadcasts:
+        ///   - RpcItemRemovedFromContainer (empty path = root removal) so observers drop it
+        ///     from the root grid visual.
+        ///   - RpcItemAddedToContainer (target path) so observers add it to the floating window.
+        /// </summary>
+        [Server]
+        public void ServerMoveFromRootToNested(
+            int                  sourceCompartmentIndex,
+            int                  targetCompartmentIndex,
+            Guid[]               targetContainerPath,
+            Guid                 itemInstanceId,
+            Vector2Int           newGridPosition,
+            GridDirection        newRotation,
+            int                  stackCount,
+            bool                 hasContainerSnapshot,
+            NetContainerSnapshot containerSnapshot)
+        {
+            if (sourceCompartmentIndex < 0 || sourceCompartmentIndex >= _serverCompartments.Count)
+            {
+                Log($"[Server] ServerMoveFromRootToNested FAIL — invalid source compartment {sourceCompartmentIndex}.");
+                return;
+            }
+
+            if (targetCompartmentIndex < 0 || targetCompartmentIndex >= _serverCompartments.Count)
+            {
+                Log($"[Server] ServerMoveFromRootToNested FAIL — invalid target compartment {targetCompartmentIndex}.");
+                return;
+            }
+
+            InventorySystem sourceRootInv = _serverCompartments[sourceCompartmentIndex];
+            InventorySystem targetRootInv = _serverCompartments[targetCompartmentIndex];
+
+            PlacedItem item = FindItemById(sourceRootInv, itemInstanceId);
+            if (item == null)
+            {
+                Log($"[Server] ServerMoveFromRootToNested FAIL — item {ShortGuid(itemInstanceId)} not in source compartment {sourceCompartmentIndex}.");
+                return;
+            }
+
+            InventoryItemSO itemDef = item.ItemDefinition as InventoryItemSO;
+            if (itemDef == null)
+            {
+                Log("[Server] ServerMoveFromRootToNested FAIL — item has no InventoryItemSO.");
+                return;
+            }
+
+            // Walk target path from the TARGET compartment (may differ from source compartment).
+            InventorySystem targetInv = targetRootInv;
+            foreach (Guid pathId in targetContainerPath)
+            {
+                PlacedItem ancestor = FindItemById(targetInv, pathId);
+                if (ancestor?.ContainerInventory == null)
+                {
+                    Log($"[Server] ServerMoveFromRootToNested FAIL — path walk failed at {ShortGuid(pathId)}.");
+                    return;
+                }
+                targetInv = ancestor.ContainerInventory;
+            }
+
+            // Resolve the ContainerInventory BEFORE removing from source so we can transfer it
+            // to the newly created PlacedItem that TryAddItem will produce in the target.
+            // TryAddItem always creates a new PlacedItem object, so any ContainerInventory set
+            // on `item` will be lost unless we re-apply it after the insert.
+            InventorySystem resolvedContainerInv = null;
+            if (itemDef.ProvidesStorage)
+            {
+                if (hasContainerSnapshot)
+                {
+                    RestoreContainerInventory(item, containerSnapshot, itemDef);
+                    resolvedContainerInv = item.ContainerInventory;
+                }
+                else
+                {
+                    // Preserve whatever ContainerInventory the item already has (e.g. set by
+                    // ServerEnsureContainerInventories at startup), or create an empty one.
+                    resolvedContainerInv = item.ContainerInventory
+                        ?? new InventorySystem(
+                            itemDef.StorageGridSize.x,
+                            itemDef.StorageGridSize.y,
+                            64f, Vector3.zero,
+                            itemDef.StorageMaxWeight);
+                }
+            }
+
+            sourceRootInv.RemoveItem(itemInstanceId);
+
+            bool success = targetInv.TryAddItem(
+                itemInstanceId, itemDef, newGridPosition, newRotation, out _, stackCount);
+
+            if (!success)
+            {
+                sourceRootInv.TryAddItem(itemInstanceId, itemDef, item.AnchorPosition, item.Rotation, out _, stackCount);
+                Log($"[Server] ServerMoveFromRootToNested FAIL — target rejected item, rolled back.");
+                return;
+            }
+
+            // Transfer ContainerInventory onto the new PlacedItem that TryAddItem created.
+            if (resolvedContainerInv != null)
+            {
+                PlacedItem inserted = FindItemById(targetInv, itemInstanceId);
+                if (inserted != null)
+                    inserted.ContainerInventory = resolvedContainerInv;
+            }
+
+            Log($"[Server] ServerMoveFromRootToNested — '{itemDef.ItemName}' id={ShortGuid(itemInstanceId)} " +
+                $"srcComp={sourceCompartmentIndex} tgtComp={targetCompartmentIndex} pathDepth={targetContainerPath.Length} pos={newGridPosition}.");
+
+            RpcItemRemovedFromContainer(sourceCompartmentIndex, Array.Empty<Guid>(), itemInstanceId);
+            RpcItemAddedToContainer(
+                targetCompartmentIndex, itemInstanceId, itemDef.ItemName,
+                newGridPosition, newRotation, stackCount, targetContainerPath);
+        }
+
+        /// <summary>
         /// Reconstruct a live ContainerInventory on a server-side PlacedItem from a
         /// NetContainerSnapshot that was stored in the player's server manifest.
-        ///
-        /// Called by ServerTryPutItem when a container item (backpack, crate, etc.) is
-        /// placed into a world loot container compartment.  Without this, the nested
-        /// InventorySystem would remain null and the backpack's contents would be omitted
-        /// from the next TgtReceiveContainerSnapshot, making them disappear on reopen.
         /// </summary>
         [Server]
         private void RestoreContainerInventory(
