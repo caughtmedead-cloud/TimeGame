@@ -1,21 +1,20 @@
 using UnityEngine;
-using FishNet.Object;
-using FishNet.Object.Synchronizing;
 using System.Collections.Generic;
 
-public abstract class BaseZone : NetworkBehaviour
+public abstract class BaseZone : MonoBehaviour
 {
     [Header("Zone Identity")]
     public string zoneName = "Zone";
+    
+    [Header("Filtering")]
+    [Tooltip("Only GameObjects with this tag can be affected by this zone. Leave empty to affect anything that enters the trigger.")]
+    public string requiredTag = "Player";
     
     [Header("Zone Shape")]
     [SerializeField] protected ZoneColliderType _colliderType = ZoneColliderType.Sphere;
     [SerializeField] protected float _editorEffectRadius = 10f;
     
-    protected readonly SyncVar<float> _effectRadius = new SyncVar<float>(
-        10f,
-        new SyncTypeSettings(WritePermission.ServerOnly, ReadPermission.Observers)
-    );
+    protected float _effectRadius = 10f;
     
     [Header("Visual Settings")]
     public Color zoneColor = new Color(0f, 1f, 1f, 0.3f);
@@ -61,12 +60,13 @@ public abstract class BaseZone : NetworkBehaviour
     
     public float effectRadius
     {
-        get => Application.isPlaying ? _effectRadius.Value : _editorEffectRadius;
+        get => Application.isPlaying ? _effectRadius : _editorEffectRadius;
         set
         {
-            if (Application.isPlaying && NetworkObject != null && IsServerStarted)
+            if (Application.isPlaying)
             {
-                _effectRadius.Value = value;
+                _effectRadius = value;
+                UpdateColliderSize();
             }
             else
             {
@@ -80,23 +80,11 @@ public abstract class BaseZone : NetworkBehaviour
     {
         CacheActiveCollider();
         CacheZoneEffects();
-        _effectRadius.OnChange += OnRadiusChanged;
     }
     
-    public override void OnStartNetwork()
+    protected virtual void OnEnable()
     {
-        base.OnStartNetwork();
-        
-        if (IsServerStarted)
-        {
-            _effectRadius.Value = _editorEffectRadius;
-            UpdateColliderSize();
-        }
-    }
-    
-    public override void OnStartClient()
-    {
-        base.OnStartClient();
+        _effectRadius = _editorEffectRadius;
         UpdateColliderSize();
     }
     
@@ -107,83 +95,41 @@ public abstract class BaseZone : NetworkBehaviour
     
     protected virtual void Update()
     {
-        if (!IsServerStarted) return;
-        
         UpdateAffectedObjects();
     }
     
     protected virtual void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"[BaseZone] OnTriggerEnter fired on {(IsServerStarted ? "SERVER" : "CLIENT")} - Object: {other.gameObject.name}, Zone: {zoneName}");
-        
-        if (!IsServerStarted) return;
-        
-        GameObject obj = other.gameObject;
-        
-        if (!CanAffectObject(obj))
-        {
-            Debug.Log($"[BaseZone] SERVER - Cannot affect object: {obj.name} (no TemporalStability component)");
-            return;
-        }
-        
-        if (!affectedObjects.Contains(obj))
-        {
-            affectedObjects.Add(obj);
-            Debug.Log($"[BaseZone] SERVER - Player {obj.name} ENTERED zone {zoneName}. Total objects in zone: {affectedObjects.Count}");
-            OnObjectEnteredZone(obj);
-        }
-        else
-        {
-            Debug.Log($"[BaseZone] SERVER - Player {obj.name} already in list");
-        }
+        NotifyObjectEntered(other.gameObject);
     }
     
     protected virtual void OnTriggerExit(Collider other)
     {
-        Debug.Log($"[BaseZone] OnTriggerExit fired on {(IsServerStarted ? "SERVER" : "CLIENT")} - Object: {other.gameObject.name}, Zone: {zoneName}");
-        
-        if (!IsServerStarted) return;
-        
-        GameObject obj = other.gameObject;
-        
-        if (affectedObjects.Remove(obj))
-        {
-            Debug.Log($"[BaseZone] SERVER - Player {obj.name} EXITED zone {zoneName}. Remaining objects: {affectedObjects.Count}");
-            OnObjectExitedZone(obj);
-        }
+        NotifyObjectExited(other.gameObject);
     }
     
-    // Called by PlayerZoneTriggerHandler via ServerRpc (for client-predicted players)
-    public void OnNetworkTriggerEnter(GameObject obj)
+    // Public entry point for external trigger detectors (e.g. a child TriggerDetector
+    // collider on the player) that forward enter/exit events directly to this zone.
+    public void NotifyObjectEntered(GameObject obj)
     {
-        if (!IsServerStarted) return;
-        
-        Debug.Log($"[BaseZone] OnNetworkTriggerEnter (ServerRpc) - Object: {obj.name}, Zone: {zoneName}");
-        
         if (!CanAffectObject(obj))
         {
-            Debug.Log($"[BaseZone] SERVER - Cannot affect object: {obj.name} (no TemporalStability component)");
             return;
         }
         
         if (!affectedObjects.Contains(obj))
         {
             affectedObjects.Add(obj);
-            Debug.Log($"[BaseZone] SERVER - Player {obj.name} ENTERED zone {zoneName} via NetworkTrigger. Total objects: {affectedObjects.Count}");
+            Debug.Log($"[BaseZone] {obj.name} ENTERED zone {zoneName}. Total objects in zone: {affectedObjects.Count}");
             OnObjectEnteredZone(obj);
         }
     }
     
-    // Called by PlayerZoneTriggerHandler via ServerRpc (for client-predicted players)
-    public void OnNetworkTriggerExit(GameObject obj)
+    public void NotifyObjectExited(GameObject obj)
     {
-        if (!IsServerStarted) return;
-        
-        Debug.Log($"[BaseZone] OnNetworkTriggerExit (ServerRpc) - Object: {obj.name}, Zone: {zoneName}");
-        
         if (affectedObjects.Remove(obj))
         {
-            Debug.Log($"[BaseZone] SERVER - Player {obj.name} EXITED zone {zoneName} via NetworkTrigger. Remaining objects: {affectedObjects.Count}");
+            Debug.Log($"[BaseZone] {obj.name} EXITED zone {zoneName}. Remaining objects: {affectedObjects.Count}");
             OnObjectExitedZone(obj);
         }
     }
@@ -262,9 +208,12 @@ public abstract class BaseZone : NetworkBehaviour
         }
     }
     
+    // Default: affect any object tagged with requiredTag (or anything at all if
+    // requiredTag is left empty). Override in a subclass for more advanced filtering
+    // (e.g. by component or layer).
     protected virtual bool CanAffectObject(GameObject obj)
     {
-        return obj.GetComponent<TemporalStability>() != null;
+        return string.IsNullOrEmpty(requiredTag) || obj.CompareTag(requiredTag);
     }
     
     public float CalculateIntensityAtPosition(Vector3 position)
@@ -330,14 +279,6 @@ public abstract class BaseZone : NetworkBehaviour
         return activeCollider;
     }
     
-    protected void OnRadiusChanged(float previousValue, float newValue, bool asServer)
-    {
-        if (!asServer) // Only update visually on clients
-        {
-            UpdateColliderSize();
-        }
-    }
-    
     protected void UpdateColliderSize()
     {
         float radius = effectRadius;
@@ -366,11 +307,6 @@ public abstract class BaseZone : NetworkBehaviour
         {
             CacheActiveCollider();
             UpdateColliderSize();
-            
-            if (GetComponent<NetworkObject>() == null)
-            {
-                Debug.LogWarning($"[BaseZone] '{gameObject.name}' is missing a NetworkObject component!", this);
-            }
             
             if (activeCollider == null)
             {

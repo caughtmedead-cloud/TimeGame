@@ -87,20 +87,8 @@ namespace TimeGame.Systems.Inventory
                         }
                     }
 
-                    // If still not found, try finding any PhysicsSceneSync (fallback)
-                    if (scenePhysics == null)
-                    {
-                        foreach (ScenePhysics sp in allScenePhysics)
-                        {
-                            PhysicsSceneSync sync = sp.GetComponent<PhysicsSceneSync>();
-                            if (sync != null)
-                            {
-                                scenePhysics = sp;
-                                Debug.Log($"[ItemUsageHandler] Found ScenePhysics via PhysicsSceneSync in scene: {sp.gameObject.scene.name}");
-                                break;
-                            }
-                        }
-                    }
+                    // If still not found, leave scenePhysics null — raycasts fall back to
+                    // the default physics scene.
                 }
 
                 if (scenePhysics == null)
@@ -517,8 +505,9 @@ namespace TimeGame.Systems.Inventory
                 // (StackCount is derived from ItemInstances.Count for tracked items)
                 int originalStackCount = item.StackCount;
 
-                // Remove dropped instances from the item
-                if (item.IsInstanceTracked && item.ItemInstances != null)
+                // Remove dropped instances from the item (ONLY for fully-tracked stacks)
+                // For uses-representative stacks, the instance shouldn't be removed, just the count
+                if (item.IsFullyTracked && item.ItemInstances != null)
                 {
                     item.ItemInstances.RemoveRange(0, Mathf.Min(itemsSpawned, item.ItemInstances.Count));
                 }
@@ -531,13 +520,12 @@ namespace TimeGame.Systems.Inventory
                 else
                 {
                     // ITEM LINEAGE: Partial drop - item is still alive, just modified
-                    // The instances were already removed at line 349 via RemoveRange()
-                    // For tracked items, StackCount is derived from ItemInstances.Count, so it's already correct
-                    // For homogeneous items, we need to manually reduce the stack count
+                    // For fully-tracked items, instances were already removed at line 349 via RemoveRange()
+                    // For homogeneous items and uses-representative, we need to manually reduce the stack count
 
-                    if (!item.IsInstanceTracked)
+                    if (!item.IsFullyTracked)
                     {
-                        // Homogeneous items: reduce stack count manually
+                        // Non-tracked items or uses-representative: reduce stack count manually
                         // This is safe because we're not using instances
                         int newStackCount = originalStackCount - itemsSpawned;
 

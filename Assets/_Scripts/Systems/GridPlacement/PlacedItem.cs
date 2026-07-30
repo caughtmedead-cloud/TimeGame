@@ -56,20 +56,36 @@ namespace TimeGame.Systems.GridPlacement
         ///
         /// When TrackIndividualItems = true on the ItemSO, this array is populated.
         /// Each ItemInstance represents one physical item with its own durability, uses, etc.
+        /// 
+        /// NOTE: For non-tracked items with HasLimitedUses = true, this may contain a single
+        /// "representative" ItemInstance that stores the uses state for the entire stack.
         /// </summary>
         public List<ItemInstance> ItemInstances { get; private set; }
 
         /// <summary>
+        /// For non-tracked items with limited uses, tracks whether ItemInstances is fully-tracked
+        /// or just a uses-representative. When true, StackCount is separate from ItemInstances.Count.
+        /// False = ItemInstances represents the full stack (fully tracked)
+        /// True = ItemInstances is just a uses representative
+        /// </summary>
+        private bool isUsesRepresentative = false;
+
+        /// <summary>
         /// Stack count for stackable items.
-        /// If ItemInstances is null: This is the count (homogeneous stack)
-        /// If ItemInstances is not null: This returns ItemInstances.Count (tracked stack)
+        /// If ItemInstances is null: This is the count (homogeneous stack, no uses tracking)
+        /// If ItemInstances is not null and isUsesRepresentative = false: This returns ItemInstances.Count (fully-tracked stack)
+        /// If ItemInstances is not null and isUsesRepresentative = true: This returns stackCount (non-tracked with uses)
         /// Always >= 1.
         /// </summary>
         public int StackCount
         {
             get
             {
-                // Tracked stack: count is derived from array
+                // Non-tracked stack with uses representative: use stored count
+                if (isUsesRepresentative && ItemInstances != null)
+                    return stackCount;
+
+                // Fully-tracked stack: count is derived from array
                 if (ItemInstances != null)
                     return ItemInstances.Count;
 
@@ -84,11 +100,26 @@ namespace TimeGame.Systems.GridPlacement
         private int stackCount = 1; // Backing field for homogeneous stacks
 
         /// <summary>
-        /// Check if this stack tracks individual item instances.
-        /// True = Each item in stack has individual properties (durability, uses, etc.)
-        /// False = Items are identical, just counted
+        /// Check if this stack tracks individual item instances (has non-null ItemInstances).
+        /// Used for networking and determining if we have instance data to serialize.
+        /// True = ItemInstances is populated (whether fully-tracked or uses-representative)
+        /// False = ItemInstances is null (pure homogeneous stack, no instance data)
         /// </summary>
         public bool IsInstanceTracked => ItemInstances != null;
+
+        /// <summary>
+        /// Check if this stack is FULLY tracked (each item has individual properties).
+        /// True = Each of the N items in the stack is individually tracked
+        /// False = Stack is homogeneous (all items identical) or uses-representative
+        /// </summary>
+        public bool IsFullyTracked => ItemInstances != null && !isUsesRepresentative;
+
+        /// <summary>
+        /// Check if this stack has a uses representative (non-tracked item with limited uses).
+        /// True = ItemInstances contains a single representative for uses display
+        /// False = ItemInstances is either null or fully-tracked
+        /// </summary>
+        public bool HasUsesRepresentative => ItemInstances != null && isUsesRepresentative;
 
         /// <summary>
         /// Optional: Instance-specific data for items with durability, modifications, etc.
@@ -185,6 +216,7 @@ namespace TimeGame.Systems.GridPlacement
             {
                 // TRACKED STACK: Create individual item instances
                 ItemInstances = new List<ItemInstance>();
+                isUsesRepresentative = false;
 
                 // If count is 0, create empty list (instances will be provided externally)
                 if (count == 0)
@@ -210,10 +242,32 @@ namespace TimeGame.Systems.GridPlacement
                     ItemInstances.Add(instance);
                 }
             }
+            else if (inventoryItem != null && inventoryItem.HasLimitedUses)
+            {
+                // NON-TRACKED STACK WITH LIMITED USES: Create a single representative instance for uses
+                // All items in this non-tracked stack have the same uses (they're homogeneous)
+                ItemInstances = new List<ItemInstance>();
+                isUsesRepresentative = true;
+
+                // If count is 0, leave the list empty — the caller (e.g. network snapshot load)
+                // will supply the representative instance via AddInstances().
+                if (count == 0)
+                    return;
+
+                // Create single representative instance with uses
+                ItemInstance representative = new ItemInstance();
+                representative.UsesRemaining = inventoryItem.MaxUses;
+                ItemInstances.Add(representative);
+
+                // Store the actual stack count separately
+                count = Mathf.Max(1, count);
+                StackCount = count;
+            }
             else
             {
-                // HOMOGENEOUS STACK: Just track count
+                // HOMOGENEOUS STACK (no uses tracking): Just track count
                 ItemInstances = null;
+                isUsesRepresentative = false;
                 count = Mathf.Max(1, count);
                 StackCount = count;
             }
@@ -228,14 +282,28 @@ namespace TimeGame.Systems.GridPlacement
         }
 
         /// <summary>
+        /// Mutates anchor, rotation, and occupied-cell cache in-place.
+        /// Called exclusively by <see cref="GridPlacementSystem.RepositionItem"/> after
+        /// grid cells have been updated.  Never call from outside the grid system —
+        /// this does NOT update the grid; the grid system is responsible for that.
+        /// </summary>
+        internal void UpdatePlacement(Vector2Int newAnchor, GridDirection newRotation)
+        {
+            AnchorPosition = newAnchor;
+            Rotation       = newRotation;
+            OccupiedCells  = ItemDefinition.GetGridPositionList(newAnchor, newRotation);
+        }
+
+        /// <summary>
         /// Set the stack count. Used when modifying stack size (split/merge operations).
-        /// ONLY USE FOR HOMOGENEOUS STACKS. For tracked stacks, use Add/RemoveInstances.
+        /// For homogeneous stacks and uses-representative stacks: updates the count.
+        /// For fully-tracked stacks: use Add/RemoveInstances instead.
         /// </summary>
         public void SetStackCount(int count)
         {
-            if (ItemInstances != null)
+            if (ItemInstances != null && !isUsesRepresentative)
             {
-                Debug.LogWarning("[PlacedItem] SetStackCount called on tracked stack! Use Add/RemoveInstances instead.");
+                Debug.LogWarning("[PlacedItem] SetStackCount called on fully-tracked stack! Use Add/RemoveInstances instead.");
                 return;
             }
 
@@ -244,14 +312,14 @@ namespace TimeGame.Systems.GridPlacement
 
         /// <summary>
         /// Add to the stack count. Returns the actual amount added.
-        /// For tracked stacks: creates new pristine item instances.
-        /// For homogeneous stacks: increments count.
+        /// For fully-tracked stacks: creates new pristine item instances.
+        /// For homogeneous stacks and uses-representative: increments count.
         /// </summary>
         public int AddToStack(int amount)
         {
-            if (ItemInstances != null)
+            if (ItemInstances != null && !isUsesRepresentative)
             {
-                // TRACKED STACK: Create new pristine instances with proper initialization
+                // FULLY-TRACKED STACK: Create new pristine instances with proper initialization
                 Inventory.InventoryItemSO inventoryItem = ItemDefinition as Inventory.InventoryItemSO;
                 for (int i = 0; i < amount; i++)
                 {
@@ -273,7 +341,7 @@ namespace TimeGame.Systems.GridPlacement
             }
             else
             {
-                // HOMOGENEOUS STACK: Just increment count
+                // HOMOGENEOUS STACK or USES-REPRESENTATIVE: Just increment count
                 StackCount += amount;
                 return amount;
             }
@@ -287,9 +355,9 @@ namespace TimeGame.Systems.GridPlacement
         /// </summary>
         public int RemoveFromStack(int amount)
         {
-            if (ItemInstances != null)
+            if (ItemInstances != null && !isUsesRepresentative)
             {
-                // TRACKED STACK: Remove instances from end
+                // FULLY-TRACKED STACK: Remove instances from end
                 int actualRemoved = Mathf.Min(amount, ItemInstances.Count - 1);
                 for (int i = 0; i < actualRemoved; i++)
                 {
@@ -299,7 +367,7 @@ namespace TimeGame.Systems.GridPlacement
             }
             else
             {
-                // HOMOGENEOUS STACK: Decrement count
+                // HOMOGENEOUS STACK or USES-REPRESENTATIVE: Decrement count
                 int actualRemoved = Mathf.Min(amount, StackCount - 1);
                 StackCount -= actualRemoved;
                 return actualRemoved;
@@ -307,11 +375,11 @@ namespace TimeGame.Systems.GridPlacement
         }
 
         /// <summary>
-        /// Add specific item instances to this stack (for merging tracked stacks).
+        /// Add specific item instances to this stack (for merging tracked stacks or equipping items with uses).
         /// Appends instances to the END of the array to maintain chronological order.
         /// Combined with RemoveInstances (which takes from end), this creates LIFO behavior
         /// where the most recently added items are split off first.
-        /// Only works for tracked stacks.
+        /// Works for fully-tracked stacks and uses-representative stacks.
         /// </summary>
         public void AddInstances(List<ItemInstance> instances)
         {
@@ -334,13 +402,14 @@ namespace TimeGame.Systems.GridPlacement
         /// Removes from the END of the array (LIFO - last in, first out).
         /// This ensures that when you split a stack, you get the most recently added items.
         /// Stack will never go below 1 instance.
-        /// Only works for tracked stacks.
+        /// Only works for fully-tracked stacks. Returns null for homogeneous or uses-representative stacks.
         /// </summary>
         public List<ItemInstance> RemoveInstances(int count)
         {
-            if (ItemInstances == null)
+            // Only works for fully-tracked stacks (not for uses-representative)
+            if (ItemInstances == null || isUsesRepresentative)
             {
-                Debug.LogWarning("[PlacedItem] RemoveInstances called on homogeneous stack!");
+                Debug.LogWarning("[PlacedItem] RemoveInstances called on non-fully-tracked stack!");
                 return null;
             }
 

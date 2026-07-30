@@ -4,7 +4,6 @@ using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using FishNet.Object;
 
 public class ZoneCreatorWindow : EditorWindow
 {
@@ -28,6 +27,7 @@ public class ZoneCreatorWindow : EditorWindow
     }
     
     private string zoneName = "Zone";
+    private string requiredTag = "Player";
     private ZoneColliderType colliderType = ZoneColliderType.Sphere;
     private float effectRadius = 10f;
     private Color zoneColor = new Color(0f, 1f, 1f, 0.3f);
@@ -56,7 +56,7 @@ public class ZoneCreatorWindow : EditorWindow
     private bool showGradientSettings = false;
     
     private List<string> availableStats;
-    private string[] effectTypeOptions = new string[] { "Stat Modifier", "Debug Log" };
+    private string[] effectTypeOptions = new string[] { "Stat Modifier", "Debug Log", "Shelter" };
     
     [MenuItem("Tools/Zones/Zone Creator")]
     public static void ShowWindow()
@@ -160,11 +160,11 @@ public class ZoneCreatorWindow : EditorWindow
         
         if (basePrefab == null)
         {
-            EditorGUILayout.HelpBox("Please assign a base prefab with:\n• NetworkObject (IsSpawnable = true)\n• GenericZone component\n• SphereCollider, BoxCollider, CapsuleCollider (all as triggers)", MessageType.Warning);
+            EditorGUILayout.HelpBox("Please assign a base prefab with:\n• GenericZone component\n• SphereCollider, BoxCollider, CapsuleCollider (all as triggers)", MessageType.Warning);
         }
         else
         {
-            EditorGUILayout.HelpBox("✓ Base prefab configured. FishNet will automatically register variants.", MessageType.Info);
+            EditorGUILayout.HelpBox("✓ Base prefab configured.", MessageType.Info);
         }
     }
     
@@ -252,6 +252,10 @@ public class ZoneCreatorWindow : EditorWindow
         EditorGUILayout.LabelField("Zone Configuration", EditorStyles.boldLabel);
         
         zoneName = EditorGUILayout.TextField("Zone Name", zoneName);
+        requiredTag = EditorGUILayout.TagField("Required Tag", requiredTag);
+        EditorGUILayout.HelpBox(string.IsNullOrEmpty(requiredTag)
+            ? "No tag filter — this zone will affect ANY object that enters its trigger."
+            : $"Only GameObjects tagged \"{requiredTag}\" will be affected by this zone's effects.", MessageType.Info);
         
         EditorGUILayout.Space(3);
         EditorGUILayout.LabelField("Collider Shape", EditorStyles.miniLabel);
@@ -328,6 +332,10 @@ public class ZoneCreatorWindow : EditorWindow
             else if (effect.effectType == "Debug Log")
             {
                 EditorGUILayout.HelpBox("Debug effect will log player enter/exit events.", MessageType.Info);
+            }
+            else if (effect.effectType == "Shelter")
+            {
+                EditorGUILayout.HelpBox("Shelter effect marks the player as sheltered from sun exposure (Last Mile) while they remain inside this zone. No additional fields.", MessageType.Info);
             }
             
             EditorGUI.indentLevel--;
@@ -538,6 +546,7 @@ public class ZoneCreatorWindow : EditorWindow
             SerializedObject so = new SerializedObject(zone);
         
             so.FindProperty("zoneName").stringValue = zoneName;
+            so.FindProperty("requiredTag").stringValue = requiredTag;
             so.FindProperty("_editorEffectRadius").floatValue = effectRadius;
             so.FindProperty("zoneColor").colorValue = zoneColor;
             so.FindProperty("selectedColor").colorValue = selectedColor;
@@ -591,6 +600,10 @@ public class ZoneCreatorWindow : EditorWindow
             else if (effectConfig.effectType == "Debug Log")
             {
                 DebugLogEffect effect = prefabContents.AddComponent<DebugLogEffect>();
+            }
+            else if (effectConfig.effectType == "Shelter")
+            {
+                prefabContents.AddComponent<ShelterEffect>();
             }
         }
     }
@@ -751,6 +764,7 @@ public class ZoneCreatorWindow : EditorWindow
         selectedPreset = preset;
         
         zoneName = preset.zoneName;
+        requiredTag = preset.requiredTag;
         colliderType = preset.colliderType;
         effectRadius = preset.effectRadius;
         zoneColor = preset.zoneColor;
@@ -790,6 +804,7 @@ public class ZoneCreatorWindow : EditorWindow
     private void ApplyCurrentSettingsToPreset(ZonePreset preset)
     {
         preset.zoneName = zoneName;
+        preset.requiredTag = requiredTag;
         preset.colliderType = colliderType;
         preset.effectRadius = effectRadius;
         preset.zoneColor = zoneColor;

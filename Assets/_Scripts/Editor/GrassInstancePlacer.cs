@@ -32,7 +32,7 @@ namespace Thelos.Editor
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             
             GUILayout.Label("Grass Instance Placer", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Places grass mesh instances optimized for SRP Batcher, ProPixelizer, and FishNet streaming", MessageType.Info);
+            EditorGUILayout.HelpBox("Places grass mesh instances optimized for SRP Batcher and ProPixelizer", MessageType.Info);
             EditorGUILayout.Space();
             
             DrawPrefabSettings();
@@ -103,11 +103,11 @@ namespace Thelos.Editor
                 bladesPerCluster = EditorGUILayout.IntSlider("Blades Per Cluster", bladesPerCluster, 10, 100);
                 EditorGUI.indentLevel--;
                 
-                EditorGUILayout.HelpBox("Clustering improves culling and FishNet/SECTR streaming performance.\n\nNote: Objects are NOT marked static (required for FishNet scene streaming).", MessageType.Info);
+                EditorGUILayout.HelpBox("Clustering improves culling and SECTR streaming performance.", MessageType.Info);
             }
             else
             {
-                EditorGUILayout.HelpBox("Not clustering will create many individual GameObjects (not recommended for networking).", MessageType.Warning);
+                EditorGUILayout.HelpBox("Not clustering will create many individual GameObjects (not recommended for large scenes).", MessageType.Warning);
             }
         }
         

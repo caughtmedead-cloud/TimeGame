@@ -28,8 +28,8 @@ namespace TimeGame.Systems.Inventory.UI
         private List<InventoryGridVisual> currentContainerGrids = new List<InventoryGridVisual>();
 
         /// <summary>
-        /// NetworkObject.ObjectId of the NetworkedWorldLootContainer that supplied the current
-        /// container data.  -1 when the container was opened locally (solo play) or is closed.
+        /// ObjectId of the world container that supplied the current container data.
+        /// -1 when the container was opened locally (default singleplayer path) or is closed.
         /// Set by OpenContainer(container, source, containerNetId).
         /// </summary>
         private int _currentContainerNetId = -1;
@@ -45,10 +45,8 @@ namespace TimeGame.Systems.Inventory.UI
         public LootContainer CurrentContainer => currentContainer;
 
         /// <summary>
-        /// NetworkObject.ObjectId of the currently open networked container, or -1 when no
-        /// networked container is open (solo play, container closed, or 2-arg OpenContainer used).
-        /// Exposed so ObserversRpcs on NetworkedWorldLootContainer can verify they are
-        /// updating the correct container's UI rather than any open container.
+        /// ObjectId of the currently open container, or -1 when no container with a tracked ID is
+        /// open (container closed, or the 2-arg OpenContainer was used).
         /// </summary>
         public int CurrentContainerNetId => _currentContainerNetId;
 
@@ -106,9 +104,8 @@ namespace TimeGame.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Open a networked loot container, tracking its NetworkObject ID so the networking
-        /// layer can reference it when items are dragged out.
-        /// Called by NetworkedInventoryComponent.TgtReceiveContainerSnapshot.
+        /// Open a container, tracking a source-specific ID (e.g. for future save/persistence
+        /// systems) so other systems can reference it when items are dragged out.
         ///
         /// IMPORTANT: _currentContainerNetId must be set AFTER OpenContainer(container, source)
         /// because that inner call may invoke CloseContainer() first (if a container was already
@@ -123,8 +120,7 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// If the given grid is one of the currently open container's compartment grids,
-        /// returns true and outputs the container's NetworkObject ID and compartment index.
-        /// Used by NetworkedInventoryComponent to build the SvrTakeItemFromContainer call.
+        /// returns true and outputs the container's tracked ID and compartment index.
         /// </summary>
         public bool TryGetContainerContext(
             InventoryGridVisual grid,
@@ -152,8 +148,6 @@ namespace TimeGame.Systems.Inventory.UI
         /// <summary>
         /// Refresh only the visual of a specific container compartment grid without
         /// closing and reopening the whole container.
-        /// Called by RpcItemRemovedFromContainer after removing an item from the
-        /// client-side InventorySystem.
         /// </summary>
         public void RefreshCompartmentGrid(int compartmentIndex)
         {
@@ -163,11 +157,8 @@ namespace TimeGame.Systems.Inventory.UI
 
         /// <summary>
         /// Add an item to a specific container compartment grid.
-        /// Called by RpcItemAddedToContainer when a player puts an item into the container.
-        ///
-        /// If the item is already present in the compartment's InventorySystem (because the
-        /// placing client already added it speculatively via the drag handler), this is a no-op
-        /// except for refreshing the visual so the grid stays in sync.
+        /// If the item is already present in the compartment's InventorySystem, this is a
+        /// no-op except for refreshing the visual so the grid stays in sync.
         /// </summary>
         public void AddItemToCompartmentGrid(
             int             compartmentIndex,

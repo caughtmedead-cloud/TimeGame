@@ -14,49 +14,61 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.02
   subtype: freeProjectFiles
-  lastShownTimestamp: 1772418551
+  lastShownTimestamp: 1785367444
   lastUpdateResponse:
     version: 1.02
     versionUrl: https://unitycodemonkey.com
     enabled: 0
-  checkedLastUpdateTimestamp: 1772418551
+  checkedLastUpdateTimestamp: 1785367445
   lastQOTDResponse:
-    questionId: 277
-    questionText: 'What is the value stored in percentage?
+    questionId: 327
+    questionText: 'When would this code cause an error?
 
-      <p>int health =
-      25;</p>
+      <p>Building closest
+      = null;</p>
 
-      <p>int healthMax = 100;</p>
+      <p>for (int i = 0; i &lt; instanceList.Count; i++) {</p>
 
-      <p>float percentage = health
-      / healthMax;</p>'
-    answerA: 0.25f
-    answerB: 0
-    answerC: 2.5f
+      <p>&nbsp;
+      &nbsp; if (Vector3.Distance(position, instanceList[i].GetPosition()) &lt; Vector3.Distance(position,
+      closest.GetPosition())) {</p>
+
+      <p>&nbsp; &nbsp; &nbsp; &nbsp; closest
+      = instanceList[i];</p>
+
+      <p>&nbsp; &nbsp; }</p>
+
+      <p>}</p>
+
+      <p>return
+      closest;</p>'
+    answerA: When instanceList is empty
+    answerB: When instanceList has at least one element
+    answerC: When instanceList has exactly two elements
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1772418551
+  lastQotdTimestamp: 1785367445
   lastDynamicHeaderResponse:
-    topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/gameDevReport_2.png
-    topText: Stay up to date with the latest in Game Dev straight to your inbox!
-    topLink: gamedevreport
-    bottomText: My 10+ Years of C# Knowledge in 1 Course!
-    bottomLink: csharpcourse
-  lastDynamicHeaderTimestamp: 1772418551
+    topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/summer2025CodeMonkeyBundle.png
+    topText: Get 80% OFF on ALL my Courses and Games!!!
+    topLink: summerbundle
+    bottomText: DONT MISS the latest important trends, sign up for my FREE Weekly
+      Newsletter!
+    bottomLink: gamedevreport
+  lastDynamicHeaderTimestamp: 1785367445
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freeprojectfiles">Browse all the FREE Project
       Files! Click Here!</a><br><a href="https://cmonkey.co/freecourses">Check out
       all my FREE courses! Click Here!</a>
-  websiteLatestMessageTimestamp: 1772418551
+  websiteLatestMessageTimestamp: 1785367445
   websiteLatestVideos:
     videos:
-    - youTubeId: XShVX_PBi1o
-      title: BEST NEW Visual Assets to INSPIRE YOU! (FEBRUARY 2026)
-    - youTubeId: RXf1jsXxWkg
-      title: Learn how to write PRO level code with this DEEP DIVE!
-    - youTubeId: Lm_YTrn9KYc
-      title: Unity HDRP is DEAD!
-    - youTubeId: Ah2WF-_rZig
-      title: Unity EXPLAINED in 200 SECONDS!
-  websiteLatestVideosTimestamp: 1772418551
+    - youTubeId: f0BSrBhudoY
+      title: TOP 10 NEW Systems and Tools JULY 2026! | Unity Asset Store
+    - youTubeId: _0Lp-iXEhfU
+      title: Join my Game Dev Practice Lab for FREE!
+    - youTubeId: 2dyD9yWWtCU
+      title: Unity 7 is RE-ANNOUNCED!
+    - youTubeId: -qpKrATW4wM
+      title: TOP 10 FREE NEW Assets JULY 2026!
+  websiteLatestVideosTimestamp: 1785367445

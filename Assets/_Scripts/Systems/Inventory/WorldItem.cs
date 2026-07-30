@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using FishNet.Object;
 using TimeGame.Systems.GridPlacement;
 
 namespace TimeGame.Systems.Inventory

@@ -306,6 +306,14 @@ namespace TimeGame.Systems.Inventory.UI
             StartCoroutine(CloseWindowForItemNextFrame(containerItem.InstanceID));
         }
 
+        /// <summary>
+        /// Close the floating window for the item with the given InstanceID, if open.
+        /// Used by the networking layer to close windows when an item is removed from a
+        /// container by another player (e.g. equip or take operation).
+        /// </summary>
+        public void CloseWindowForItemId(System.Guid instanceId)
+            => CloseWindowForItemImmediate(instanceId);
+
         private void CloseWindowForItemImmediate(System.Guid instanceID)
         {
             FloatingContainerWindow window = openWindows.FirstOrDefault(w =>

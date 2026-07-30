@@ -66,12 +66,20 @@ namespace TimeGame.Systems.Inventory.UI
         /// <summary>
         /// Fired after a successful same-grid item repositioning (non-split).
         /// The networking layer subscribes to detect when an item is moved to a new
-        /// position within the same container grid so it can call SvrMoveItemInContainer —
+        /// position within the same container grid so it can call SvrInventoryOperation —
         /// preventing the item from snapping back to its original position when the
         /// container is closed and reopened.
         /// Parameters: grid, movedItem (already placed at its new position).
         /// </summary>
         public static event System.Action<InventoryGridVisual, PlacedItem> OnItemRepositionedInGrid;
+
+        /// <summary>
+        /// Fired when a drag-merge removes the source item from a container grid.
+        /// The networking layer uses this to delete the source item on the server so
+        /// the stack merge is reflected in _serverCompartments without duplication.
+        /// Parameters: grid the item was removed from, InstanceID of the removed source item.
+        /// </summary>
+        public static event System.Action<InventoryGridVisual, System.Guid> OnItemRemovedFromGrid;
 
         // Singleton — O(1) access, avoids FindObjectOfType at runtime
         public static InventoryDragHandler Instance { get; private set; }
@@ -202,17 +210,17 @@ namespace TimeGame.Systems.Inventory.UI
             // If we're splitting the stack, we need different logic
             if (isStackSplit)
             {
-                // STACK MASTER PATTERN: Handle tracked vs homogeneous stacks differently
+                // STACK MASTER PATTERN: Handle fully-tracked vs non-tracked stacks differently
                 List<ItemInstance> splitInstances = null;
 
-                if (placedItem.IsInstanceTracked)
+                if (placedItem.IsFullyTracked)
                 {
-                    // TRACKED STACK: Remove specific instances from the original
+                    // FULLY-TRACKED STACK: Remove specific instances from the original
                     splitInstances = placedItem.RemoveInstances(draggedStackCount);
                 }
                 else
                 {
-                    // HOMOGENEOUS STACK: Just reduce the count
+                    // NON-TRACKED STACK or USES-REPRESENTATIVE: Just reduce the stack count
                     int remainingCount = placedItem.StackCount - draggedStackCount;
                     placedItem.SetStackCount(remainingCount);
                 }
@@ -413,8 +421,8 @@ namespace TimeGame.Systems.Inventory.UI
 
                             if (actualAdded > 0)
                             {
-                                // TRACKED STACKS: Transfer specific instances
-                                if (itemAtPosition.IsInstanceTracked)
+                                // FULLY-TRACKED STACKS: Transfer specific instances
+                                if (itemAtPosition.IsFullyTracked)
                                 {
                                     // CRITICAL: For full stack moves, get instances from originalPlacedItem BEFORE removing it!
                                     // For splits, get from drag visual (which already has the split instances)
@@ -473,6 +481,9 @@ namespace TimeGame.Systems.Inventory.UI
                                 if (!isStackSplit && originalGrid != null)
                                 {
                                     originalGrid.InventorySystem.RemoveItem(itemInstanceID);
+                                    // Notify the networking layer so it can remove the source from
+                                    // the server's _serverCompartments and push a corrective snapshot.
+                                    OnItemRemovedFromGrid?.Invoke(originalGrid, itemInstanceID);
                                 }
 
                                 dropped = true;
@@ -490,7 +501,7 @@ namespace TimeGame.Systems.Inventory.UI
                                         PlacedItem originalItem = originalGrid.InventorySystem.GetItemByID(originalItemInstanceID);
                                         if (originalItem != null)
                                         {
-                                            if (originalItem.IsInstanceTracked && draggingPlacedObject != null)
+                                            if (originalItem.IsFullyTracked && draggingPlacedObject != null)
                                             {
                                                 // Return specific instances
                                                 InventoryItemVisual dragVisual = draggingPlacedObject.GetComponent<InventoryItemVisual>();
@@ -542,11 +553,13 @@ namespace TimeGame.Systems.Inventory.UI
                                 if (!isStackSplit && originalGrid != null)
                                 {
                                     // STACK MASTER: Get the instances from the drag visual
+                                    // (covers fully-tracked stacks AND uses-representative consumables)
                                     List<ItemInstance> draggedInstances = null;
                                     if (draggingPlacedObject != null)
                                     {
                                         InventoryItemVisual dragVisual = draggingPlacedObject.GetComponent<InventoryItemVisual>();
-                                        if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.IsInstanceTracked)
+                                        if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.IsInstanceTracked
+                                            && dragVisual.PlacedItem.ItemInstances?.Count > 0)
                                         {
                                             // Get the instances we were dragging
                                             draggedInstances = new List<ItemInstance>(dragVisual.PlacedItem.ItemInstances);
@@ -600,12 +613,14 @@ namespace TimeGame.Systems.Inventory.UI
                     // If we didn't merge, try normal placement (no auto-stacking)
                     else if (!isDroppingOnSameStack)
                     {
-                        // STACK MASTER: Get instances from drag visual for tracked stacks (both splits and full moves)
+                        // STACK MASTER: Get instances from drag visual for any instance-tracked item
+                        // (both fully-tracked stacks AND uses-representative items like consumables).
                         List<ItemInstance> draggedInstances = null;
                         if (draggingPlacedObject != null)
                         {
                             InventoryItemVisual dragVisual = draggingPlacedObject.GetComponent<InventoryItemVisual>();
-                            if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.IsInstanceTracked)
+                            if (dragVisual != null && dragVisual.PlacedItem != null && dragVisual.PlacedItem.IsInstanceTracked
+                                && dragVisual.PlacedItem.ItemInstances?.Count > 0)
                             {
                                 draggedInstances = new List<ItemInstance>(dragVisual.PlacedItem.ItemInstances);
                             }
@@ -665,6 +680,12 @@ namespace TimeGame.Systems.Inventory.UI
                                 placedItem.ItemInstances.Clear();
                                 placedItem.AddInstances(draggedInstances);
                             }
+
+                            // SPLIT RELATIONSHIP: Propagate SplitFromInstanceID so the networking layer
+                            // can detect this was a split.  TryAddItem creates a plain new PlacedItem
+                            // that does not carry the split relationship set on the drag item.
+                            if (dropped && placedItem != null && isStackSplit && originalPlacedItem?.SplitFromInstanceID != null)
+                                placedItem.SplitFromInstanceID = originalPlacedItem.SplitFromInstanceID;
 
                             // NESTED INVENTORY: Transfer container inventory for cross-grid moves
                             if (dropped && placedItem != null && originalPlacedItem != null && originalPlacedItem.ContainerInventory != null)
@@ -733,7 +754,7 @@ namespace TimeGame.Systems.Inventory.UI
                     }
                     // Equipment slot → grid: item was already unequipped at drag start so
                     // originalGrid is null.  Fire the networking event so HandleItemMovedBetweenGrids
-                    // can send SvrPutItemIntoContainer when the target is a container grid.
+                    // can call SvrInventoryOperation when the target is a container grid.
                     // Passing null as sourceGrid is safe: TryGetContainerContext(null) returns false,
                     // so the TAKE branch is skipped and only the PUT branch fires.
                     else if (!isStackSplit && originalGrid == null && dropTarget is InventoryGridVisual equipToGridTarget)
@@ -750,7 +771,7 @@ namespace TimeGame.Systems.Inventory.UI
                         }
 
                         // Notify the networking layer when a split crosses to a different grid.
-                        // This allows SvrPutItemIntoContainer / SvrTakeItemFromContainer to
+                        // This allows SvrInventoryOperation / SvrTakeItemFromContainer to
                         // persist the partial operation to the server's authoritative state.
                         // NOTE: For merge+split paths (isDroppingOnSameStack && isStackSplit),
                         // placedItem is the merged-into item; the server will deny that case

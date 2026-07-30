@@ -1,165 +1,59 @@
 using UnityEngine;
-using FishNet.Object;
-using FishNet.Component.Prediction;
-using FishNet.Connection;
 
-public class PlayerZoneTriggerHandler : NetworkBehaviour
+/// <summary>
+/// Forwards the local player's zone trigger enter/exit events directly to the
+/// affected BaseZone. Singleplayer replacement for the former server-authoritative
+/// FishNet ServerRpc forwarding.
+/// </summary>
+public class PlayerZoneTriggerHandler : MonoBehaviour
 {
-    private NetworkTrigger _networkTrigger;
+    private TriggerDetector _triggerDetector;
     
     private void Awake()
     {
-        _networkTrigger = GetComponentInChildren<NetworkTrigger>();
+        _triggerDetector = GetComponentInChildren<TriggerDetector>();
         
-        if (_networkTrigger == null)
+        if (_triggerDetector == null)
         {
-            Debug.LogError("[PlayerZoneTriggerHandler] ❌ NetworkTrigger component not found! Add it to the TriggerDetector child object.");
+            Debug.LogError("[PlayerZoneTriggerHandler] TriggerDetector component not found! Add it to the TriggerDetector child object.");
             enabled = false;
             return;
         }
         
-        _networkTrigger.OnEnter += OnZoneTriggerEnter;
-        _networkTrigger.OnExit += OnZoneTriggerExit;
+        _triggerDetector.OnEnter += OnZoneTriggerEnter;
+        _triggerDetector.OnExit += OnZoneTriggerExit;
     }
     
     private void OnDestroy()
     {
-        if (_networkTrigger != null)
+        if (_triggerDetector != null)
         {
-            _networkTrigger.OnEnter -= OnZoneTriggerEnter;
-            _networkTrigger.OnExit -= OnZoneTriggerExit;
+            _triggerDetector.OnEnter -= OnZoneTriggerEnter;
+            _triggerDetector.OnExit -= OnZoneTriggerExit;
         }
     }
     
     private void OnZoneTriggerEnter(Collider other)
     {
-        if (!IsOwner) return;
         if (other == null) return;
         
-        Debug.Log($"[PlayerZoneTriggerHandler] CLIENT - Detected zone trigger ENTER: {other.gameObject.name}");
-        
-        // Check for new BaseZone system
         var baseZone = other.GetComponent<BaseZone>();
         if (baseZone != null)
         {
-            var zoneNetworkObject = baseZone.GetComponent<NetworkObject>();
-            if (zoneNetworkObject != null)
-            {
-                Debug.Log($"[PlayerZoneTriggerHandler] CLIENT - Notifying server about BaseZone: {baseZone.zoneName}");
-                NotifyServerZoneEntered_ServerRpc(zoneNetworkObject);
-            }
-            else
-            {
-                Debug.LogWarning($"[PlayerZoneTriggerHandler] ⚠️ Zone '{baseZone.zoneName}' has no NetworkObject component!");
-            }
-            return;
-        }
-        
-        // Legacy support for EnhancedTemporalZone
-        var enhancedZone = other.GetComponent<EnhancedTemporalZone>();
-        if (enhancedZone != null)
-        {
-            var zoneNetworkObject = enhancedZone.GetComponent<NetworkObject>();
-            if (zoneNetworkObject != null)
-            {
-                NotifyServerZoneEntered_ServerRpc(zoneNetworkObject);
-            }
+            Debug.Log($"[PlayerZoneTriggerHandler] Notifying zone entered: {baseZone.zoneName}");
+            baseZone.NotifyObjectEntered(gameObject);
         }
     }
     
     private void OnZoneTriggerExit(Collider other)
     {
-        if (!IsOwner) return;
         if (other == null) return;
         
-        Debug.Log($"[PlayerZoneTriggerHandler] CLIENT - Detected zone trigger EXIT: {other.gameObject.name}");
-        
-        // Check for new BaseZone system
         var baseZone = other.GetComponent<BaseZone>();
         if (baseZone != null)
         {
-            var zoneNetworkObject = baseZone.GetComponent<NetworkObject>();
-            if (zoneNetworkObject != null)
-            {
-                Debug.Log($"[PlayerZoneTriggerHandler] CLIENT - Notifying server about BaseZone exit: {baseZone.zoneName}");
-                NotifyServerZoneExited_ServerRpc(zoneNetworkObject);
-            }
-            return;
-        }
-        
-        // Legacy support
-        var enhancedZone = other.GetComponent<EnhancedTemporalZone>();
-        if (enhancedZone != null)
-        {
-            var zoneNetworkObject = enhancedZone.GetComponent<NetworkObject>();
-            if (zoneNetworkObject != null)
-            {
-                NotifyServerZoneExited_ServerRpc(zoneNetworkObject);
-            }
-        }
-    }
-    
-    [ServerRpc(RequireOwnership = false)]
-    private void NotifyServerZoneEntered_ServerRpc(NetworkObject zoneNetworkObject, NetworkConnection sender = null)
-    {
-        if (zoneNetworkObject == null)
-        {
-            Debug.LogWarning($"[Server] ⚠️ Zone NetworkObject is null!");
-            return;
-        }
-        
-        Debug.Log($"[PlayerZoneTriggerHandler] SERVER RPC - Player {gameObject.name} entered zone");
-        
-        // New BaseZone system - trigger directly on the zone
-        var baseZone = zoneNetworkObject.GetComponent<BaseZone>();
-        if (baseZone != null)
-        {
-            Debug.Log($"[PlayerZoneTriggerHandler] SERVER - Calling BaseZone trigger for {gameObject.name}");
-            baseZone.OnNetworkTriggerEnter(gameObject);
-            return;
-        }
-        
-        // Legacy EnhancedTemporalZone
-        var enhancedZone = zoneNetworkObject.GetComponent<EnhancedTemporalZone>();
-        if (enhancedZone != null)
-        {
-            var stability = GetComponent<TemporalStability>();
-            if (stability != null)
-            {
-                enhancedZone.PlayerEntered(stability);
-            }
-        }
-    }
-    
-    [ServerRpc(RequireOwnership = false)]
-    private void NotifyServerZoneExited_ServerRpc(NetworkObject zoneNetworkObject, NetworkConnection sender = null)
-    {
-        if (zoneNetworkObject == null)
-        {
-            Debug.LogWarning($"[Server] ⚠️ Zone NetworkObject is null!");
-            return;
-        }
-        
-        Debug.Log($"[PlayerZoneTriggerHandler] SERVER RPC - Player {gameObject.name} exited zone");
-        
-        // New BaseZone system
-        var baseZone = zoneNetworkObject.GetComponent<BaseZone>();
-        if (baseZone != null)
-        {
-            Debug.Log($"[PlayerZoneTriggerHandler] SERVER - Calling BaseZone exit for {gameObject.name}");
-            baseZone.OnNetworkTriggerExit(gameObject);
-            return;
-        }
-        
-        // Legacy
-        var enhancedZone = zoneNetworkObject.GetComponent<EnhancedTemporalZone>();
-        if (enhancedZone != null)
-        {
-            var stability = GetComponent<TemporalStability>();
-            if (stability != null)
-            {
-                enhancedZone.PlayerExited(stability);
-            }
+            Debug.Log($"[PlayerZoneTriggerHandler] Notifying zone exited: {baseZone.zoneName}");
+            baseZone.NotifyObjectExited(gameObject);
         }
     }
 }

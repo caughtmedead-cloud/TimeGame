@@ -283,6 +283,50 @@ namespace TimeGame.Systems.GridPlacement
         }
 
         /// <summary>
+        /// Moves an already-placed item to a new position and rotation without destroying
+        /// or recreating the <see cref="PlacedItem"/> object.
+        ///
+        /// This is the lineage-correct alternative to Remove + TryPlaceItem for same-grid
+        /// repositioning.  All per-instance state — <c>ItemInstances</c>, <c>ContainerInventory</c>,
+        /// <c>SplitFromInstanceID</c>, and any external references to the <see cref="PlacedItem"/>
+        /// — remain valid after the call because the C# object is never replaced.
+        ///
+        /// Returns <c>false</c> (item stays in place, no side-effects) when:
+        /// <list type="bullet">
+        ///   <item>the item ID is not tracked by this grid,</item>
+        ///   <item>the target position/rotation is blocked by a <em>different</em> item, or</item>
+        ///   <item>the target cells are out of bounds.</item>
+        /// </list>
+        /// </summary>
+        public bool RepositionItem(Guid instanceId, Vector2Int newAnchor, GridDirection newRotation)
+        {
+            if (!placedItems.TryGetValue(instanceId, out PlacedItem item)) return false;
+
+            // Validate using ignoreItemID so the item's own current cells don't block itself.
+            if (!CanPlaceItem(item.ItemDefinition, newAnchor, newRotation, instanceId)) return false;
+
+            // Vacate old cells.
+            foreach (Vector2Int cellPos in item.OccupiedCells)
+            {
+                if (IsValidGridPosition(cellPos))
+                    grid.GetGridObject(cellPos.x, cellPos.y).Clear();
+            }
+
+            // Mutate the PlacedItem in-place — no new object, no lost state.
+            item.UpdatePlacement(newAnchor, newRotation);
+
+            // Occupy new cells.
+            foreach (Vector2Int cellPos in item.OccupiedCells)
+            {
+                if (IsValidGridPosition(cellPos))
+                    grid.GetGridObject(cellPos.x, cellPos.y).SetOccupyingItem(item);
+            }
+
+            // placedItems dict entry unchanged — same key, same object reference.
+            return true;
+        }
+
+        /// <summary>
         /// Remove an item at the specified grid position.
         /// Returns true if an item was removed.
         /// </summary>

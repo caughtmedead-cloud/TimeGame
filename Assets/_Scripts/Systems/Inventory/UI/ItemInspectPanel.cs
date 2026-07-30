@@ -635,16 +635,41 @@ namespace TimeGame.Systems.Inventory.UI
             }
 
             // ── Instance / durability ───────────────────────────────────────
-            if (placedItem != null && placedItem.IsInstanceTracked &&
+            if (placedItem != null && itemDef.HasLimitedUses)
+            {
+                ItemInstance useInstance = null;
+
+                // Check for fully-tracked items
+                if (placedItem.IsFullyTracked &&
+                    placedItem.ItemInstances != null && placedItem.ItemInstances.Count > 0)
+                {
+                    useInstance = placedItem.ItemInstances[0];
+                }
+                // Check for non-tracked items with uses representative
+                else if (placedItem.HasUsesRepresentative &&
+                         placedItem.ItemInstances != null && placedItem.ItemInstances.Count > 0)
+                {
+                    useInstance = placedItem.ItemInstances[0];
+                }
+
+                if (useInstance != null)
+                {
+                    AddDivider("CONDITION");
+                    AddStatRow("Uses Remaining", $"{useInstance.UsesRemaining} / {itemDef.MaxUses}");
+
+                    // Durability as a bar + number (only for tracked items)
+                    if (placedItem.IsFullyTracked)
+                    {
+                        AddDurabilityRow(useInstance.Durability);
+                    }
+                }
+            }
+            // ── Durability-only (no uses) ────────────────────────────────────
+            else if (placedItem != null && placedItem.IsFullyTracked &&
                 placedItem.ItemInstances != null && placedItem.ItemInstances.Count > 0)
             {
                 ItemInstance inst = placedItem.ItemInstances[0];
                 AddDivider("CONDITION");
-
-                if (itemDef.HasLimitedUses)
-                    AddStatRow("Uses Remaining", $"{inst.UsesRemaining} / {itemDef.MaxUses}");
-
-                // Durability as a bar + number
                 AddDurabilityRow(inst.Durability);
             }
 

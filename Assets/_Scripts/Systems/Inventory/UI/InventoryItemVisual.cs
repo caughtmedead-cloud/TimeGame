@@ -387,13 +387,22 @@ namespace TimeGame.Systems.Inventory.UI
         /// <summary>
         /// Update the uses count display based on the current ItemInstance.
         /// Shows "current/max" format only if item has limited uses.
+        /// Works for both fully-tracked items and non-tracked items with uses.
         /// </summary>
         public void UpdateUsesCount()
         {
             if (usesCountText == null || PlacedItem == null || ItemDefinition == null)
                 return;
 
-            // Check if this is a tracked item with uses
+            InventoryItemSO itemSO = ItemDefinition as InventoryItemSO;
+            if (itemSO == null || !itemSO.HasLimitedUses)
+            {
+                usesCountText.text = "";
+                usesCountText.enabled = false;
+                return;
+            }
+
+            // Check for fully-tracked items with uses
             if (PlacedItem.IsInstanceTracked &&
                 PlacedItem.ItemInstances != null &&
                 PlacedItem.ItemInstances.Count > 0)
@@ -401,10 +410,30 @@ namespace TimeGame.Systems.Inventory.UI
                 // Get first item in stack (the one that would be used)
                 ItemInstance firstItem = PlacedItem.ItemInstances[0];
 
-                // Only show uses if item has limited uses (not -1)
-                if (firstItem.UsesRemaining >= 0 && ItemDefinition is InventoryItemSO itemSO && itemSO.HasLimitedUses)
+                // Show uses for tracked items
+                if (firstItem.UsesRemaining >= 0)
                 {
                     usesCountText.text = $"{firstItem.UsesRemaining}/{itemSO.MaxUses}";
+                    usesCountText.enabled = true;
+                }
+                else
+                {
+                    usesCountText.text = "";
+                    usesCountText.enabled = false;
+                }
+            }
+            // Check for non-tracked items with uses representative
+            else if (PlacedItem.HasUsesRepresentative &&
+                     PlacedItem.ItemInstances != null &&
+                     PlacedItem.ItemInstances.Count > 0)
+            {
+                // Get the representative instance
+                ItemInstance representative = PlacedItem.ItemInstances[0];
+
+                // Show uses for non-tracked items with uses
+                if (representative.UsesRemaining >= 0)
+                {
+                    usesCountText.text = $"{representative.UsesRemaining}/{itemSO.MaxUses}";
                     usesCountText.enabled = true;
                 }
                 else

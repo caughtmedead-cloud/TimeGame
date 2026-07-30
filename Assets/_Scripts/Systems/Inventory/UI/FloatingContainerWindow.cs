@@ -1,8 +1,11 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using DG.Tweening;
+using TimeGame.Systems.Inventory;
 
 namespace TimeGame.Systems.Inventory.UI
 {
@@ -109,6 +112,33 @@ namespace TimeGame.Systems.Inventory.UI
                 gridVisual.RefreshAllItemVisuals();
                 Log($"Refreshed grid for '{containerItem.ItemDefinition?.ItemName}'.");
             }
+        }
+
+        /// <summary>
+        /// Rebuilds this window's grid in-place from a <see cref="ContainerItemData"/> snapshot
+        /// pushed by the server after any mutation.
+        ///
+        /// Works directly on <c>gridVisual.InventorySystem</c> (which is the same object as
+        /// <c>containerItem.ContainerInventory</c> after the window was opened) so the
+        /// object reference is never replaced — the item-lineage law is honoured at the UI layer.
+        /// </summary>
+        public void RebuildFromData(ContainerItemData data)
+        {
+            InventorySystem inv = gridVisual?.InventorySystem;
+            if (inv == null || data == null) return;
+
+            // Clear in-place — same object, preserved reference.
+            foreach (var p in inv.GetAllItems().ToList())
+                inv.RemoveItem(p.InstanceID);
+
+            data.LoadIntoInventorySystem(inv, compartmentIndex: 0);
+
+            // SwapInventorySystem is a no-op here (same object) but ensures the visual
+            // re-wires internal event subscriptions if the implementation requires it.
+            gridVisual.SwapInventorySystem(inv);
+            gridVisual.RefreshAllItemVisuals();
+
+            Log($"RebuildFromData for '{containerItem?.ItemDefinition?.ItemName}'.");
         }
 
         private void Awake()
@@ -287,11 +317,6 @@ namespace TimeGame.Systems.Inventory.UI
         /// Close this window.
         /// Any in-progress drag from this window's grid is cancelled so the item returns
         /// to the grid rather than getting stuck to the cursor.
-        /// A snapshot of the current grid contents is then sent to the server so the
-        /// nested container's authoritative state is up-to-date, acting as a reconciliation
-        /// step that covers any real-time RPC gaps (reordering, merges, etc.).
-        /// Real-time RPCs keep OTHER clients' floating windows in sync during the session;
-        /// the snapshot here ensures persistence across close/reopen for THIS client.
         /// </summary>
         public void Close()
         {
@@ -301,45 +326,6 @@ namespace TimeGame.Systems.Inventory.UI
             if (dragHandler != null && dragHandler.IsDragging)
             {
                 dragHandler.CancelDrag();
-            }
-
-            // ── Persistence snapshot ──────────────────────────────────────────
-            // Send the live nested-container state to the server so changes survive
-            // close/reopen.  Only fires when this window was opened from a world loot
-            // container (both IDs ≥ 0); player-only containers (-1) need no server sync.
-            if (_parentWorldContainerNetId >= 0 && _parentCompartmentIndex >= 0
-                && containerItem != null)
-            {
-                TimeGame.Systems.Networking.Inventory.NetworkedInventoryComponent netInv =
-                    TimeGame.Systems.Networking.Inventory.NetworkedInventoryComponent.LocalInstance;
-                if (netInv != null)
-                {
-                    bool                hasSnapshot = false;
-                    TimeGame.Systems.Networking.Inventory.NetContainerSnapshot snapshot = default;
-
-                    if (containerItem.ContainerInventory != null)
-                    {
-                        ContainerItemData data =
-                            ContainerItemData.FromInventorySystem(containerItem.ContainerInventory);
-                        if (data != null)
-                        {
-                            snapshot    = TimeGame.Systems.Networking.Inventory.InventoryNetConverter.ToNetSnapshot(data);
-                            hasSnapshot = !data.IsEmpty();
-                        }
-                    }
-
-                    // Build the full container path: ancestors + this window's own container ID.
-                    System.Guid[] fullPath = AppendGuid(
-                        _containerPath ?? System.Array.Empty<System.Guid>(),
-                        containerItem.InstanceID);
-
-                    netInv.SvrSyncNestedContainer(
-                        _parentWorldContainerNetId,
-                        _parentCompartmentIndex,
-                        fullPath,
-                        hasSnapshot,
-                        snapshot);
-                }
             }
 
             if (canvasGroup != null)

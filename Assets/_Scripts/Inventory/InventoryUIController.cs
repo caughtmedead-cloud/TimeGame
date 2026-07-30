@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using FishNet.Object;
 
 namespace TimeGame.Inventory
 {
@@ -9,7 +8,7 @@ namespace TimeGame.Inventory
     /// Attached to the player prefab to control their inventory UI.
     /// Also disables player movement/look input while inventory is open.
     /// </summary>
-    public class InventoryUIController : NetworkBehaviour
+    public class InventoryUIController : MonoBehaviour
     {
         [Header("Inventory UI References")]
         [Tooltip("The Canvas GameObject containing the entire inventory UI")]
@@ -109,7 +108,7 @@ namespace TimeGame.Inventory
         
         private void Update()
         {
-            if (!IsOwner || !isInventoryOpen) return;
+            if (!isInventoryOpen) return;
 
             if (Input.GetKeyDown(KeyCode.Escape))
             {
@@ -130,38 +129,22 @@ namespace TimeGame.Inventory
         
         #endregion
         
-        #region FishNet Lifecycle
+        #region Local Player Setup
         
-        public override void OnStartClient()
+        private void Start()
         {
-            base.OnStartClient();
+            // Enable input for local player
+            inputActions.Player.Enable();
             
-            if (IsOwner)
+            // Start with inventory closed
+            if (inventoryCanvas != null)
             {
-                // Enable input for local player
-                inputActions.Player.Enable();
-                
-                // Start with inventory closed
-                if (inventoryCanvas != null)
-                {
-                    inventoryCanvas.SetActive(false);
-                }
-                
-                if (debugMode)
-                {
-                    Debug.Log("[InventoryUIController] Initialized for local player. Press Tab to open inventory, ESC to close.");
-                }
+                inventoryCanvas.SetActive(false);
             }
-            else
+            
+            if (debugMode)
             {
-                // Disable input for non-owned players
-                inputActions.Player.Disable();
-                
-                // Hide inventory UI for remote players
-                if (inventoryCanvas != null)
-                {
-                    inventoryCanvas.SetActive(false);
-                }
+                Debug.Log("[InventoryUIController] Initialized for local player. Press Tab to open inventory, ESC to close.");
             }
         }
         
@@ -171,8 +154,6 @@ namespace TimeGame.Inventory
         
         private void OnInventoryToggle(InputAction.CallbackContext context)
         {
-            if (!IsOwner) return; // Only local player can toggle their inventory
-
             // Don't open inventory if inspect panel is visible from world
             // (The inspect panel will handle closing itself)
             var inspectPanel = TimeGame.Systems.Inventory.UI.ItemInspectPanel.Instance;
@@ -201,8 +182,6 @@ namespace TimeGame.Inventory
         /// </summary>
         public void OpenInventory()
         {
-            if (!IsOwner) return;
-            
             isInventoryOpen = true;
             
             // Show inventory UI
@@ -238,8 +217,6 @@ namespace TimeGame.Inventory
         /// <param name="restoreCursor">Whether to restore the previous cursor lock state</param>
         private void CloseInventory(bool restoreCursor = true)
         {
-            if (!IsOwner) return;
-
             isInventoryOpen = false;
 
             // Cancel any active drag before closing — prevents item visuals getting stuck
@@ -344,7 +321,6 @@ namespace TimeGame.Inventory
         /// </summary>
         public void Open()
         {
-            if (!IsOwner) return;
             if (!isInventoryOpen)
             {
                 OpenInventory();
@@ -356,7 +332,6 @@ namespace TimeGame.Inventory
         /// </summary>
         public void Close()
         {
-            if (!IsOwner) return;
             if (isInventoryOpen)
             {
                 CloseInventory();

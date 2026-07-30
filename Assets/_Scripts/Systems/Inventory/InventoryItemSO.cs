@@ -66,6 +66,16 @@ namespace TimeGame.Systems.Inventory
         [Tooltip("Maximum weight capacity of this item's storage")]
         public float StorageMaxWeight = 20f;
 
+        [Header("Use Effects")]
+        [Tooltip("Health restored when this item is used. 0 = no heal.")]
+        public float HealAmount = 0f;
+
+        [Tooltip("Hunger restored when this item is used. 0 = no restore.")]
+        public float HungerRestore = 0f;
+
+        [Tooltip("Stamina restored when this item is used. 0 = no restore.")]
+        public float StaminaRestore = 0f;
+
         /// <summary>
         /// Prefab for 3D world representation (dropped items, pickups, etc.)
         /// Must have WorldItem component attached.

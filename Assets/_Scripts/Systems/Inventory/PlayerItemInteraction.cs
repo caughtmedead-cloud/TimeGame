@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using FishNet.Object;
 using TimeGame.Systems.Inventory.UI;
 using TimeGame.Systems.GridPlacement;
-using TimeGame.Systems.Networking.Inventory;
 using TimeGame.Inventory;
 
 namespace TimeGame.Systems.Inventory
@@ -39,7 +37,6 @@ namespace TimeGame.Systems.Inventory
         private WorldItem currentlyLookedAtItem;
         private WorldLootContainer currentlyLookedAtContainer;
         private PlayerInputActions inputActions;
-        private NetworkedInventoryComponent netInv;
 
         #region Unity Lifecycle
 
@@ -54,8 +51,6 @@ namespace TimeGame.Systems.Inventory
             {
                 scenePhysics = GetComponent<ScenePhysics>();
             }
-
-            netInv = GetComponentInParent<NetworkedInventoryComponent>(true);
 
             inputActions = new PlayerInputActions();
 
@@ -309,41 +304,15 @@ namespace TimeGame.Systems.Inventory
         /// <summary>
         /// Open a world loot container — forces this player's inventory screen up, then populates left panel.
         /// InventoryUIController lives on the player prefab, so this is always the local player's UI.
-        ///
-        /// Networked path: sends SvrRequestContainerOpen so the server provides the authoritative
-        /// snapshot.  TgtReceiveContainerSnapshot (on NetworkedInventoryComponent) then calls
-        /// ContainerInteractionManager.OpenContainer with the correct contents.
-        ///
-        /// Solo path (no NetworkedWorldLootContainer): calls WorldLootContainer.Open() directly.
         /// </summary>
         private void TryOpenContainer(WorldLootContainer container)
         {
             if (container == null) return;
 
-            // Always open the inventory UI immediately — no need to wait for the server round-trip
+            // Always open the inventory UI immediately
             if (inventoryUIController != null)
                 inventoryUIController.Open();
 
-            // ── Networked path ────────────────────────────────────────────────
-            NetworkedWorldLootContainer netContainer =
-                container.GetComponent<NetworkedWorldLootContainer>();
-
-            if (netContainer != null)
-            {
-                if (netInv == null)
-                {
-                    Debug.LogWarning("[PlayerItemInteraction] NetworkedWorldLootContainer found but no NetworkedInventoryComponent on this player — falling back to local open.");
-                    container.Open();
-                    return;
-                }
-
-                // Ask the server for the authoritative snapshot.
-                // TgtReceiveContainerSnapshot on NetworkedInventoryComponent will populate the UI.
-                netInv.SvrRequestContainerOpen(netContainer.NetworkObject.ObjectId);
-                return;
-            }
-
-            // ── Solo path ─────────────────────────────────────────────────────
             container.Open();
         }
 
@@ -514,41 +483,6 @@ namespace TimeGame.Systems.Inventory
             ItemInstance instance = worldItem.ItemInstance;
             ContainerItemData containerData = worldItem.ContainerData;
 
-            // ── Networked path ────────────────────────────────────────────────
-            NetworkedWorldItem netWorldItem = worldItem.GetComponent<NetworkedWorldItem>();
-            if (netWorldItem != null)
-            {
-                if (netInv == null)
-                {
-                    Debug.LogWarning("[PlayerItemInteraction] NetworkedWorldItem found but no NetworkedInventoryComponent on this player — pickup aborted.");
-                    return;
-                }
-
-                // Speculatively add to local inventory with a pre-generated Guid so the
-                // server can confirm (TgtPickupGranted) or roll back (TgtPickupDenied).
-                System.Guid speculativeId = System.Guid.NewGuid();
-                bool placed = TryAddSpeculativeItem(itemDef, quantity, instance, containerData, speculativeId);
-
-                if (!placed)
-                {
-                    if (debugMode)
-                        Debug.LogWarning($"[PlayerItemInteraction] Inventory full — cannot speculatively place {itemDef.ItemName}");
-                    return;
-                }
-
-                netInv.MarkPendingPickup(speculativeId);
-                netInv.SvrPickupItem(netWorldItem.NetworkObject.ObjectId, speculativeId, transform.position);
-
-                // Clear target now — the world object will be despawned by the server on grant.
-                // On denial the speculative item is removed by TgtPickupDenied; the world item remains visible.
-                ClearCurrentTarget();
-
-                if (debugMode)
-                    Debug.Log($"[PlayerItemInteraction] Speculative pickup sent: {itemDef.ItemName} x{quantity}  speculativeId={speculativeId}");
-                return;
-            }
-
-            // ── Solo (offline / singleplayer) path ────────────────────────────
             bool success = TryAddToAnyInventoryGrid(itemDef, quantity, instance, containerData);
 
             if (success)
@@ -566,184 +500,15 @@ namespace TimeGame.Systems.Inventory
             }
         }
 
-        /// <summary>
-        /// Adds the item to the first available inventory grid cell, stamping it with
-        /// <paramref name="instanceId"/> so the server can later confirm or roll it back
-        /// by Guid without a remove-and-re-add round trip.
-        /// </summary>
-        private bool TryAddSpeculativeItem(InventoryItemSO item, int quantity, ItemInstance instance,
-            ContainerItemData containerData, System.Guid instanceId)
-        {
-            if (inventoryManager == null) return false;
-
-            GridPlacement.GridDirection[] rotations = item.CanRotate
-                ? new[] { GridPlacement.GridDirection.Down, GridPlacement.GridDirection.Right,
-                          GridPlacement.GridDirection.Up,  GridPlacement.GridDirection.Left }
-                : new[] { GridPlacement.GridDirection.Down };
-
-            foreach (var grid in inventoryManager.GetAllGrids())
-            {
-                if (grid == null) continue;
-
-                foreach (GridPlacement.GridDirection rotation in rotations)
-                {
-                    Vector2Int? position = FindFirstAvailablePosition(grid, item, rotation);
-                    if (!position.HasValue) continue;
-
-                    // Pass stackCount=0 for tracked items so InitializeStack doesn't create a pristine
-                    // duplicate instance — we attach the real one below.
-                    int stackCount = (instance != null && item.TrackIndividualItems) ? 0 : quantity;
-
-                    bool success = grid.InventorySystem.TryAddItem(
-                        instanceId,
-                        item,
-                        position.Value,
-                        rotation,
-                        out GridPlacement.PlacedItem placedItem,
-                        stackCount
-                    );
-
-                    if (success && placedItem != null)
-                    {
-                        if (instance != null && item.TrackIndividualItems)
-                            placedItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
-
-                        if (containerData != null && item.ProvidesStorage)
-                        {
-                            InventorySystem containerInv = new InventorySystem(
-                                item.StorageGridSize.x,
-                                item.StorageGridSize.y,
-                                64f,
-                                Vector3.zero,
-                                item.StorageMaxWeight
-                            );
-                            containerData.LoadIntoInventorySystem(containerInv, 0);
-                            placedItem.ContainerInventory = containerInv;
-                        }
-
-                        grid.RefreshAllItemVisuals();
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         private bool TryAddToAnyInventoryGrid(InventoryItemSO item, int quantity, ItemInstance instance, ContainerItemData containerData = null)
         {
-            if (inventoryManager == null) return false;
-
-            var allGrids = inventoryManager.GetAllGrids();
-
-            // Step 1: Try merging into an existing stack first (all grids, before spawning new stacks)
-            // Covers both tracked items (individual instances) and non-tracked stackables (plain quantity)
-            if (item.IsStackable)
-            {
-                foreach (var grid in allGrids)
-                {
-                    if (grid == null) continue;
-
-                    foreach (GridPlacement.PlacedItem existingItem in grid.InventorySystem.GetAllItems())
-                    {
-                        if (existingItem.ItemDefinition != item) continue;
-                        if (existingItem.StackCount >= item.MaxStackSize) continue;
-
-                        if (instance != null && item.TrackIndividualItems)
-                        {
-                            // Tracked item — add the specific instance
-                            existingItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
-                        }
-                        else
-                        {
-                            // Non-tracked stackable — just increment the stack count
-                            existingItem.AddToStack(quantity);
-                        }
-
-                        grid.RefreshAllItemVisuals();
-                        return true;
-                    }
-                }
-            }
-
-            // Step 2: No existing stack — find a free position, trying all rotations if allowed
-            GridPlacement.GridDirection[] rotations = item.CanRotate
-                ? new[] { GridPlacement.GridDirection.Down, GridPlacement.GridDirection.Right, GridPlacement.GridDirection.Up, GridPlacement.GridDirection.Left }
-                : new[] { GridPlacement.GridDirection.Down };
-
-            foreach (var grid in allGrids)
-            {
-                if (grid == null) continue;
-
-                foreach (GridPlacement.GridDirection rotation in rotations)
-                {
-                    Vector2Int? position = FindFirstAvailablePosition(grid, item, rotation);
-                    if (!position.HasValue) continue;
-
-                    // Pass stackCount=0 when we have a real instance so InitializeStack
-                    // doesn't create a pristine duplicate — we attach the real one below.
-                    int stackCountToCreate = (instance != null && item.TrackIndividualItems) ? 0 : quantity;
-
-                    bool success = grid.InventorySystem.TryAddItem(
-                        item,
-                        position.Value,
-                        rotation,
-                        out GridPlacement.PlacedItem placedItem,
-                        stackCountToCreate,
-                        allowAutoStack: false // already handled stacking in Step 1
-                    );
-
-                    if (success && placedItem != null)
-                    {
-                        // Attach real instance if tracked
-                        if (instance != null && item.TrackIndividualItems)
-                            placedItem.AddInstances(new System.Collections.Generic.List<ItemInstance> { instance });
-
-                        // Restore container inventory if this is a container item
-                        if (containerData != null && item.ProvidesStorage)
-                        {
-                            // CRITICAL: Use 64f — must match UI cell size so grid renders correctly
-                            InventorySystem containerInv = new InventorySystem(
-                                item.StorageGridSize.x,
-                                item.StorageGridSize.y,
-                                64f,
-                                Vector3.zero,
-                                item.StorageMaxWeight
-                            );
-                            containerData.LoadIntoInventorySystem(containerInv, 0);
-                            placedItem.ContainerInventory = containerInv;
-                        }
-
-                        grid.RefreshAllItemVisuals();
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return InventoryPlacementHelper.TryAddToAnyGrid(
+                inventoryManager.GetAllGrids(), item, quantity, instance, containerData);
         }
 
         private Vector2Int? FindFirstAvailablePosition(InventoryGridVisual grid, InventoryItemSO item, GridPlacement.GridDirection rotation)
         {
-            if (grid == null || item == null) return null;
-
-            int width = grid.InventorySystem.Width;
-            int height = grid.InventorySystem.Height;
-
-            int itemWidth  = item.GetRotatedWidth(rotation);
-            int itemHeight = item.GetRotatedHeight(rotation);
-
-            for (int y = 0; y <= height - itemHeight; y++)
-            {
-                for (int x = 0; x <= width - itemWidth; x++)
-                {
-                    Vector2Int pos = new Vector2Int(x, y);
-                    if (grid.InventorySystem.CanAddItem(item, pos, rotation))
-                        return pos;
-                }
-            }
-
-            return null;
+            return InventoryPlacementHelper.FindFirstAvailablePosition(grid, item, rotation);
         }
 
         #endregion

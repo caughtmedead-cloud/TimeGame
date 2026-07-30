@@ -19,25 +19,25 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: 231699b592ae08a45a5025ce6c888e6f, type: 2}
     weight: 1
     minQuantity: 1
-    maxQuantity: 10
+    maxQuantity: 1
     compartmentIndex: 0
     spillToOtherCompartments: 1
   - item: {fileID: 11400000, guid: cfbf87991d2121e4095add2ac6a01723, type: 2}
     weight: 1
     minQuantity: 0
-    maxQuantity: 2
+    maxQuantity: 1
     compartmentIndex: 0
     spillToOtherCompartments: 1
   - item: {fileID: 11400000, guid: 76fb7bed2dff8724c9e3fc4e217bbe7d, type: 2}
     weight: 1
     minQuantity: 0
-    maxQuantity: 2
+    maxQuantity: 1
     compartmentIndex: 0
     spillToOtherCompartments: 1
   - item: {fileID: 11400000, guid: 446001fd4a459fb4b81c332564445407, type: 2}
     weight: 1
     minQuantity: 0
-    maxQuantity: 2
+    maxQuantity: 1
     compartmentIndex: 0
     spillToOtherCompartments: 1
   - item: {fileID: 11400000, guid: e2869b5fd4678774d802733942d58e73, type: 2}
@@ -49,6 +49,12 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: 21370374b9290db40b6a2d21c79caa85, type: 2}
     weight: 1
     minQuantity: 0
-    maxQuantity: 5
+    maxQuantity: 1
+    compartmentIndex: 0
+    spillToOtherCompartments: 1
+  - item: {fileID: 11400000, guid: 6f5d86258e5f26643b7888cda1605b33, type: 2}
+    weight: 1
+    minQuantity: 0
+    maxQuantity: 1
     compartmentIndex: 0
     spillToOtherCompartments: 1

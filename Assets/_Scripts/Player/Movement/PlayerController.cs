@@ -4,11 +4,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using NewThelos.Systems.Input;
-using FishNet.Object;
-using FishNet.Object.Synchronizing;
 using DG.Tweening;
 
-public class PlayerController : NetworkBehaviour
+public class PlayerController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float walkSpeed = 3f;
@@ -67,16 +65,12 @@ public class PlayerController : NetworkBehaviour
     private bool isGrounded;
     private bool isSprinting = false;
     private bool wasGrounded = false;
-    private readonly SyncVar<bool> isCrouching = new SyncVar<bool>(
-        false,
-        new SyncTypeSettings(WritePermission.ServerOnly, ReadPermission.Observers)
-    );
+    private bool isCrouching = false;
     private bool jumpedThisFrame = false;
     private bool jumpQueued = false;
     private bool crouchInput = false;
     private bool crouchToggled = false;
     private bool isCrouchJumpRequested = false;
-    private bool predictedCrouch = false;
     private float jumpQueueTime = 0f;
     private float timeLeftGround = 0f;
     private bool wasInAir = false;
@@ -121,47 +115,26 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    public override void OnStartClient()
-    {
-        base.OnStartClient();
-
-        if (IsOwner)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-
-            if (playerCamera != null)
-            {
-                playerCamera.enabled = true;
-            }
-            
-            inputActions.Player.Enable();
-        }
-        else
-        {
-            if (playerCamera != null)
-            {
-                playerCamera.enabled = false;
-            }
-            
-            inputActions.Player.Disable();
-        }
-    }
-
     private void Start()
     {
         gravity = (2 * jumpHeight) / Mathf.Pow(timeToJumpApex, 2);
         jumpVelocity = (2 * jumpHeight) / timeToJumpApex;
         
         characterController.minMoveDistance = 0f;
-        
-        isCrouching.OnChange += OnCrouchChanged;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        if (playerCamera != null)
+        {
+            playerCamera.enabled = true;
+        }
+
+        inputActions.Player.Enable();
     }
 
     private void Update()
     {
-        if (!IsOwner) return;
-
         if (inputModeManager != null && !inputModeManager.IsGameplayMode())
             return;
 
@@ -224,8 +197,6 @@ public class PlayerController : NetworkBehaviour
 
     private void OnJumpPerformed(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
-        
         if (Time.time - lastJumpTime < jumpCooldown)
         {
             return;
@@ -341,7 +312,7 @@ public class PlayerController : NetworkBehaviour
             if (EffectiveCrouch())
             {
                 isCrouchJumpRequested = true;
-                StopCrouch();
+                SetCrouch(false);
             }
 
             jumpedThisFrame = true;
@@ -385,22 +356,15 @@ public class PlayerController : NetworkBehaviour
             wantsToCrouch = false;
         }
 
-        if (IsOwner)
+        if (wantsToCrouch && !EffectiveCrouch() && CanStartCrouch())
         {
-            if (wantsToCrouch && !EffectiveCrouch() && CanStartCrouch())
+            SetCrouch(true);
+        }
+        else if (!wantsToCrouch && EffectiveCrouch())
+        {
+            if (CanStandUp())
             {
-                predictedCrouch = true;
-                StartCrouch();
-                ServerSetCrouch(true);
-            }
-            else if (!wantsToCrouch && EffectiveCrouch())
-            {
-                if (CanStandUp())
-                {
-                    predictedCrouch = false;
-                    StopCrouch();
-                    ServerSetCrouch(false);
-                }
+                SetCrouch(false);
             }
         }
 
@@ -418,9 +382,7 @@ public class PlayerController : NetworkBehaviour
 
     private bool EffectiveCrouch()
     {
-        if (IsOwner)
-            return predictedCrouch || isCrouching.Value;
-        return isCrouching.Value;
+        return isCrouching;
     }
 
     private bool CanStartCrouch()
@@ -444,7 +406,7 @@ public class PlayerController : NetworkBehaviour
 
         Vector3 rayStart = transform.position + Vector3.up * characterController.height;
 
-        bool hasObstacle = gameObject.PhysicsSphereCast(
+        bool hasObstacle = Physics.SphereCast(
             rayStart,
             characterController.radius * 0.9f,
             Vector3.up,
@@ -457,45 +419,14 @@ public class PlayerController : NetworkBehaviour
         return !hasObstacle;
     }
 
-    [ServerRpc]
-    private void ServerSetCrouch(bool crouch)
+    // Sets the local crouch state and triggers the crouch animation behaviour.
+    private void SetCrouch(bool crouch)
     {
+        isCrouching = crouch;
         if (crouch)
-        {
-            if (CanStartCrouch())
-                isCrouching.Value = true;
-        }
+            StartCrouch();
         else
-        {
-            if (CanStandUp())
-                isCrouching.Value = false;
-        }
-    }
-
-    private void OnCrouchChanged(bool previousValue, bool newValue, bool asServer)
-    {
-        if (!IsOwner)
-        {
-            if (newValue)
-                StartCrouch();
-            else
-                StopCrouch();
-        }
-        else
-        {
-            if (predictedCrouch != newValue)
-            {
-                predictedCrouch = false;
-                if (newValue)
-                    StartCrouch();
-                else
-                    StopCrouch();
-            }
-            else
-            {
-                predictedCrouch = false;
-            }
-        }
+            StopCrouch();
     }
 
     private void HandleMouseLook()
@@ -541,7 +472,7 @@ public class PlayerController : NetworkBehaviour
 
     private void OnApplicationFocus(bool hasFocus)
     {
-        if (hasFocus && IsOwner)
+        if (hasFocus)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -551,7 +482,7 @@ public class PlayerController : NetworkBehaviour
     // Triggered when landing is detected
     private void OnLanded()
     {
-        if (IsOwner && playerCamera != null)
+        if (playerCamera != null)
         {
             // Quick camera punch on landing
             playerCamera.transform.DOPunchRotation(
@@ -590,7 +521,7 @@ public class PlayerController : NetworkBehaviour
         Vector3 origin = transform.position;
         float radius = characterController.radius * 0.8f;
         
-        bool hit = gameObject.PhysicsSphereCast(origin, radius, Vector3.down, out RaycastHit hitInfo, groundCheckDistance, groundLayer);
+        bool hit = Physics.SphereCast(origin, radius, Vector3.down, out RaycastHit hitInfo, groundCheckDistance, groundLayer);
         
         return hit;
     }
@@ -661,6 +592,6 @@ public class PlayerController : NetworkBehaviour
         set => gamepadSensitivity = Mathf.Clamp(value, 10f, 300f); 
     }
 
-    public bool IsCrouching => isCrouching.Value;
+    public bool IsCrouching => isCrouching;
     public float CrouchSpeed => crouchSpeed;
 }

@@ -69,7 +69,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: 0.125, y: 0.2, z: 0}
+      localPosition: {x: 0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -81,7 +81,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: -0.125, y: 0.2, z: 0}
+      localPosition: {x: -0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -185,7 +185,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: 0.125, y: 0.2, z: 0}
+      localPosition: {x: 0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -197,7 +197,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: -0.125, y: 0.2, z: 0}
+      localPosition: {x: -0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -301,7 +301,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: 0.125, y: 0.2, z: 0}
+      localPosition: {x: 0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -313,7 +313,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: -0.125, y: 0.2, z: 0}
+      localPosition: {x: -0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -429,7 +429,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: 0.125, y: 0.2, z: 0}
+      localPosition: {x: 0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -441,7 +441,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: -0.125, y: 0.2, z: 0}
+      localPosition: {x: -0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -557,7 +557,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: 0.125, y: 0.2, z: 0}
+      localPosition: {x: 0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -569,7 +569,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: -0.125, y: 0.2, z: 0}
+      localPosition: {x: -0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -685,7 +685,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: 0.125, y: 0.2, z: 0}
+      localPosition: {x: 0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -697,7 +697,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: -0.125, y: 0.2, z: 0}
+      localPosition: {x: -0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -813,7 +813,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: 0.125, y: 0.2, z: 0}
+      localPosition: {x: 0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor
@@ -825,7 +825,7 @@ MonoBehaviour:
       gizmoColor: {r: 0, g: 1, b: 1, a: 1}
     - socketName: Floor
       socketType: 0
-      localPosition: {x: -0.125, y: 0.2, z: 0}
+      localPosition: {x: -0.125, y: 0, z: 0}
       localRotation: {x: 0, y: 0, z: 0}
       size: {x: 0.3, y: 0.3, z: 0.3}
       acceptedTypes: floor

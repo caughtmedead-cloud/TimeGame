@@ -8,6 +8,7 @@
   <Project Path="Kybernetik.InspectorGadgets.csproj" />
   <Project Path="FishNet.Runtime.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="OccaSoftware.SuperSimpleSkybox.Runtime.csproj" />
   <Project Path="DTT.EditorUtilities.Editor.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="KronnectHub.csproj" />
@@ -24,6 +25,7 @@
   <Project Path="MotionWarping.Editor.csproj" />
   <Project Path="CAS.Addons.FPS.Runtime.csproj" />
   <Project Path="KAnimationCore.Runtime.csproj" />
+  <Project Path="OccaSoftware.SuperSimpleSkybox.Editor.csproj" />
   <Project Path="Unity.FishNet.Codegen.csproj" />
   <Project Path="Assembly-CSharp-firstpass.csproj" />
   <Project Path="CAS.Editor.csproj" />
@@ -41,6 +43,7 @@
   <Project Path="EdgeFusion.csproj" />
   <Project Path="V_Animation.csproj" />
   <Project Path="ScriptableWidget.Runtime.csproj" />
+  <Project Path="OccaSoftware.SuperSimpleSkybox.Demo.csproj" />
   <Project Path="CodeMonkeyFreeEditor.csproj" />
   <Project Path="Bezi.Editor.csproj" />
   <Project Path="UMotionSourceApplication.csproj" />

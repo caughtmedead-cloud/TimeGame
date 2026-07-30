@@ -17,6 +17,7 @@ public class ZonePreset : ScriptableObject
     
     [Header("Zone Identity")]
     public string zoneName = "Zone";
+    public string requiredTag = "Player";
     
     [Header("Zone Shape")]
     public ZoneColliderType colliderType = ZoneColliderType.Sphere;

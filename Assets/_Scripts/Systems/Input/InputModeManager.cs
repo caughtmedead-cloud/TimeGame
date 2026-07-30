@@ -1,5 +1,4 @@
 using UnityEngine;
-using FishNet.Object;
 
 namespace NewThelos.Systems.Input
 {
@@ -11,7 +10,7 @@ namespace NewThelos.Systems.Input
     /// - Tab: Toggle between gameplay and UI mode
     /// - Escape: Switch to UI mode
     /// </summary>
-    public class InputModeManager : NetworkBehaviour
+    public class InputModeManager : MonoBehaviour
     {
         [Header("Input Settings")]
         [Tooltip("Key to toggle between gameplay and UI mode")]
@@ -31,27 +30,14 @@ namespace NewThelos.Systems.Input
         
         public InputMode CurrentMode => _currentMode;
         
-        public override void OnStartClient()
+        private void Start()
         {
-            base.OnStartClient();
-            
-            // Only the owner controls their own input
-            if (!IsOwner)
-            {
-                enabled = false;
-                return;
-            }
-            
             // Start in gameplay mode
             SetInputMode(InputMode.Gameplay);
         }
         
         private void Update()
         {
-            // Only owner processes input
-            if (!IsOwner)
-                return;
-            
             // Toggle between modes with Tab
             if (UnityEngine.Input.GetKeyDown(toggleKey))
             {

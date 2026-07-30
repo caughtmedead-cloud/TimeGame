@@ -119,6 +119,12 @@ namespace TimeGame.Systems.Inventory
             // Try placement in grid system
             bool success = gridSystem.TryPlaceItem(item, position, rotation, out placedItem, stackCount);
 
+            // Ensure storage containers always have an initialized (possibly empty) InventorySystem.
+            if (success && placedItem != null && item.ProvidesStorage && placedItem.ContainerInventory == null)
+                placedItem.ContainerInventory = new InventorySystem(
+                    item.StorageGridSize.x, item.StorageGridSize.y,
+                    CellSize, Vector3.zero, item.StorageMaxWeight);
+
             return success;
         }
 
@@ -148,6 +154,12 @@ namespace TimeGame.Systems.Inventory
 
             // Try placement in grid system with specific ID and stack count
             bool success = gridSystem.TryPlaceItem(instanceID, item, position, rotation, out placedItem, stackCount);
+
+            // Ensure storage containers always have an initialized (possibly empty) InventorySystem.
+            if (success && placedItem != null && item.ProvidesStorage && placedItem.ContainerInventory == null)
+                placedItem.ContainerInventory = new InventorySystem(
+                    item.StorageGridSize.x, item.StorageGridSize.y,
+                    CellSize, Vector3.zero, item.StorageMaxWeight);
 
             return success;
         }
@@ -297,6 +309,23 @@ namespace TimeGame.Systems.Inventory
         public bool RemoveItem(Guid instanceID)
         {
             return gridSystem.RemoveItem(instanceID);
+        }
+
+        /// <summary>
+        /// Moves an already-placed item to a new position without destroying the
+        /// <see cref="PlacedItem"/> object.  Preserves all item state:
+        /// <c>ItemInstances</c>, <c>ContainerInventory</c>, <c>SplitFromInstanceID</c>,
+        /// and any external C# references to the object stay valid.
+        ///
+        /// Use this instead of <c>RemoveItem + TryAddItem</c> for any same-inventory
+        /// reposition (e.g. drag-drop within the same grid or within the same nested container).
+        ///
+        /// Returns <c>false</c> without side-effects if the item is not in this inventory
+        /// or if the target cells are blocked by a different item.
+        /// </summary>
+        public bool RepositionItem(Guid instanceID, Vector2Int newPosition, GridDirection newRotation)
+        {
+            return gridSystem.RepositionItem(instanceID, newPosition, newRotation);
         }
 
         /// <summary>
