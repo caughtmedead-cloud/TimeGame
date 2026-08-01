@@ -1,24 +1,23 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TimeGame.Systems.Inventory;
+using TimeGame.Systems.Inventory.UI;
 
 namespace LastMile.DebugTools
 {
     /// <summary>
     /// Dedicated in-game debug menu for testing the Last Mile day/night cycle and
-    /// shelter systems end-to-end without touching gameplay code or waiting real time.
+    /// shift systems end-to-end without touching gameplay code or waiting real time.
     /// Toggle visibility with F1. Only compiled into editor/development builds.
     /// </summary>
     public class NightCycleDebugMenu : MonoBehaviour
     {
-        // Tag used project-wide to locate the player GameObject (see ItemUsageHandler).
-        private const string PlayerTag = "Player";
-
         [Header("References")]
         [Tooltip("Auto-resolved from NightCycleManager.Instance if left unassigned.")]
         [SerializeField] private NightCycleManager nightCycle;
 
-        [Tooltip("Auto-resolved from the \"Player\"-tagged GameObject if left unassigned.")]
-        [SerializeField] private SunExposureDetector exposureDetector;
+        [Tooltip("Auto-resolved from ShiftController.Instance if left unassigned.")]
+        [SerializeField] private ShiftController shiftController;
 
         [Header("Settings")]
         [SerializeField] private KeyCode legacyToggleKey = KeyCode.F1;
@@ -26,12 +25,13 @@ namespace LastMile.DebugTools
 
         // Fixed panel size, used to anchor it to the top-right corner of the screen.
         private const float PanelWidth = 340f;
-        private const float PanelHeight = 520f;
+        private const float PanelHeight = 640f;
         private const float PanelMargin = 10f;
 
         private bool isVisible;
         private string shiftDurationInput = "60";
         private float debugTimeScale = 1f;
+        private DeliveryStop[] cachedDeliveryStops = new DeliveryStop[0];
 
         private void Start()
         {
@@ -42,21 +42,12 @@ namespace LastMile.DebugTools
                 nightCycle = NightCycleManager.Instance;
             }
 
-            ResolveExposureDetector();
-        }
-
-        private void ResolveExposureDetector()
-        {
-            if (exposureDetector != null)
+            if (shiftController == null)
             {
-                return;
+                shiftController = ShiftController.Instance;
             }
 
-            GameObject player = GameObject.FindGameObjectWithTag(PlayerTag);
-            if (player != null)
-            {
-                exposureDetector = player.GetComponent<SunExposureDetector>();
-            }
+            RefreshDeliveryStops();
         }
 
         private void Update()
@@ -78,10 +69,14 @@ namespace LastMile.DebugTools
             {
                 nightCycle = NightCycleManager.Instance;
             }
-            if (exposureDetector == null)
+            if (shiftController == null)
             {
-                ResolveExposureDetector();
+                shiftController = ShiftController.Instance;
             }
+
+            // Keep the delivery stop list fresh in case stops are added/removed at
+            // runtime — a plain array refresh is cheap enough to run every frame here.
+            RefreshDeliveryStops();
         }
 
         private void OnGUI()
@@ -111,7 +106,9 @@ namespace LastMile.DebugTools
             GUILayout.Space(10);
             DrawSkipControls();
             GUILayout.Space(10);
-            DrawShelterControls();
+            DrawShiftStateControls();
+            GUILayout.Space(10);
+            DrawDeliveryControls();
 
             GUILayout.EndArea();
         }
@@ -125,18 +122,27 @@ namespace LastMile.DebugTools
             GUILayout.Label($"Shift Active: {nightCycle.IsShiftActive}");
             GUILayout.Label($"Dawn Lethal Window: {nightCycle.IsDawnLethalWindow}");
 
-            if (exposureDetector != null)
+            if (shiftController != null)
             {
-                GUILayout.Label($"Player Sheltered: {exposureDetector.IsSheltered}");
-                GUILayout.Label($"Player Exposed: {exposureDetector.IsCurrentlyExposed}");
-                GUILayout.Label($"Sustain Threshold: {exposureDetector.SustainedExposureSecondsBeforeLethal:F1}s continuous unsheltered (persists across sunrise)");
+                int totalStops = shiftController.ActiveManifest != null ? shiftController.ActiveManifest.stops.Count : 0;
+                GUILayout.Label($"Player Sheltered: {shiftController.IsPlayerSheltered}");
+                GUILayout.Label($"Completed Stops: {shiftController.CompletedStops.Count} / {totalStops}");
+
+                foreach (DeliveryStop stop in cachedDeliveryStops)
+                {
+                    if (stop == null || stop.Definition == null || stop.IsFullyDelivered)
+                    {
+                        continue;
+                    }
+
+                    GUILayout.Label($"  In progress — {stop.StopId}: {stop.DeliveredQuantity}/{stop.Definition.requiredQuantity} (remaining {stop.RemainingQuantity})");
+                }
             }
             else
             {
-                GUILayout.Label("No SunExposureDetector found on Player.");
+                GUILayout.Label("No ShiftController found in scene.");
             }
         }
-
         private void DrawShiftControls()
         {
             GUILayout.Label("--- Shift ---");
@@ -182,24 +188,68 @@ namespace LastMile.DebugTools
             }
         }
 
-        private void DrawShelterControls()
+        private void DrawShiftStateControls()
         {
-            GUILayout.Label("--- Shelter / Exposure ---");
-            if (exposureDetector == null)
+            GUILayout.Label("--- Shelter ---");
+            if (shiftController == null)
             {
-                GUILayout.Label("No SunExposureDetector found on Player.");
+                GUILayout.Label("No ShiftController found in scene.");
                 return;
             }
 
-            if (GUILayout.Button(exposureDetector.IsSheltered ? "Unshelter Player" : "Shelter Player"))
+            if (GUILayout.Button(shiftController.IsPlayerSheltered ? "Unshelter Player" : "Shelter Player"))
             {
-                exposureDetector.SetSheltered(!exposureDetector.IsSheltered);
+                shiftController.SetPlayerSheltered(!shiftController.IsPlayerSheltered);
             }
 
-            if (GUILayout.Button("Force Lethal Exposure"))
+            if (GUILayout.Button("Force Sunrise Now"))
             {
-                exposureDetector.DebugForceLethalExposure();
+                nightCycle.SkipToNormalizedTime(1f);
             }
         }
+
+        private void DrawDeliveryControls()
+        {
+            GUILayout.Label("--- Deliveries ---");
+
+            if (cachedDeliveryStops.Length == 0)
+            {
+                GUILayout.Label("No DeliveryStop found in scene.");
+                return;
+            }
+
+            foreach (DeliveryStop stop in cachedDeliveryStops)
+            {
+                if (stop == null)
+                {
+                    continue;
+                }
+
+                string label = $"{stop.StopId} | InRange: {stop.IsPlayerInRange} | Delivered: {stop.DeliveredQuantity}/{(stop.Definition != null ? stop.Definition.requiredQuantity : 0)} | Remaining: {stop.RemainingQuantity}";
+                GUILayout.Label(label);
+
+                if (GUILayout.Button($"Open Delivery Window ({stop.StopId})"))
+                {
+                    if (LastMile.UI.DeliveryGridWindowUI.Instance == null)
+                    {
+                        Debug.LogWarning("[NightCycleDebugMenu] Cannot open delivery window — no DeliveryGridWindowUI found in scene.");
+                    }
+                    else
+                    {
+                        LastMile.UI.DeliveryGridWindowUI.Instance.Open(stop);
+                    }
+                }
+            }
+        }
+
+        // Scans the scene for all DeliveryStop components. Called once at Start and
+        // once per frame in Update so newly spawned/destroyed stops stay reflected
+        // without a manual refresh button — keeping this menu as simple to use as
+        // possible.
+        private void RefreshDeliveryStops()
+        {
+            cachedDeliveryStops = Object.FindObjectsByType<DeliveryStop>(FindObjectsSortMode.None);
+        }
+
     }
 }

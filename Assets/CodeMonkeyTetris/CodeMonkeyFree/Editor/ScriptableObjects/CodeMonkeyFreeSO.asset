@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentVersion: 1.02
   subtype: freeProjectFiles
-  lastShownTimestamp: 1785367444
+  lastShownTimestamp: 1785546885
   lastUpdateResponse:
     version: 1.02
     versionUrl: https://unitycodemonkey.com
     enabled: 0
-  checkedLastUpdateTimestamp: 1785367445
+  checkedLastUpdateTimestamp: 1785546886
   lastQOTDResponse:
     questionId: 327
     questionText: 'When would this code cause an error?
@@ -47,7 +47,7 @@ MonoBehaviour:
     answerC: When instanceList has exactly two elements
     answerD: 
     answerE: 
-  lastQotdTimestamp: 1785367445
+  lastQotdTimestamp: 1785546886
   lastDynamicHeaderResponse:
     topImageUrl: https://codemonkeyexternal.blob.core.windows.net/external/Misc/summer2025CodeMonkeyBundle.png
     topText: Get 80% OFF on ALL my Courses and Games!!!
@@ -55,12 +55,12 @@ MonoBehaviour:
     bottomText: DONT MISS the latest important trends, sign up for my FREE Weekly
       Newsletter!
     bottomLink: gamedevreport
-  lastDynamicHeaderTimestamp: 1785367445
+  lastDynamicHeaderTimestamp: 1785546886
   websiteLatestMessage:
     text: <a href="https://cmonkey.co/freeprojectfiles">Browse all the FREE Project
       Files! Click Here!</a><br><a href="https://cmonkey.co/freecourses">Check out
       all my FREE courses! Click Here!</a>
-  websiteLatestMessageTimestamp: 1785367445
+  websiteLatestMessageTimestamp: 1785546886
   websiteLatestVideos:
     videos:
     - youTubeId: f0BSrBhudoY
@@ -71,4 +71,4 @@ MonoBehaviour:
       title: Unity 7 is RE-ANNOUNCED!
     - youTubeId: -qpKrATW4wM
       title: TOP 10 FREE NEW Assets JULY 2026!
-  websiteLatestVideosTimestamp: 1785367445
+  websiteLatestVideosTimestamp: 1785546886

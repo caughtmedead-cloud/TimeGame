@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35f1d6691b5c093419554e45afc29386, type: 3}
+  m_Name: DefaultDeliveryReactions
+  m_EditorClassIdentifier: 
+  reactions:
+  - outcome: 0
+    lines:
+    - Thank you, this is everything.
+    - Perfect, that's exactly what I needed.
+    - Great, you're a lifesaver.
+  - outcome: 1
+    lines:
+    - This isn't all of it, but it'll have to do.
+    - Still short, but I'll take what I can get.
+    - "Not quite enough yet \u2014 come back with the rest."
+  - outcome: 2
+    lines:
+    - This isn't what I ordered.
+    - That's not what I need.
+    - You've got nothing for me here.
+  - outcome: 3
+    lines:
+    - You've already brought me everything, thanks.
+  - outcome: 4
+    lines:
+    - "It's too late for this now \u2014 get to shelter!"

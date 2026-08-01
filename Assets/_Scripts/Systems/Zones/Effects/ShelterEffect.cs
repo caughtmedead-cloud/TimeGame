@@ -1,25 +1,17 @@
-using System.Collections.Generic;
 using UnityEngine;
 using LastMile;
 
 /// <summary>
-/// Marks the player as sheltered (immune to sun exposure) while standing inside
-/// a shelter-tagged zone. Attach alongside a GenericZone component.
+/// Marks the player as sheltered while standing inside a shelter-tagged zone.
+/// Shelter state is reported directly to ShiftController, which resolves the
+/// shift's single pass/fail check the moment sunrise fires. Attach alongside
+/// a GenericZone component.
 /// </summary>
 public class ShelterEffect : ZoneEffect
 {
-    private Dictionary<GameObject, SunExposureDetector> cachedDetectors = new Dictionary<GameObject, SunExposureDetector>();
-
     public override void OnPlayerEnter(GameObject player)
     {
-        if (!TryGetExposureDetector(player, out SunExposureDetector detector))
-        {
-            Debug.LogWarning($"[ShelterEffect] Player {player.name} does not have a SunExposureDetector component.");
-            return;
-        }
-
-        cachedDetectors[player] = detector;
-        detector.SetSheltered(true);
+        ShiftController.Instance?.SetPlayerSheltered(true);
 
         Debug.Log($"[ShelterEffect] Player {player.name} entered shelter — sun exposure checks bypassed.");
     }
@@ -33,25 +25,9 @@ public class ShelterEffect : ZoneEffect
 
     public override void OnPlayerExit(GameObject player)
     {
-        if (!cachedDetectors.TryGetValue(player, out SunExposureDetector detector))
-        {
-            TryGetExposureDetector(player, out detector);
-        }
-
-        if (detector != null)
-        {
-            detector.SetSheltered(false);
-        }
-
-        cachedDetectors.Remove(player);
+        ShiftController.Instance?.SetPlayerSheltered(false);
 
         Debug.Log($"[ShelterEffect] Player {player.name} exited shelter — sun exposure checks resumed.");
-    }
-
-    private bool TryGetExposureDetector(GameObject player, out SunExposureDetector detector)
-    {
-        detector = player.GetComponentInParent<SunExposureDetector>();
-        return detector != null;
     }
 
     public override string GetEffectDescription()
