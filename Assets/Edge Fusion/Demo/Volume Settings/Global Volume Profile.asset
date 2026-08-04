@@ -1,0 +1,138 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
+  m_Name: Global Volume Profile
+  m_EditorClassIdentifier: 
+  components:
+  - {fileID: 6879968890381706046}
+--- !u!114 &6879968890381706046
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e725baf07381d40e9972f75d7670e54f, type: 3}
+  m_Name: EdgeFusion
+  m_EditorClassIdentifier: 
+  active: 1
+  blendLayers:
+    m_OverrideState: 1
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 39
+  renderingLayerFilter:
+    m_OverrideState: 0
+    m_Value:
+      serializedVersion: 0
+      m_Bits: 4294967295
+  blendWithOthers:
+    m_OverrideState: 0
+    m_Value: 1
+  doubleSidedLayers:
+    m_OverrideState: 0
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 0
+  doubleSidedRenderingLayerFilter:
+    m_OverrideState: 0
+    m_Value:
+      serializedVersion: 0
+      m_Bits: 4294967295
+  specialGroupLayers:
+    m_OverrideState: 0
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 0
+  specialGroupRenderingLayerFilter:
+    m_OverrideState: 0
+    m_Value:
+      serializedVersion: 0
+      m_Bits: 4294967295
+  intensity:
+    m_OverrideState: 1
+    m_Value: 1
+  radius:
+    m_OverrideState: 1
+    m_Value: 0.1
+  enableIntraObjectFusion:
+    m_OverrideState: 1
+    m_Value: 0
+  intraObjectFusionPerObject:
+    m_OverrideState: 0
+    m_Value: 0
+  concavityTest:
+    m_OverrideState: 1
+    m_Value: 1
+  normalThreshold:
+    m_OverrideState: 1
+    m_Value: 0.95
+  sampleCount:
+    m_OverrideState: 1
+    m_Value: 24
+  jitter:
+    m_OverrideState: 0
+    m_Value: 0
+  maxBlendDistance:
+    m_OverrideState: 0
+    m_Value: 50
+  binarySearchSteps:
+    m_OverrideState: 0
+    m_Value: 7
+  earlyExitHits:
+    m_OverrideState: 0
+    m_Value: 5
+  debugMode:
+    m_OverrideState: 0
+    m_Value: 1
+  depthDebugMultiplier:
+    m_OverrideState: 0
+    m_Value: 1
+  msaaEdgeFixPower:
+    m_OverrideState: 0
+    m_Value: 0
+  compareMode:
+    m_OverrideState: 0
+    m_Value: 0
+  compareSameSide:
+    m_OverrideState: 0
+    m_Value: 0
+  comparePanning:
+    m_OverrideState: 0
+    m_Value: 0.5
+  compareLineAngle:
+    m_OverrideState: 0
+    m_Value: 1.4
+  compareLineWidth:
+    m_OverrideState: 0
+    m_Value: 0.002
+  compareLineColor:
+    m_OverrideState: 0
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
+  maxScreenRadius:
+    m_OverrideState: 1
+    m_Value: 0.369
+  shadowProtection:
+    m_OverrideState: 1
+    m_Value: 0
+  noiseIntensity:
+    m_OverrideState: 0
+    m_Value: 0
+  noiseScale:
+    m_OverrideState: 1
+    m_Value: 3.91
+  noiseContrast:
+    m_OverrideState: 1
+    m_Value: 0.312
+  idExclusionPairs: []

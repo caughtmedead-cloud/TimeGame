@@ -96,6 +96,8 @@ packages-lock.json
 
 # Large asset folders
 [Aa]ssets/_Animation/
+[Aa]ssets/_Art/
+[Aa]ssets/_Prefabs/
 [Aa]ssets/Polygonmaker/
 [Aa]ssets/Polygonmaker.meta
 [Aa]ssets/_Art/Mesh/UnityRobot/Skeleton/Textures/
@@ -111,3 +113,12 @@ packages-lock.json
 [Aa]ssets/scriptable-animation-system-main-demo/
 [Aa]ssets/ProPixelizer/
 [Aa]ssets/ProPixelizer.meta
+[Aa]ssets/FortressLevel/
+[Aa]ssets/FortressLevel.meta
+[Aa]ssets/Harpia Games/
+[Aa]ssets/Harpia Games.meta
+[Aa]ssets/BakeryLightmaps/
+[Aa]ssets/BakeryLightmaps.meta
+[Aa]ssets/HIVEMIND/
+# Claude Code worktrees
+.claude/

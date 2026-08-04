@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 9c8e7f4a5d6b4c8f9a1b2c3d4e5f6a7b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/Editor/Assets/VolumetricFog/VolumetricFogValidationProvider.cs
+  uploadId: 839450

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: eec53c98219e9644495982492a333245
+timeCreated: 1556220254
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Documentation/Sectr Terrain Streaming
+    Quickstart.pdf
+  uploadId: 726995

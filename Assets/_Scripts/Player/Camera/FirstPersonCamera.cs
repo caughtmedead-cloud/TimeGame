@@ -1,7 +1,6 @@
 using UnityEngine;
-using FishNet.Object;
 
-public class FirstPersonCamera : NetworkBehaviour
+public class FirstPersonCamera : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Transform rootTransform;
@@ -18,25 +17,8 @@ public class FirstPersonCamera : NetworkBehaviour
 
     private float verticalRotation = 0f;
 
-    public override void OnStartClient()
-    {
-        base.OnStartClient();
-        
-        if (!IsOwner)
-        {
-            if (cameraTransform != null)
-            {
-                Camera cam = cameraTransform.GetComponent<Camera>();
-                if (cam != null) cam.enabled = false;
-            }
-            enabled = false;
-        }
-    }
-
     private void LateUpdate()
     {
-        if (!IsOwner) return;
-        
         if (headBone != null && cameraTransform != null)
         {
             cameraTransform.position = headBone.position + headBone.TransformDirection(positionOffset);
@@ -55,8 +37,6 @@ public class FirstPersonCamera : NetworkBehaviour
 
     public void HandleLookInput(float deltaX, float deltaY)
     {
-        if (!IsOwner) return;
-
         rootTransform.Rotate(Vector3.up, deltaX);
 
         verticalRotation -= deltaY;

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 03bd754e4c422f846ae5f62903928085
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 4890085278179872738
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329637
+  packageName: Old Roads - Modular - HQ
+  packageVersion: 1.0
+  assetPath: Assets/Old_Road_Modular/ExampleSceneAssets/ExampleSceneLightingSettings.lighting
+  uploadId: 779995

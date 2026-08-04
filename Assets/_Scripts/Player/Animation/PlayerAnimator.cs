@@ -1,12 +1,9 @@
 using UnityEngine;
-using FishNet.Object;
-using FishNet.Component.Animating;
 
-public class PlayerAnimator : NetworkBehaviour
+public class PlayerAnimator : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Animator animator;
-    [SerializeField] private NetworkAnimator networkAnimator;
     [SerializeField] private CharacterController characterController;
 
     [Header("Animation Settings")]
@@ -45,9 +42,6 @@ public class PlayerAnimator : NetworkBehaviour
     {
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
-        
-        if (networkAnimator == null)
-            networkAnimator = GetComponent<NetworkAnimator>();
 
         if (characterController == null)
             characterController = GetComponent<CharacterController>();
@@ -57,8 +51,6 @@ public class PlayerAnimator : NetworkBehaviour
 
     private void LateUpdate()
     {
-        if (!IsOwner) return;
-
         UpdateMovementAnimation();
         UpdatePhysicsStates();
         DetectJump();
@@ -81,10 +73,10 @@ public class PlayerAnimator : NetworkBehaviour
         );
 
         // Use smoothed values for blend tree
-        networkAnimator.Animator.SetFloat(velocityXHash, smoothedVelocity.x);
-        networkAnimator.Animator.SetFloat(velocityZHash, smoothedVelocity.y);
-        networkAnimator.Animator.SetFloat(speedHash, currentSpeed);
-        networkAnimator.Animator.SetBool(isCrouchingHash, isCrouching);
+        animator.SetFloat(velocityXHash, smoothedVelocity.x);
+        animator.SetFloat(velocityZHash, smoothedVelocity.y);
+        animator.SetFloat(speedHash, currentSpeed);
+        animator.SetBool(isCrouchingHash, isCrouching);
 
         float animatorSpeedMultiplier = CalculateAnimatorSpeedMultiplier(
             currentSpeed,
@@ -93,7 +85,7 @@ public class PlayerAnimator : NetworkBehaviour
             crouchSpeed,
             isCrouching
         );
-        networkAnimator.Animator.speed = animatorSpeedMultiplier;
+        animator.speed = animatorSpeedMultiplier;
     }
 
     private float CalculateAnimatorSpeedMultiplier(
@@ -133,16 +125,16 @@ public class PlayerAnimator : NetworkBehaviour
         bool isNearGround = playerController.IsNearGround();
         bool inAir = playerController.IsInAir();
 
-        networkAnimator.Animator.SetBool(isGroundedHash, isGrounded);
-        networkAnimator.Animator.SetBool(isNearGroundHash, isNearGround);
-        networkAnimator.Animator.SetBool(inAirHash, inAir);
+        animator.SetBool(isGroundedHash, isGrounded);
+        animator.SetBool(isNearGroundHash, isNearGround);
+        animator.SetBool(inAirHash, inAir);
 
         if (!wasGrounded && isGrounded)
         {
             OnLanded();
             
             // Clear jump trigger on landing as safety measure
-            networkAnimator.ResetTrigger("Jump");
+            animator.ResetTrigger("Jump");
         }
 
         wasGrounded = isGrounded;
@@ -152,16 +144,16 @@ public class PlayerAnimator : NetworkBehaviour
     {
         if (playerController != null && playerController.ConsumeJumpEvent())
         {
-            networkAnimator.SetTrigger("Jump");
+            animator.SetTrigger("Jump");
             lastJumpTriggerTime = Time.time;
         }
         
         // Safety: Auto-reset jump trigger if it's been active too long
         if (Time.time - lastJumpTriggerTime > jumpTriggerTimeout)
         {
-            if (networkAnimator.Animator.GetBool(jumpHash))
+            if (animator.GetBool(jumpHash))
             {
-                networkAnimator.ResetTrigger("Jump");
+                animator.ResetTrigger("Jump");
             }
         }
     }

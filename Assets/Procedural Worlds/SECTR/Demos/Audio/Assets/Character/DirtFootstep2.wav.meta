@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 455dbb5d6e0df9446aa6a097535b3e21
+AudioImporter:
+  serializedVersion: 4
+  format: 0
+  quality: .5
+  stream: 1
+  3D: 0
+  forceToMono: 0
+  useHardware: 0
+  loopable: 0
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Demos/Audio/Assets/Character/DirtFootstep2.wav
+  uploadId: 726995

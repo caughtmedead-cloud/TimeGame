@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: e32c490055f4e48988dea4fc10066510
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/Editor/Assets/VolumetricLights/VolumetricLightsValidationProvider.cs
+  uploadId: 839450

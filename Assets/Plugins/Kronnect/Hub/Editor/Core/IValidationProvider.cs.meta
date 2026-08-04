@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 364771cac85a344dea8105af7de3a413
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/Editor/Core/IValidationProvider.cs
+  uploadId: 839450

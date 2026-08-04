@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: b5d964528f50c41dca9dc885e2bcbcb8
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/Editor/Utility/TypeUtility.cs
+  uploadId: 839450

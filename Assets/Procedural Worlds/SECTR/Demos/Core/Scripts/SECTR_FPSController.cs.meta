@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 505a61c9422f1cb42aae0d9561173ca3
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/SECTR/Demos/Core/Scripts/SECTR_FPSController.cs
+  uploadId: 726995

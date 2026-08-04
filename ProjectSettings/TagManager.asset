@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - DeadBody
   layers:
   - Default
   - TransparentFX
@@ -11,13 +12,13 @@ TagManager:
   - Ground
   - Water
   - UI
-  - Anomaly
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Zone
+  - InspectPreview
+  - Walls
+  - Obstacles
+  - PerfectShotIcon
+  - DeadBody
+  - Door
   - 
   - 
   - 

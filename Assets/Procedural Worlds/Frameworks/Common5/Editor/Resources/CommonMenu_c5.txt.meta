@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 7d6a68f6157029846971fd11be9b8b58
+timeCreated: 1603744842
+licenseType: Store
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 144433
+  packageName: SECTR COMPLETE 2019
+  packageVersion: 2019.0.9
+  assetPath: Assets/Procedural Worlds/Frameworks/Common5/Editor/Resources/CommonMenu_c5.txt
+  uploadId: 726995

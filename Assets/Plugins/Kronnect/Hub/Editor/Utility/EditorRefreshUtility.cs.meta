@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7d8f9c3a1b2e4f5a8c9d0e1f2a3b4c5d
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 348090
+  packageName: Kronnect Hub
+  packageVersion: 1.2.1
+  assetPath: Assets/Plugins/Kronnect/Hub/Editor/Utility/EditorRefreshUtility.cs
+  uploadId: 839450

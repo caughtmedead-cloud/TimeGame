@@ -1,0 +1,1843 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64a7c73d2751c2845ae5e0239beb5137, type: 3}
+  m_Name: ConcreteBuildingLibrary
+  m_EditorClassIdentifier: 
+  libraryName: Building Pieces
+  description: Collection of building pieces for modular construction.
+  pieces:
+  - pieceName: ConcreteWall
+    prefab: {fileID: 3480077511626338739, guid: 29d34cd91babf134aba5796088e7f92f, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Left
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: right
+      acceptMatchMode: 0
+      providedTypes: left
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Right
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: left
+      acceptMatchMode: 0
+      providedTypes: right
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 2.8, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: bottom
+      acceptMatchMode: 0
+      providedTypes: top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Bottom
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: top
+      acceptMatchMode: 0
+      providedTypes: bottom
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: 0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: -0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: -0.02, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-tile
+      acceptMatchMode: 0
+      providedTypes: wall-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: 0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: -0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: wall,concrete
+  - pieceName: ConcreteWallDestroyed
+    prefab: {fileID: 629396476874369561, guid: b1ea5fd5e3b6ba64f98b14871bf04ae1, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Left
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: right
+      acceptMatchMode: 0
+      providedTypes: left
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Right
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: left
+      acceptMatchMode: 0
+      providedTypes: right
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 2.8, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: bottom
+      acceptMatchMode: 0
+      providedTypes: top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Bottom
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: top
+      acceptMatchMode: 0
+      providedTypes: bottom
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: 0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: -0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: -0.02, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: destroyed-tile
+      acceptMatchMode: 0
+      providedTypes: destroyed-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: 0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: -0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: wall,concrete
+  - pieceName: ConcreteDoorwayWide
+    prefab: {fileID: 4298069922181200910, guid: 1851d98215f7bca42bc8519435d55b96, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Left
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: right
+      acceptMatchMode: 0
+      providedTypes: left
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Right
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: left
+      acceptMatchMode: 0
+      providedTypes: right
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 2.8, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: bottom
+      acceptMatchMode: 0
+      providedTypes: top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Bottom
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: top
+      acceptMatchMode: 0
+      providedTypes: bottom
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: 0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: -0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Center_Tile
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: doorway-tile
+      acceptMatchMode: 0
+      providedTypes: doorway-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Center_Doors
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: 0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: -0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: wall,concrete
+  - pieceName: ConcreteDoorwaySingle
+    prefab: {fileID: 3683038176856462180, guid: 758d4e6a13ae908408f0a3071067cca1, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Left
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: right
+      acceptMatchMode: 0
+      providedTypes: left
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Right
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: left
+      acceptMatchMode: 0
+      providedTypes: right
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 2.8, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: bottom
+      acceptMatchMode: 0
+      providedTypes: top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Bottom
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: top
+      acceptMatchMode: 0
+      providedTypes: bottom
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: 0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: -0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Center_Tile
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: doorway-tile
+      acceptMatchMode: 0
+      providedTypes: doorway-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Center_Doors
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: 0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: -0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: wall,concrete
+  - pieceName: ConcreteWindowDouble
+    prefab: {fileID: 5664012840672072004, guid: 79ba59f40ee6d2a41b831c06d81b6496, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Left
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: right
+      acceptMatchMode: 0
+      providedTypes: left
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Right
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: left
+      acceptMatchMode: 0
+      providedTypes: right
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 2.8, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: bottom
+      acceptMatchMode: 0
+      providedTypes: top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Bottom
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: top
+      acceptMatchMode: 0
+      providedTypes: bottom
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: 0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: -0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: doublewindow-tile
+      acceptMatchMode: 0
+      providedTypes: doublewindow-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Window
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-double-window
+      acceptMatchMode: 0
+      providedTypes: wall-double-window
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: 0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: -0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: wall,concrete
+  - pieceName: ConcreteWindowWide
+    prefab: {fileID: 7173866945698936627, guid: d138c3549de0207468a6fc6a9193dd65, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Left
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: right
+      acceptMatchMode: 0
+      providedTypes: left
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Right
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: left
+      acceptMatchMode: 0
+      providedTypes: right
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 2.8, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: bottom
+      acceptMatchMode: 0
+      providedTypes: top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Bottom
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: top
+      acceptMatchMode: 0
+      providedTypes: bottom
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: 0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: -0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: doublewindow-tile
+      acceptMatchMode: 0
+      providedTypes: doublewindow-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Window
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-wide-window
+      acceptMatchMode: 0
+      providedTypes: wall-wide-window
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: 0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: -0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: wall,concrete
+  - pieceName: ConcreteWindowSingle
+    prefab: {fileID: 4151433263654065144, guid: c0e98a9dfd22f3f408510b392285a413, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Left
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: right
+      acceptMatchMode: 0
+      providedTypes: left
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Right
+      socketType: 0
+      localPosition: {x: 0, y: 1.5, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: left
+      acceptMatchMode: 0
+      providedTypes: right
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 2.8, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: bottom
+      acceptMatchMode: 0
+      providedTypes: top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Bottom
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: top
+      acceptMatchMode: 0
+      providedTypes: bottom
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: 0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Floor
+      socketType: 0
+      localPosition: {x: -0.125, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor
+      acceptMatchMode: 0
+      providedTypes: wall
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: doublewindow-tile
+      acceptMatchMode: 0
+      providedTypes: doublewindow-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Window
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-single-window
+      acceptMatchMode: 0
+      providedTypes: wall-single-window
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: 0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    - socketName: Border
+      socketType: 0
+      localPosition: {x: -0.18, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 90}
+      size: {x: 3, y: 2.5, z: 0.1}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: wall,concrete
+  - pieceName: ConcreteGround
+    prefab: {fileID: 7896762944262769054, guid: b7d87c65b16273d4888abee0ae773749, type: 3}
+    pieceType: 1
+    sockets:
+    - socketName: Edge_North
+      socketType: 2
+      localPosition: {x: 0, y: 0, z: 1.5}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.2, y: 0.2, z: 4}
+      acceptedTypes: wall,floor
+      acceptMatchMode: 0
+      providedTypes: floor
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    - socketName: Edge_South
+      socketType: 2
+      localPosition: {x: 0, y: 0, z: -1.5}
+      localRotation: {x: 0, y: 180, z: 0}
+      size: {x: 0.2, y: 0.2, z: 4}
+      acceptedTypes: wall,floor
+      acceptMatchMode: 0
+      providedTypes: floor
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    - socketName: Edge_East
+      socketType: 2
+      localPosition: {x: 1.5, y: 0, z: 0}
+      localRotation: {x: 0, y: 90, z: 0}
+      size: {x: 0.2, y: 0.2, z: 4}
+      acceptedTypes: wall,floor
+      acceptMatchMode: 0
+      providedTypes: floor
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    - socketName: Edge_West
+      socketType: 2
+      localPosition: {x: -1.5, y: 0, z: 0}
+      localRotation: {x: 0, y: -90, z: 0}
+      size: {x: 0.2, y: 0.2, z: 4}
+      acceptedTypes: wall,floor
+      acceptMatchMode: 0
+      providedTypes: floor
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+    - socketName: Top
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 3, y: 0, z: 3}
+      acceptedTypes: floor-tile
+      acceptMatchMode: 0
+      providedTypes: floor-top
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 0, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: floor,concrete
+  - pieceName: GreenTileWall
+    prefab: {fileID: 3811761081023902265, guid: 37688fd5649d00346bdae283d54b122f, type: 3}
+    pieceType: 2
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: wall-tile
+      acceptMatchMode: 0
+      providedTypes: wall-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: tile,decor
+  - pieceName: GreenTileWindowDouble
+    prefab: {fileID: 1823681401641540765, guid: 39f0f1ca1e99a7f4994eb9ddc13a9b73, type: 3}
+    pieceType: 2
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: doublewindow-tile
+      acceptMatchMode: 0
+      providedTypes: doublewindow-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: tile,decor
+  - pieceName: GreenTileDoorwayWide
+    prefab: {fileID: 4568737248401544923, guid: 49ba7e1aa29f7d84ca2695a4142f58ef, type: 3}
+    pieceType: 2
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: doorway-tile
+      acceptMatchMode: 0
+      providedTypes: doorway-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: tile,decor
+  - pieceName: Destroyed_Painted_Wall
+    prefab: {fileID: 2673457631858498010, guid: fb4d1b238b2533d4b96ac207172a7ce1, type: 3}
+    pieceType: 2
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: destroyed-tile
+      acceptMatchMode: 0
+      providedTypes: destroyed-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: tile,decor
+  - pieceName: Destroyed_Tile_Wall_01
+    prefab: {fileID: 7460467369469574399, guid: c18c428277001774786e5bfa5cb6dcda, type: 3}
+    pieceType: 2
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: destroyed-tile
+      acceptMatchMode: 0
+      providedTypes: destroyed-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: tile,decor
+  - pieceName: Destroyed_Tile_Wall_02
+    prefab: {fileID: 3798479001464190991, guid: 3f0c53ab2bd702a449619b0acdb7a15e, type: 3}
+    pieceType: 2
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: destroyed-tile
+      acceptMatchMode: 0
+      providedTypes: destroyed-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: tile,decor
+  - pieceName: DoorDoubleLocked_01
+    prefab: {fileID: 5190439703560995586, guid: 511931c285be0c74e939945acf95a436, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleLocked_02
+    prefab: {fileID: 2857833389594870936, guid: 90b711ac1d649e04ba2bb5edb4132303, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleLocked_03
+    prefab: {fileID: 7074129680491269495, guid: 3e38ae6af70f8b2439db865e63fc7269, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleLocked_04
+    prefab: {fileID: 8077133604393624384, guid: 2176f868d4b3f5b4eac786808447ac6b, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleLocked_05
+    prefab: {fileID: 8155744073846876647, guid: 7cde48a435a3db849bf495ee156293f9, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleLocked_06
+    prefab: {fileID: 5895472212912394034, guid: a402fbc98788b0546ad58e44872a3ffd, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorSingleLeftClosed
+    prefab: {fileID: 422067250502504104, guid: 04906175d92fa0a429767004cf434705, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorSingleRightClosed
+    prefab: {fileID: 9078946646405145997, guid: 6df515b76a07e5c479a19e8f626ee481, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorSingleOpen_01
+    prefab: {fileID: 3589244879514803165, guid: 830228e3aa9799f4a9d441e72c907870, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorSingleOpen_02
+    prefab: {fileID: 274196705462355423, guid: 05b78e5af746a3541ad65e863aed7a33, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorSingleOpen_03
+    prefab: {fileID: 8698040306759375898, guid: cad8c7e012b7820438b883c7a8dd7448, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorSingleOpen_04
+    prefab: {fileID: 1547662915560962825, guid: 3e29d109a95527e43904d59332c3b61b, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorSingleOpen_05
+    prefab: {fileID: 4032003326658518666, guid: 51fe7b56e322a7444a805b1cd83d6627, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-single
+      acceptMatchMode: 0
+      providedTypes: door-single
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleOpen_01
+    prefab: {fileID: 3435141586505294433, guid: 76bfdeff2e1c2114787531bd346e496d, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleOpen_02
+    prefab: {fileID: 2857833389594870936, guid: 8a16dee84bb6e8842b12a7aae7e1c9ac, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleOpen_03
+    prefab: {fileID: 7074129680491269495, guid: bd98098365de7ff4eb94eab217c5c231, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleOpen_04
+    prefab: {fileID: 8077133604393624384, guid: a7a1c2bd3938d7043ad1afd3770b1d53, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleOpen_05
+    prefab: {fileID: 8155744073846876647, guid: 52423ee0e92b4104390333698554a861, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: DoorDoubleOpen_06
+    prefab: {fileID: 5895472212912394034, guid: 5d459c88e5343254fb6a000ab44be87c, type: 3}
+    pieceType: 4
+    sockets:
+    - socketName: Center
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: door-double
+      acceptMatchMode: 0
+      providedTypes: door-double
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: door
+  - pieceName: GreenTileFloor
+    prefab: {fileID: 3506469283198387681, guid: 8f3a4fa184b132a478bea4eb9dfd4376, type: 3}
+    pieceType: 3
+    sockets:
+    - socketName: Socket_0
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0.3, y: 0.3, z: 0.3}
+      acceptedTypes: floor-top
+      acceptMatchMode: 0
+      providedTypes: floor-tile
+      provideMatchMode: 0
+      alignRotation: 1
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0, g: 1, b: 1, a: 1}
+    gridSize: {x: 0, y: 0, z: 0}
+    canPlaceOnGround: 0
+    canStack: 0
+    providedTags: tile,decor
+  - pieceName: DoubleWindowCovered
+    prefab: {fileID: 3847599901399030938, guid: 11a383f6b4ffcf54ba587cd932317485, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-double-window
+      acceptMatchMode: 0
+      providedTypes: wall-double-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: DoubleWindowCovered_01
+    prefab: {fileID: 8206255157039405053, guid: 9ff43908f255a924486cf819a71f1d3e, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-double-window
+      acceptMatchMode: 0
+      providedTypes: wall-double-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: DoubleWindowCovered_02
+    prefab: {fileID: 8079946502135928530, guid: 13481c7003f6f004185e64ecde28dbeb, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-double-window
+      acceptMatchMode: 0
+      providedTypes: wall-double-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: DoubleWindowCovered_03
+    prefab: {fileID: 3574140500723694757, guid: 4c980c43e20fe7c47a99b76ee2a863a0, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-double-window
+      acceptMatchMode: 0
+      providedTypes: wall-double-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: DoubleWindowUncovered
+    prefab: {fileID: 7931831133190916508, guid: fc0d7e5571866714aa9146abaf51dc97, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-double-window
+      acceptMatchMode: 0
+      providedTypes: wall-double-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: DoubleWindowUncovered_01
+    prefab: {fileID: 3954618028402110585, guid: 6aebab75db9ef0543a3764c3cddf59bc, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-double-window
+      acceptMatchMode: 0
+      providedTypes: wall-double-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: SingleWindowCovered_01
+    prefab: {fileID: 2838839944454112577, guid: 14b0219a84844554087c54f62e83a77f, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-single-window
+      acceptMatchMode: 0
+      providedTypes: wall-single-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: SingleWindowCovered_02
+    prefab: {fileID: 575866757615001122, guid: dd390b5a5e0f98e42899afa383b3bf23, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-single-window
+      acceptMatchMode: 0
+      providedTypes: wall-single-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: SingleWindowCovered_03
+    prefab: {fileID: 5637851630914658199, guid: e360205214e32ca49bc2e3040ade5cae, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-single-window
+      acceptMatchMode: 0
+      providedTypes: wall-single-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: SingleWindowCovered_04
+    prefab: {fileID: 1937972578335950155, guid: c6230808a6e7da5438f890fedef3af57, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-single-window
+      acceptMatchMode: 0
+      providedTypes: wall-single-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: SingleWindowOpen_01
+    prefab: {fileID: 7189477720531673322, guid: 59df411f767085a4b814f675b032f0ac, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-single-window
+      acceptMatchMode: 0
+      providedTypes: wall-single-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: SingleWindowOpen_02
+    prefab: {fileID: 5301483086586625829, guid: 0b36b8dd7142c8442bc43588be7a8233, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-single-window
+      acceptMatchMode: 0
+      providedTypes: wall-single-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: WideWindowCovered_01
+    prefab: {fileID: 2699400879022877527, guid: 611ec5ce38822154e997edc975ffcb97, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-wide-window
+      acceptMatchMode: 0
+      providedTypes: wall-wide-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: WideWindowCovered_02
+    prefab: {fileID: 4048658254991765944, guid: c1d5b1cb301452542ae07f6b968fdf23, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-wide-window
+      acceptMatchMode: 0
+      providedTypes: wall-wide-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: WideWindowCovered_03
+    prefab: {fileID: 8411694030439697905, guid: 52a4bda69b304ac468a6d6fb1ca68796, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-wide-window
+      acceptMatchMode: 0
+      providedTypes: wall-wide-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: WideWindowOpen_01
+    prefab: {fileID: 1143437342603058940, guid: bec5a430fe7344d4389c5dc60708e3f6, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-wide-window
+      acceptMatchMode: 0
+      providedTypes: wall-wide-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: WideWindowOpen_02
+    prefab: {fileID: 2212926377773952705, guid: 3ed10e58f552bce4290149553bd65ee7, type: 3}
+    pieceType: 5
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 0}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-wide-window
+      acceptMatchMode: 0
+      providedTypes: wall-wide-window
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.33397084, g: 0.32520464, b: 0.8490566, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  - pieceName: WallBorder
+    prefab: {fileID: 1030981127, guid: abc00000000009526050313903054390, type: 3}
+    pieceType: 0
+    sockets:
+    - socketName: Wall
+      socketType: 0
+      localPosition: {x: 0, y: 0, z: 0}
+      localRotation: {x: 0, y: 0, z: 270}
+      size: {x: 0, y: 0, z: 0}
+      acceptedTypes: wall-border
+      acceptMatchMode: 0
+      providedTypes: wall-border
+      provideMatchMode: 0
+      alignRotation: 0
+      connectionOffset: {x: 0, y: 0, z: 0}
+      gizmoColor: {r: 0.6075471, g: 0.23270196, b: 0.23270196, a: 0}
+    gridSize: {x: 4, y: 3, z: 0.5}
+    canPlaceOnGround: 1
+    canStack: 0
+    providedTags: 
+  snapToGrid: 1
+  gridSize: 4
+  floorHeight: 3
+  snapRotation: 1
+  snapPointColor: {r: 1, g: 0.5, b: 0, a: 0.8}
+  previewColor: {r: 0.5, g: 1, b: 0.5, a: 0.5}

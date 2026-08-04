@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2acc7616c3220c8489d6111ead3bf149, type: 3}
+  m_Name: PipeSegmentLibrary
+  m_EditorClassIdentifier: 
+  libraryName: Pipes
+  description: Collection of segments for chain placement.
+  segments:
+  - segmentName: Straight
+    prefab: {fileID: 1583893872088828935, guid: 351241d1124cc244faa47268ac533d7a, type: 3}
+    spawnPivots:
+    - name: Forward
+      position: {x: 0, y: 1.8, z: 0}
+      rotation: {x: 0, y: 0, z: 0}
+    spawnPivotPosition: {x: 0, y: 1.8, z: 0}
+    spawnPivotRotation: {x: 0, y: 0, z: 0}
+    icon: {fileID: 0}
+    canBeStartSegment: 0
+    canHaveChildren: 1
+  - segmentName: Connection Cap
+    prefab: {fileID: 8984191300887246867, guid: f74b4f04d71148544bf6255e1ef6fea6, type: 3}
+    spawnPivots:
+    - name: Forward
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0}
+    spawnPivotPosition: {x: 0, y: 0, z: 0}
+    spawnPivotRotation: {x: 0, y: 0, z: 0}
+    icon: {fileID: 0}
+    canBeStartSegment: 1
+    canHaveChildren: 1
+  - segmentName: End Cap
+    prefab: {fileID: 5840441938706198561, guid: 3160a2a84dc097445ade5f5a5acd2759, type: 3}
+    spawnPivots:
+    - name: Forward
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0}
+    spawnPivotPosition: {x: 0, y: 0, z: 0}
+    spawnPivotRotation: {x: 0, y: 0, z: 0}
+    icon: {fileID: 0}
+    canBeStartSegment: 0
+    canHaveChildren: 0
+  - segmentName: T-Branch
+    prefab: {fileID: 5204446252717015296, guid: 45524f5da668f1d45b0facd70cc6d92e, type: 3}
+    spawnPivots:
+    - name: Forward
+      position: {x: 0, y: 1.82, z: 0}
+      rotation: {x: 0, y: 0, z: 0}
+    - name: Down
+      position: {x: 0, y: 0.9, z: 1.49}
+      rotation: {x: 90, y: 0, z: 0}
+    spawnPivotPosition: {x: 0, y: 0, z: 0}
+    spawnPivotRotation: {x: 0, y: 0, z: 0}
+    icon: {fileID: 0}
+    canBeStartSegment: 0
+    canHaveChildren: 1
+  - segmentName: Corner
+    prefab: {fileID: 3001760622315129396, guid: e8d2c98922f77fb4d9540e6025d15bfd, type: 3}
+    spawnPivots:
+    - name: Forward
+      position: {x: 0, y: 0.9, z: 0.9}
+      rotation: {x: 90, y: 0, z: 0}
+    spawnPivotPosition: {x: 0, y: 0.9, z: 0.9}
+    spawnPivotRotation: {x: 90, y: 0, z: 0}
+    icon: {fileID: 0}
+    canBeStartSegment: 0
+    canHaveChildren: 1
+  pivotGizmoColor: {r: 0, g: 1, b: 0.5, a: 0.8}
+  previewColor: {r: 0, g: 1, b: 1, a: 0.3}
+  snapToGrid: 1
+  gridSize: 1
+  snapRotation: 1
